@@ -7,10 +7,10 @@ import {
   Receipt,
   BarChart3,
   Settings,
-  BookOpen,
   X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import logo from "@/assets/logo.jpeg";
 
 interface SidebarProps {
   onClose?: () => void;
@@ -34,9 +34,7 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-sidebar-border px-5 py-5">
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-sidebar-primary">
-            <BookOpen className="h-5 w-5 text-sidebar-primary-foreground" />
-          </div>
+          <img src={logo} alt="Alhamd Academy" className="h-10 w-10 rounded-lg object-contain" />
           <div>
             <h2 className="text-base font-bold text-sidebar-foreground">أكاديمية الحمد</h2>
             <p className="text-xs text-sidebar-muted">لتحفيظ القرآن الكريم</p>
