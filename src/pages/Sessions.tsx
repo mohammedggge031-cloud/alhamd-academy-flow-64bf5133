@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send, BookOpen } from "lucide-react";
+import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send, BookOpen, Eye } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -104,15 +104,30 @@ const Sessions = () => {
     },
   });
 
-  // Fetch existing reports
+  // Fetch existing reports (full data for teacher view)
   const { data: existingReports = [] } = useQuery({
     queryKey: ["session-reports"],
     queryFn: async () => {
-      const { data } = await supabase.from("session_reports").select("session_id");
+      const { data } = await supabase
+        .from("session_reports")
+        .select(`
+          *,
+          students:student_id(name),
+          sessions:session_id(session_date, start_time)
+        `)
+        .order("created_at", { ascending: false });
       return data ?? [];
     },
   });
   const reportedSessionIds = new Set(existingReports.map((r: any) => r.session_id));
+
+  // Sessions that need reports (completed but no report yet)
+  const pendingReportSessions = useMemo(() => {
+    if (isAdmin) return [];
+    return sessions.filter((s: any) => s.status === "completed" && !reportedSessionIds.has(s.id));
+  }, [sessions, reportedSessionIds, isAdmin]);
+
+  const [showMyReports, setShowMyReports] = useState(false);
 
   // Submit session report
   const submitReport = useMutation({
@@ -409,8 +424,34 @@ const Sessions = () => {
         </Card>
       )}
 
-      {/* Filters */}
-      <div className="flex items-center gap-3">
+      {/* Teacher: Pending report alerts */}
+      {!isAdmin && pendingReportSessions.length > 0 && (
+        <Card className="border-destructive/30 bg-destructive/5 shadow-sm">
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-sm font-bold flex items-center gap-2 text-destructive">
+              <FileText className="h-4 w-4" />
+              حصص تحتاج تقرير ({pendingReportSessions.length})
+            </h3>
+            <div className="divide-y divide-border">
+              {pendingReportSessions.map((session: any) => (
+                <div key={session.id} className="flex items-center justify-between py-2 gap-3">
+                  <div className="text-sm">
+                    <p className="font-medium">{getStudentName(session)}</p>
+                    <p className="text-xs text-muted-foreground">{session.session_date} · {session.start_time?.slice(0, 5) ?? ""}</p>
+                  </div>
+                  <Button size="sm" variant="outline" className="gap-1 text-xs border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                    onClick={() => { setReportDialog(session); }}>
+                    <FileText className="h-3 w-3" />إرسال التقرير
+                  </Button>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Filters + My Reports toggle */}
+      <div className="flex items-center gap-3 flex-wrap">
         <Filter className="h-4 w-4 text-muted-foreground" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -425,10 +466,58 @@ const Sessions = () => {
             <SelectItem value="postponed">مؤجلة</SelectItem>
           </SelectContent>
         </Select>
+        {!isAdmin && (
+          <Button size="sm" variant={showMyReports ? "default" : "outline"} className="gap-1 mr-auto"
+            onClick={() => setShowMyReports(!showMyReports)}>
+            <Eye className="h-3.5 w-3.5" />
+            تقاريري
+          </Button>
+        )}
       </div>
 
+      {/* My Reports view */}
+      {!isAdmin && showMyReports && (
+        <Card className="border-none shadow-sm">
+          <CardContent className="p-4 space-y-3">
+            <h3 className="text-base font-bold flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              تقاريري السابقة ({existingReports.length})
+            </h3>
+            {existingReports.length === 0 && (
+              <p className="text-center text-muted-foreground py-6">لا توجد تقارير بعد</p>
+            )}
+            <div className="divide-y divide-border">
+              {existingReports.map((r: any) => (
+                <div key={r.id} className="py-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-medium">{r.students?.name ?? "—"}</p>
+                    <span className="text-xs text-muted-foreground">{r.sessions?.session_date ?? ""}</span>
+                  </div>
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Badge variant="secondary" className={levelLabels[r.student_level]?.className ?? ""}>
+                      {levelLabels[r.student_level]?.label ?? r.student_level}
+                    </Badge>
+                    {r.admin_alert && (
+                      <Badge variant="secondary" className="bg-warning/10 text-warning text-[10px]">
+                        <AlertTriangle className="h-3 w-3 ml-1" />تنبيه إدارة
+                      </Badge>
+                    )}
+                  </div>
+                  {r.session_notes && <p className="text-xs text-muted-foreground">{r.session_notes}</p>}
+                  {r.homework && (
+                    <div className="text-xs bg-muted/50 rounded-lg p-2">
+                      <span className="font-medium text-foreground">الواجب: </span>{r.homework}
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Sessions list */}
-      {isLoading ? (
+      {!showMyReports && (isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
       ) : (
         <Card className="border-none shadow-sm">
@@ -437,40 +526,57 @@ const Sessions = () => {
               {filtered.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">لا توجد حصص</p>
               )}
-              {filtered.map((session: any) => (
-                <div
-                  key={session.id}
-                  className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer"
-                  onClick={() => setSelectedSession(session)}
-                >
-                  <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center shrink-0">
-                      <span className="text-sm font-bold text-primary">{getStudentName(session)[0]}</span>
+              {filtered.map((session: any) => {
+                const statusBorderColors: Record<string, string> = {
+                  upcoming: "border-r-4 border-r-accent-foreground",
+                  confirmed: "border-r-4 border-r-primary",
+                  completed: "border-r-4 border-r-success",
+                  absent_student: "border-r-4 border-r-destructive",
+                  absent_teacher: "border-r-4 border-r-destructive",
+                  cancelled: "border-r-4 border-r-muted-foreground",
+                  postponed: "border-r-4 border-r-warning",
+                };
+                const needsReport = !isAdmin && session.status === "completed" && !reportedSessionIds.has(session.id);
+                return (
+                  <div
+                    key={session.id}
+                    className={`flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer ${statusBorderColors[session.status] ?? ""} ${needsReport ? "bg-destructive/5" : ""}`}
+                    onClick={() => setSelectedSession(session)}
+                  >
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center shrink-0">
+                        <span className="text-sm font-bold text-primary">{getStudentName(session)[0]}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{getStudentName(session)}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {getTeacherName(session)} · {session.start_time?.slice(0, 5) ?? ""} · {session.duration_minutes} دقيقة
+                        </p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">{getStudentName(session)}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {getTeacherName(session)} · {session.start_time?.slice(0, 5) ?? ""} · {session.duration_minutes} دقيقة
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {session.pending_approval && (
-                      <Badge variant="secondary" className="text-[10px] bg-warning/10 text-warning">
-                        ⏳ معلق
+                    <div className="flex items-center gap-2">
+                      {needsReport && (
+                        <Badge variant="secondary" className="text-[10px] bg-destructive/10 text-destructive">
+                          <FileText className="h-3 w-3 ml-1" />تقرير
+                        </Badge>
+                      )}
+                      {session.pending_approval && (
+                        <Badge variant="secondary" className="text-[10px] bg-warning/10 text-warning">
+                          ⏳ معلق
+                        </Badge>
+                      )}
+                      <span className="text-xs text-muted-foreground hidden sm:block">{session.session_date}</span>
+                      <Badge variant="secondary" className={statusConfig[session.status]?.className ?? ""}>
+                        {statusConfig[session.status]?.label ?? session.status}
                       </Badge>
-                    )}
-                    <span className="text-xs text-muted-foreground hidden sm:block">{session.session_date}</span>
-                    <Badge variant="secondary" className={statusConfig[session.status]?.className ?? ""}>
-                      {statusConfig[session.status]?.label ?? session.status}
-                    </Badge>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
-      )}
+      ))}
 
       {/* Session detail dialog */}
       <Dialog open={!!selectedSession} onOpenChange={() => setSelectedSession(null)}>
