@@ -420,6 +420,7 @@ const Sessions = () => {
             <SelectItem value="confirmed">مقبولة</SelectItem>
             <SelectItem value="completed">مكتملة</SelectItem>
             <SelectItem value="absent_student">غياب طالب</SelectItem>
+            <SelectItem value="absent_teacher">غياب معلم</SelectItem>
             <SelectItem value="cancelled">ملغاة</SelectItem>
             <SelectItem value="postponed">مؤجلة</SelectItem>
           </SelectContent>
