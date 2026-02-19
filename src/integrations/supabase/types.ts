@@ -301,43 +301,58 @@ export type Database = {
       }
       students: {
         Row: {
+          absence_hours: number | null
           age: number | null
           assigned_teacher_id: string | null
+          attended_hours: number | null
+          country: string | null
           created_at: string
           guardian_whatsapp: string | null
           id: string
           is_active: boolean | null
           name: string
+          paid_hours: number | null
           remaining_hours: number | null
           schedule: Json | null
+          session_duration_minutes: number | null
           timezone: string | null
           updated_at: string
           whatsapp: string | null
         }
         Insert: {
+          absence_hours?: number | null
           age?: number | null
           assigned_teacher_id?: string | null
+          attended_hours?: number | null
+          country?: string | null
           created_at?: string
           guardian_whatsapp?: string | null
           id?: string
           is_active?: boolean | null
           name: string
+          paid_hours?: number | null
           remaining_hours?: number | null
           schedule?: Json | null
+          session_duration_minutes?: number | null
           timezone?: string | null
           updated_at?: string
           whatsapp?: string | null
         }
         Update: {
+          absence_hours?: number | null
           age?: number | null
           assigned_teacher_id?: string | null
+          attended_hours?: number | null
+          country?: string | null
           created_at?: string
           guardian_whatsapp?: string | null
           id?: string
           is_active?: boolean | null
           name?: string
+          paid_hours?: number | null
           remaining_hours?: number | null
           schedule?: Json | null
+          session_duration_minutes?: number | null
           timezone?: string | null
           updated_at?: string
           whatsapp?: string | null
