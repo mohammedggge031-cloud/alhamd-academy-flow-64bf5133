@@ -160,6 +160,7 @@ export type Database = {
           status: string
           student_id: string
           teacher_id: string
+          teacher_paid: boolean | null
           updated_at: string
           waiting_minutes: number | null
         }
@@ -173,6 +174,7 @@ export type Database = {
           status?: string
           student_id: string
           teacher_id: string
+          teacher_paid?: boolean | null
           updated_at?: string
           waiting_minutes?: number | null
         }
@@ -186,6 +188,7 @@ export type Database = {
           status?: string
           student_id?: string
           teacher_id?: string
+          teacher_paid?: boolean | null
           updated_at?: string
           waiting_minutes?: number | null
         }
