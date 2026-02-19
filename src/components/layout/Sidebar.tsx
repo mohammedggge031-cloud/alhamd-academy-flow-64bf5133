@@ -8,6 +8,7 @@ import {
   BarChart3,
   BookOpen,
   Settings,
+  DollarSign,
   X,
   LogOut,
 } from "lucide-react";
@@ -19,20 +20,23 @@ interface SidebarProps {
   onClose?: () => void;
 }
 
-const navItems = [
-  { to: "/", icon: LayoutDashboard, label: "لوحة التحكم" },
-  { to: "/students", icon: Users, label: "الطلاب" },
-  { to: "/teachers", icon: GraduationCap, label: "المعلمون" },
-  { to: "/sessions", icon: CalendarDays, label: "الحصص" },
-  { to: "/invoices", icon: Receipt, label: "الفواتير" },
-  { to: "/reports", icon: BarChart3, label: "التقارير" },
-  { to: "/monthly-reports", icon: BookOpen, label: "تقارير الطلاب" },
-  { to: "/settings", icon: Settings, label: "الإعدادات" },
+const allNavItems = [
+  { to: "/", icon: LayoutDashboard, label: "لوحة التحكم", roles: ["admin", "manager"] },
+  { to: "/students", icon: Users, label: "الطلاب", roles: ["admin", "manager"] },
+  { to: "/teachers", icon: GraduationCap, label: "المعلمون", roles: ["admin", "manager"] },
+  { to: "/sessions", icon: CalendarDays, label: "الحصص", roles: ["admin", "manager"] },
+  { to: "/invoices", icon: Receipt, label: "الفواتير", roles: ["admin", "manager"] },
+  { to: "/expenses", icon: DollarSign, label: "المصاريف", roles: ["admin"] },
+  { to: "/reports", icon: BarChart3, label: "التقارير", roles: ["admin"] },
+  { to: "/monthly-reports", icon: BookOpen, label: "تقارير الطلاب", roles: ["admin", "manager"] },
+  { to: "/settings", icon: Settings, label: "الإعدادات", roles: ["admin"] },
 ];
 
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const location = useLocation();
-  const { signOut } = useAuth();
+  const { signOut, role } = useAuth();
+
+  const navItems = allNavItems.filter(item => item.roles.includes(role ?? ""));
 
   return (
     <aside className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -85,11 +89,11 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
       <div className="border-t border-sidebar-border p-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-sidebar-accent flex items-center justify-center">
-            <span className="text-sm font-bold text-sidebar-primary">أ</span>
+            <span className="text-sm font-bold text-sidebar-primary">{role === "manager" ? "م" : "أ"}</span>
           </div>
           <div>
-            <p className="text-sm font-medium text-sidebar-foreground">المدير</p>
-            <p className="text-xs text-sidebar-muted">admin@alhamd.academy</p>
+            <p className="text-sm font-medium text-sidebar-foreground">{role === "manager" ? "مدير مساعد" : "المدير"}</p>
+            <p className="text-xs text-sidebar-muted">{role}</p>
           </div>
         </div>
         <Button
