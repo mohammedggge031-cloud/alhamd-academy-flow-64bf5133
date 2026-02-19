@@ -14,16 +14,332 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      invoices: {
+        Row: {
+          amount: number
+          created_at: string
+          discount: number | null
+          due_date: string | null
+          id: string
+          notes: string | null
+          paid_at: string | null
+          status: string
+          student_id: string
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          discount?: number | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          student_id: string
+          total: number
+          updated_at?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          discount?: number | null
+          due_date?: string | null
+          id?: string
+          notes?: string | null
+          paid_at?: string | null
+          status?: string
+          student_id?: string
+          total?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoices_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string
+          id: string
+          updated_at: string
+          user_id: string
+          whatsapp: string | null
+        }
+        Insert: {
+          created_at?: string
+          full_name: string
+          id?: string
+          updated_at?: string
+          user_id: string
+          whatsapp?: string | null
+        }
+        Update: {
+          created_at?: string
+          full_name?: string
+          id?: string
+          updated_at?: string
+          user_id?: string
+          whatsapp?: string | null
+        }
+        Relationships: []
+      }
+      sessions: {
+        Row: {
+          created_at: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          session_date: string
+          start_time: string | null
+          status: string
+          student_id: string
+          teacher_id: string
+          updated_at: string
+          waiting_minutes: number | null
+        }
+        Insert: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          session_date: string
+          start_time?: string | null
+          status?: string
+          student_id: string
+          teacher_id: string
+          updated_at?: string
+          waiting_minutes?: number | null
+        }
+        Update: {
+          created_at?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          session_date?: string
+          start_time?: string | null
+          status?: string
+          student_id?: string
+          teacher_id?: string
+          updated_at?: string
+          waiting_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sessions_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_self_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      students: {
+        Row: {
+          age: number | null
+          assigned_teacher_id: string | null
+          created_at: string
+          guardian_whatsapp: string | null
+          id: string
+          is_active: boolean | null
+          name: string
+          remaining_hours: number | null
+          schedule: Json | null
+          timezone: string | null
+          updated_at: string
+          whatsapp: string | null
+        }
+        Insert: {
+          age?: number | null
+          assigned_teacher_id?: string | null
+          created_at?: string
+          guardian_whatsapp?: string | null
+          id?: string
+          is_active?: boolean | null
+          name: string
+          remaining_hours?: number | null
+          schedule?: Json | null
+          timezone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Update: {
+          age?: number | null
+          assigned_teacher_id?: string | null
+          created_at?: string
+          guardian_whatsapp?: string | null
+          id?: string
+          is_active?: boolean | null
+          name?: string
+          remaining_hours?: number | null
+          schedule?: Json | null
+          timezone?: string | null
+          updated_at?: string
+          whatsapp?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "students_assigned_teacher_id_fkey"
+            columns: ["assigned_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_assigned_teacher_id_fkey"
+            columns: ["assigned_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_self_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teachers: {
+        Row: {
+          age: number | null
+          created_at: string
+          hourly_rate: number
+          id: string
+          is_active: boolean | null
+          monthly_absence_hours: number | null
+          monthly_hours: number | null
+          monthly_salary: number | null
+          monthly_waiting_minutes: number | null
+          qualification: string | null
+          rating: number | null
+          students_count: number | null
+          subjects: string[] | null
+          updated_at: string
+          user_id: string
+          zoom_link: string | null
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string
+          hourly_rate?: number
+          id?: string
+          is_active?: boolean | null
+          monthly_absence_hours?: number | null
+          monthly_hours?: number | null
+          monthly_salary?: number | null
+          monthly_waiting_minutes?: number | null
+          qualification?: string | null
+          rating?: number | null
+          students_count?: number | null
+          subjects?: string[] | null
+          updated_at?: string
+          user_id: string
+          zoom_link?: string | null
+        }
+        Update: {
+          age?: number | null
+          created_at?: string
+          hourly_rate?: number
+          id?: string
+          is_active?: boolean | null
+          monthly_absence_hours?: number | null
+          monthly_hours?: number | null
+          monthly_salary?: number | null
+          monthly_waiting_minutes?: number | null
+          qualification?: string | null
+          rating?: number | null
+          students_count?: number | null
+          subjects?: string[] | null
+          updated_at?: string
+          user_id?: string
+          zoom_link?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
-      [_ in never]: never
+      teachers_self_view: {
+        Row: {
+          age: number | null
+          created_at: string | null
+          hourly_rate: number | null
+          id: string | null
+          is_active: boolean | null
+          qualification: string | null
+          user_id: string | null
+          zoom_link: string | null
+        }
+        Insert: {
+          age?: number | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          qualification?: string | null
+          user_id?: string | null
+          zoom_link?: string | null
+        }
+        Update: {
+          age?: number | null
+          created_at?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          is_active?: boolean | null
+          qualification?: string | null
+          user_id?: string | null
+          zoom_link?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "teacher"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +466,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "teacher"],
+    },
   },
 } as const
