@@ -506,7 +506,13 @@ const Sessions = () => {
                   <Label className="text-sm font-medium">إجراءات</Label>
                   <div className="grid grid-cols-2 gap-2">
                     <Button size="sm" className="gap-1"
-                      onClick={() => updateStatus.mutate({ id: selectedSession.id, status: "confirmed" })}>
+                      onClick={async () => {
+                        await updateStatus.mutateAsync({ id: selectedSession.id, status: "confirmed" });
+                        // Send WhatsApp reminder to student that teacher joined
+                        supabase.functions.invoke("send-session-reminder", {
+                          body: { type: "teacher_joined", session_id: selectedSession.id },
+                        });
+                      }}>
                       <Check className="h-3 w-3" />قبول الحصة
                     </Button>
                     <Button size="sm" variant="destructive" className="gap-1"
