@@ -2,16 +2,7 @@ import { Phone, MapPin, Clock, ArrowRightLeft } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-
-const DAYS_AR: Record<string, string> = {
-  saturday: "السبت",
-  sunday: "الأحد",
-  monday: "الاثنين",
-  tuesday: "الثلاثاء",
-  wednesday: "الأربعاء",
-  thursday: "الخميس",
-  friday: "الجمعة",
-};
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface StudentCardProps {
   student: {
@@ -34,18 +25,24 @@ interface StudentCardProps {
   onTransfer: () => void;
 }
 
-const invoiceStatusMap: Record<string, { label: string; className: string }> = {
-  paid: { label: "مدفوعة", className: "bg-success text-success-foreground" },
-  pending: { label: "معلقة", className: "bg-warning text-warning-foreground" },
-  overdue: { label: "متأخرة", className: "bg-destructive text-destructive-foreground" },
-};
-
 const StudentCard = ({ student, teacherName, invoiceStatus, onTransfer }: StudentCardProps) => {
+  const { t } = useLanguage();
   const remaining = student.remaining_hours ?? 0;
   const attended = student.attended_hours ?? 0;
   const absence = student.absence_hours ?? 0;
   const scheduleArr = Array.isArray(student.schedule) ? student.schedule : [];
-  const status = invoiceStatus && invoiceStatusMap[invoiceStatus] ? invoiceStatus : "pending";
+  const status = invoiceStatus && ["paid", "pending", "overdue"].includes(invoiceStatus) ? invoiceStatus : "pending";
+
+  const invoiceStatusMap: Record<string, { label: string; className: string }> = {
+    paid: { label: t("paid"), className: "bg-success text-success-foreground" },
+    pending: { label: t("pending"), className: "bg-warning text-warning-foreground" },
+    overdue: { label: t("overdue"), className: "bg-destructive text-destructive-foreground" },
+  };
+
+  const daysMap: Record<string, string> = {
+    saturday: t("saturday"), sunday: t("sunday"), monday: t("monday"),
+    tuesday: t("tuesday"), wednesday: t("wednesday"), thursday: t("thursday"), friday: t("friday"),
+  };
 
   return (
     <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
@@ -89,33 +86,33 @@ const StudentCard = ({ student, teacherName, invoiceStatus, onTransfer }: Studen
         <div className="grid grid-cols-3 gap-2 rounded-lg bg-muted/50 p-3 text-center">
           <div>
             <p className="text-lg font-bold text-primary">{remaining}</p>
-            <p className="text-[10px] text-muted-foreground">متبقي</p>
+            <p className="text-[10px] text-muted-foreground">{t("remaining")}</p>
           </div>
           <div>
             <p className="text-lg font-bold text-success">{attended}</p>
-            <p className="text-[10px] text-muted-foreground">محضور</p>
+            <p className="text-[10px] text-muted-foreground">{t("attended")}</p>
           </div>
           <div>
             <p className="text-lg font-bold text-destructive">{absence}</p>
-            <p className="text-[10px] text-muted-foreground">غياب</p>
+            <p className="text-[10px] text-muted-foreground">{t("absence")}</p>
           </div>
         </div>
 
         {remaining <= 1 && (
           <div className="rounded-lg bg-warning/10 px-3 py-2 text-xs text-warning font-medium">
-            ⚠️ رصيد الساعات على وشك النفاد
+            {t("lowBalanceWarning")}
           </div>
         )}
 
         {scheduleArr.length > 0 && (
           <p className="text-xs text-muted-foreground">
-            {scheduleArr.map((s: any) => `${DAYS_AR[s.day] || s.day} ${s.time}`).join(" · ")}
+            {scheduleArr.map((s: any) => `${daysMap[s.day] || s.day} ${s.time}`).join(" · ")}
           </p>
         )}
 
         <Button variant="ghost" size="sm" className="w-full gap-2 text-xs" onClick={onTransfer}>
           <ArrowRightLeft className="h-3 w-3" />
-          تحويل لمعلم آخر
+          {t("transferTeacher")}
         </Button>
       </CardContent>
     </Card>

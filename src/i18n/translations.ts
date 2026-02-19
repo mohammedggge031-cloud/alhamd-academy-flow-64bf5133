@@ -372,8 +372,47 @@ const translations = {
 
   // Time units
   thirtyMin: { en: "30 minutes", ar: "30 دقيقة" },
+  fortyFiveMin: { en: "45 minutes", ar: "45 دقيقة" },
+  sixtyMin: { en: "60 minutes", ar: "60 دقيقة" },
+  ninetyMin: { en: "90 minutes", ar: "90 دقيقة" },
   oneHour: { en: "1 hour", ar: "ساعة" },
   twoHours: { en: "2 hours", ar: "ساعتين" },
+
+  // Timezone labels
+  tzEgypt: { en: "Egypt (Cairo)", ar: "مصر (القاهرة)" },
+  tzSaudi: { en: "Saudi Arabia (Riyadh)", ar: "السعودية (الرياض)" },
+  tzUAE: { en: "UAE (Dubai)", ar: "الإمارات (دبي)" },
+  tzKuwait: { en: "Kuwait", ar: "الكويت" },
+  tzBahrain: { en: "Bahrain", ar: "البحرين" },
+  tzQatar: { en: "Qatar", ar: "قطر" },
+  tzOman: { en: "Oman (Muscat)", ar: "عُمان (مسقط)" },
+  tzJordan: { en: "Jordan (Amman)", ar: "الأردن (عمّان)" },
+  tzIraq: { en: "Iraq (Baghdad)", ar: "العراق (بغداد)" },
+  tzLibya: { en: "Libya (Tripoli)", ar: "ليبيا (طرابلس)" },
+  tzTunisia: { en: "Tunisia", ar: "تونس" },
+  tzAlgeria: { en: "Algeria", ar: "الجزائر" },
+  tzMorocco: { en: "Morocco (Casablanca)", ar: "المغرب (الدار البيضاء)" },
+  tzLondon: { en: "London", ar: "لندن" },
+  tzTurkey: { en: "Turkey (Istanbul)", ar: "تركيا (إسطنبول)" },
+  tzNewYork: { en: "New York", ar: "نيويورك" },
+  tzLA: { en: "Los Angeles", ar: "لوس أنجلوس" },
+  tzPakistan: { en: "Pakistan (Karachi)", ar: "باكستان (كراتشي)" },
+  tzMalaysia: { en: "Malaysia", ar: "ماليزيا" },
+  tzIndonesia: { en: "Indonesia (Jakarta)", ar: "إندونيسيا (جاكرتا)" },
+
+  // Additional
+  enterStudentName: { en: "Enter student name", ar: "أدخل اسم الطالب" },
+  enterAge: { en: "Age", ar: "العمر" },
+  enterCountry: { en: "Country", ar: "الدولة" },
+  qualificationPlaceholder: { en: "e.g. Ijazah in Hafs from Asim", ar: "مثال: إجازة في حفص عن عاصم" },
+  teacherNotFound: { en: "Teacher data not found", ar: "لم يتم العثور على بيانات المعلم" },
+  noSessions: { en: "No sessions found", ar: "لا توجد حصص" },
+  conflictNote: { en: "Transfer will proceed, please review schedule conflicts", ar: "سيتم تحويل الطالب مع إشعار بضرورة تعديل المواعيد" },
+  at: { en: "at", ar: "الساعة" },
+  teacherLabel: { en: "Teacher:", ar: "المعلم:" },
+  selectPlaceholder: { en: "Select", ar: "اختر" },
+  adminActionsLabel: { en: "Actions", ar: "إجراءات" },
+  enterTeacherName: { en: "Enter teacher name", ar: "أدخل اسم المعلم" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

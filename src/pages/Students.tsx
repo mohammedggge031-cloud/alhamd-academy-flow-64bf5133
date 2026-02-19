@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import AddStudentForm from "@/components/students/AddStudentForm";
 import StudentCard from "@/components/students/StudentCard";
 import TransferStudentDialog from "@/components/students/TransferStudentDialog";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Students = () => {
   const [search, setSearch] = useState("");
@@ -22,6 +23,7 @@ const Students = () => {
   const [invoiceStatuses, setInvoiceStatuses] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [transferStudent, setTransferStudent] = useState<any>(null);
+  const { t } = useLanguage();
 
   const fetchStudents = async () => {
     setLoading(true);
@@ -34,7 +36,6 @@ const Students = () => {
     if (data) {
       setStudents(data);
 
-      // Fetch teacher names
       const teacherIds = [...new Set(data.map((s) => s.assigned_teacher_id).filter(Boolean))];
       const names: Record<string, string> = {};
       for (const tid of teacherIds) {
@@ -49,12 +50,11 @@ const Students = () => {
             .select("full_name")
             .eq("user_id", teacher.user_id)
             .maybeSingle();
-          names[tid] = profile?.full_name || "معلم";
+          names[tid] = profile?.full_name || t("teacher");
         }
       }
       setTeacherNames(names);
 
-      // Fetch latest invoice status per student
       const statuses: Record<string, string> = {};
       for (const s of data) {
         const { data: invoice } = await supabase
@@ -88,20 +88,20 @@ const Students = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Users className="h-6 w-6 text-primary" />
-            إدارة الطلاب
+            {t("studentsTitle")}
           </h1>
-          <p className="text-muted-foreground">{students.length} طالب مسجل</p>
+          <p className="text-muted-foreground">{students.length} {t("studentsRegistered")}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2">
               <Plus className="h-4 w-4" />
-              إضافة طالب
+              {t("addStudent")}
             </Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>إضافة طالب جديد</DialogTitle>
+              <DialogTitle>{t("addStudentTitle")}</DialogTitle>
             </DialogHeader>
             <AddStudentForm
               onSuccess={() => {
@@ -117,7 +117,7 @@ const Students = () => {
       <div className="relative max-w-md">
         <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
         <Input
-          placeholder="بحث بالاسم أو رقم الهاتف أو الدولة..."
+          placeholder={t("searchStudents")}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           className="pr-10"
@@ -125,16 +125,16 @@ const Students = () => {
       </div>
 
       {loading ? (
-        <p className="text-center text-muted-foreground py-8">جاري تحميل الطلاب...</p>
+        <p className="text-center text-muted-foreground py-8">{t("loadingStudents")}</p>
       ) : filtered.length === 0 ? (
-        <p className="text-center text-muted-foreground py-8">لا يوجد طلاب</p>
+        <p className="text-center text-muted-foreground py-8">{t("noStudents")}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {filtered.map((student) => (
             <StudentCard
               key={student.id}
               student={student}
-              teacherName={teacherNames[student.assigned_teacher_id] || "بدون معلم"}
+              teacherName={teacherNames[student.assigned_teacher_id] || t("noTeacher")}
               invoiceStatus={invoiceStatuses[student.id] || null}
               onTransfer={() => setTransferStudent(student)}
             />

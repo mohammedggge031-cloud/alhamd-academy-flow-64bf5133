@@ -3,62 +3,35 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 
-const TIMEZONES = [
-  { value: "Africa/Cairo", label: "مصر (القاهرة)" },
-  { value: "Asia/Riyadh", label: "السعودية (الرياض)" },
-  { value: "Asia/Dubai", label: "الإمارات (دبي)" },
-  { value: "Asia/Kuwait", label: "الكويت" },
-  { value: "Asia/Bahrain", label: "البحرين" },
-  { value: "Asia/Qatar", label: "قطر" },
-  { value: "Asia/Muscat", label: "عُمان (مسقط)" },
-  { value: "Asia/Amman", label: "الأردن (عمّان)" },
-  { value: "Asia/Baghdad", label: "العراق (بغداد)" },
-  { value: "Africa/Tripoli", label: "ليبيا (طرابلس)" },
-  { value: "Africa/Tunis", label: "تونس" },
-  { value: "Africa/Algiers", label: "الجزائر" },
-  { value: "Africa/Casablanca", label: "المغرب (الدار البيضاء)" },
-  { value: "Europe/London", label: "لندن" },
-  { value: "Europe/Istanbul", label: "تركيا (إسطنبول)" },
-  { value: "America/New_York", label: "نيويورك" },
-  { value: "America/Los_Angeles", label: "لوس أنجلوس" },
-  { value: "Asia/Karachi", label: "باكستان (كراتشي)" },
-  { value: "Asia/Kuala_Lumpur", label: "ماليزيا" },
-  { value: "Asia/Jakarta", label: "إندونيسيا (جاكرتا)" },
+interface Teacher { id: string; name: string; }
+interface ScheduleEntry { day: string; time: string; }
+interface AddStudentFormProps { onSuccess: () => void; onCancel: () => void; }
+
+const TIMEZONE_KEYS: { value: string; key: string }[] = [
+  { value: "Africa/Cairo", key: "tzEgypt" }, { value: "Asia/Riyadh", key: "tzSaudi" },
+  { value: "Asia/Dubai", key: "tzUAE" }, { value: "Asia/Kuwait", key: "tzKuwait" },
+  { value: "Asia/Bahrain", key: "tzBahrain" }, { value: "Asia/Qatar", key: "tzQatar" },
+  { value: "Asia/Muscat", key: "tzOman" }, { value: "Asia/Amman", key: "tzJordan" },
+  { value: "Asia/Baghdad", key: "tzIraq" }, { value: "Africa/Tripoli", key: "tzLibya" },
+  { value: "Africa/Tunis", key: "tzTunisia" }, { value: "Africa/Algiers", key: "tzAlgeria" },
+  { value: "Africa/Casablanca", key: "tzMorocco" }, { value: "Europe/London", key: "tzLondon" },
+  { value: "Europe/Istanbul", key: "tzTurkey" }, { value: "America/New_York", key: "tzNewYork" },
+  { value: "America/Los_Angeles", key: "tzLA" }, { value: "Asia/Karachi", key: "tzPakistan" },
+  { value: "Asia/Kuala_Lumpur", key: "tzMalaysia" }, { value: "Asia/Jakarta", key: "tzIndonesia" },
 ];
 
-const DAYS = [
-  { value: "saturday", label: "السبت" },
-  { value: "sunday", label: "الأحد" },
-  { value: "monday", label: "الاثنين" },
-  { value: "tuesday", label: "الثلاثاء" },
-  { value: "wednesday", label: "الأربعاء" },
-  { value: "thursday", label: "الخميس" },
-  { value: "friday", label: "الجمعة" },
+const DAY_KEYS = [
+  { value: "saturday", key: "saturday" }, { value: "sunday", key: "sunday" },
+  { value: "monday", key: "monday" }, { value: "tuesday", key: "tuesday" },
+  { value: "wednesday", key: "wednesday" }, { value: "thursday", key: "thursday" },
+  { value: "friday", key: "friday" },
 ];
-
-interface Teacher {
-  id: string;
-  name: string;
-}
-
-interface ScheduleEntry {
-  day: string;
-  time: string;
-}
-
-interface AddStudentFormProps {
-  onSuccess: () => void;
-  onCancel: () => void;
-}
 
 const getTimezoneOffset = (tz: string): string => {
   try {
@@ -67,10 +40,8 @@ const getTimezoneOffset = (tz: string): string => {
     const studentTime = new Date(now.toLocaleString("en-US", { timeZone: tz }));
     const diffHours = (studentTime.getTime() - egyptTime.getTime()) / (1000 * 60 * 60);
     const sign = diffHours >= 0 ? "+" : "";
-    return `${sign}${diffHours} ساعة عن توقيت مصر`;
-  } catch {
-    return "";
-  }
+    return `${sign}${diffHours}`;
+  } catch { return ""; }
 };
 
 const convertTimeToEgypt = (time: string, fromTz: string): string => {
@@ -81,27 +52,20 @@ const convertTimeToEgypt = (time: string, fromTz: string): string => {
     now.setHours(hours, minutes, 0, 0);
     const studentStr = now.toLocaleString("en-US", { timeZone: fromTz });
     const studentDate = new Date(studentStr);
-    const egyptStr = new Date(
+    return new Date(
       studentDate.getTime() -
         (new Date(now.toLocaleString("en-US", { timeZone: fromTz })).getTime() -
           new Date(now.toLocaleString("en-US", { timeZone: "Africa/Cairo" })).getTime())
-    ).toLocaleTimeString("ar-EG", {
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: true,
-      timeZone: "Africa/Cairo",
+    ).toLocaleTimeString("en-US", {
+      hour: "2-digit", minute: "2-digit", hour12: true, timeZone: "Africa/Cairo",
     });
-    return egyptStr;
-  } catch {
-    return "";
-  }
+  } catch { return ""; }
 };
 
 const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
+  const { t } = useLanguage();
   const [loading, setLoading] = useState(false);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
-
-  // Form state
   const [name, setName] = useState("");
   const [age, setAge] = useState("");
   const [country, setCountry] = useState("");
@@ -119,19 +83,12 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
 
   useEffect(() => {
     const fetchTeachers = async () => {
-      const { data } = await supabase
-        .from("teachers")
-        .select("id, user_id")
-        .eq("is_active", true);
+      const { data } = await supabase.from("teachers").select("id, user_id").eq("is_active", true);
       if (data) {
         const teacherList: Teacher[] = [];
         for (const t of data) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("user_id", t.user_id)
-            .maybeSingle();
-          teacherList.push({ id: t.id, name: profile?.full_name || "معلم" });
+          const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", t.user_id).maybeSingle();
+          teacherList.push({ id: t.id, name: profile?.full_name || "Teacher" });
         }
         setTeachers(teacherList);
       }
@@ -149,131 +106,108 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
 
   const handleSubmit = async () => {
     if (!name.trim() || !whatsapp.trim()) {
-      toast({ title: "خطأ", description: "الاسم ورقم الواتساب مطلوبان", variant: "destructive" });
+      toast({ title: t("error"), description: t("nameWhatsappRequired"), variant: "destructive" });
       return;
     }
-
     setLoading(true);
     try {
       const validSchedule = schedule.filter((s) => s.day && s.time);
-
-      // Create student
       const { data: student, error: studentError } = await supabase
         .from("students")
         .insert([{
-          name: name.trim(),
-          age: age ? parseInt(age) : null,
-          country: country.trim() || null,
-          whatsapp: whatsapp.trim(),
-          guardian_whatsapp: guardianWhatsapp.trim() || null,
-          timezone,
-          assigned_teacher_id: teacherId || null,
+          name: name.trim(), age: age ? parseInt(age) : null, country: country.trim() || null,
+          whatsapp: whatsapp.trim(), guardian_whatsapp: guardianWhatsapp.trim() || null,
+          timezone, assigned_teacher_id: teacherId || null,
           paid_hours: paidHours ? parseFloat(paidHours) : 0,
           remaining_hours: paidHours ? parseFloat(paidHours) : 0,
           session_duration_minutes: parseInt(sessionDuration),
           schedule: validSchedule as any,
         }])
-        .select()
-        .single();
-
+        .select().single();
       if (studentError) {
         if (studentError.message.includes("unique") || studentError.message.includes("duplicate")) {
-          toast({ title: "خطأ", description: "رقم الواتساب مسجل بالفعل", variant: "destructive" });
-        } else {
-          throw studentError;
-        }
+          toast({ title: t("error"), description: t("whatsappExists"), variant: "destructive" });
+        } else { throw studentError; }
         setLoading(false);
         return;
       }
-
-      // Create invoice if financial data provided
       if (packagePrice && parseFloat(packagePrice) > 0 && student) {
         const dueDate = new Date();
         dueDate.setMonth(dueDate.getMonth() + 1);
-
         await supabase.from("invoices").insert({
-          student_id: student.id,
-          amount: parseFloat(packagePrice),
-          total: parseFloat(packagePrice),
-          status: paymentDate ? "paid" : "pending",
-          paid_at: paymentDate || null,
+          student_id: student.id, amount: parseFloat(packagePrice), total: parseFloat(packagePrice),
+          status: paymentDate ? "paid" : "pending", paid_at: paymentDate || null,
           due_date: dueDate.toISOString().split("T")[0],
         });
       }
-
-      toast({ title: "تم", description: "تم إضافة الطالب بنجاح" });
+      toast({ title: t("success"), description: t("studentAdded") });
       onSuccess();
     } catch (err: any) {
-      toast({ title: "خطأ", description: err.message, variant: "destructive" });
-    } finally {
-      setLoading(false);
-    }
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    } finally { setLoading(false); }
   };
 
   return (
     <div className="grid gap-4 py-2">
-      {/* Basic Info */}
-      <h3 className="font-bold text-sm text-primary border-b pb-1">البيانات الأساسية</h3>
+      <h3 className="font-bold text-sm text-primary border-b pb-1">{t("basicInfo")}</h3>
       <div className="grid gap-2">
-        <Label>الاسم الكامل *</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="أدخل اسم الطالب" />
+        <Label>{t("fullName")} *</Label>
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("enterStudentName")} />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
-          <Label>السن</Label>
-          <Input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder="العمر" />
+          <Label>{t("age")}</Label>
+          <Input type="number" value={age} onChange={(e) => setAge(e.target.value)} placeholder={t("enterAge")} />
         </div>
         <div className="grid gap-2">
-          <Label>الدولة</Label>
-          <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder="الدولة" />
+          <Label>{t("country")}</Label>
+          <Input value={country} onChange={(e) => setCountry(e.target.value)} placeholder={t("enterCountry")} />
         </div>
       </div>
       <div className="grid gap-2">
-        <Label>رقم الواتساب (الطالب) *</Label>
+        <Label>{t("whatsappStudent")} *</Label>
         <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+966..." dir="ltr" />
       </div>
       <div className="grid gap-2">
-        <Label>رقم ولي الأمر (واتساب)</Label>
+        <Label>{t("guardianWhatsapp")}</Label>
         <Input value={guardianWhatsapp} onChange={(e) => setGuardianWhatsapp(e.target.value)} placeholder="+966..." dir="ltr" />
       </div>
       <div className="grid gap-2">
-        <Label>المنطقة الزمنية</Label>
+        <Label>{t("timezone")}</Label>
         <Select value={timezone} onValueChange={setTimezone}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            {TIMEZONES.map((tz) => (
-              <SelectItem key={tz.value} value={tz.value}>{tz.label}</SelectItem>
+            {TIMEZONE_KEYS.map((tz) => (
+              <SelectItem key={tz.value} value={tz.value}>{t(tz.key as any)}</SelectItem>
             ))}
           </SelectContent>
         </Select>
         {tzOffset && timezone !== "Africa/Cairo" && (
-          <p className="text-xs text-muted-foreground">فرق التوقيت: {tzOffset}</p>
+          <p className="text-xs text-muted-foreground">{tzOffset} {t("timezoneOffset")}</p>
         )}
       </div>
 
-      {/* Financial Info */}
-      <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">البيانات المالية</h3>
+      <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">{t("financialInfo")}</h3>
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
-          <Label>عدد الساعات المدفوعة</Label>
+          <Label>{t("paidHours")}</Label>
           <Input type="number" value={paidHours} onChange={(e) => setPaidHours(e.target.value)} placeholder="0" />
         </div>
         <div className="grid gap-2">
-          <Label>سعر الباقة ($)</Label>
+          <Label>{t("packagePrice")}</Label>
           <Input type="number" value={packagePrice} onChange={(e) => setPackagePrice(e.target.value)} placeholder="0" />
         </div>
       </div>
       <div className="grid gap-2">
-        <Label>تاريخ الدفع</Label>
+        <Label>{t("paymentDate")}</Label>
         <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} dir="ltr" />
       </div>
 
-      {/* Study Info */}
-      <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">بيانات الدراسة</h3>
+      <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">{t("studyInfo")}</h3>
       <div className="grid gap-2">
-        <Label>المعلم المسند إليه</Label>
+        <Label>{t("assignedTeacher")}</Label>
         <Select value={teacherId} onValueChange={setTeacherId}>
-          <SelectTrigger><SelectValue placeholder="اختر المعلم" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder={t("selectTeacher")} /></SelectTrigger>
           <SelectContent>
             {teachers.map((t) => (
               <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
@@ -282,41 +216,34 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
         </Select>
       </div>
       <div className="grid gap-2">
-        <Label>مدة الحصة (دقيقة)</Label>
+        <Label>{t("sessionDuration")}</Label>
         <Select value={sessionDuration} onValueChange={setSessionDuration}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="30">30 دقيقة</SelectItem>
-            <SelectItem value="45">45 دقيقة</SelectItem>
-            <SelectItem value="60">60 دقيقة</SelectItem>
-            <SelectItem value="90">90 دقيقة</SelectItem>
+            <SelectItem value="30">{t("thirtyMin")}</SelectItem>
+            <SelectItem value="45">{t("fortyFiveMin")}</SelectItem>
+            <SelectItem value="60">{t("sixtyMin")}</SelectItem>
+            <SelectItem value="90">{t("ninetyMin")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
 
-      {/* Weekly Schedule */}
       <div className="grid gap-2">
-        <Label>جدول الحصص الأسبوعي</Label>
+        <Label>{t("weeklySchedule")}</Label>
         {schedule.map((entry, idx) => (
           <div key={idx} className="flex gap-2 items-center">
             <Select value={entry.day} onValueChange={(v) => updateScheduleEntry(idx, "day", v)}>
-              <SelectTrigger className="flex-1"><SelectValue placeholder="اليوم" /></SelectTrigger>
+              <SelectTrigger className="flex-1"><SelectValue placeholder={t("day")} /></SelectTrigger>
               <SelectContent>
-                {DAYS.map((d) => (
-                  <SelectItem key={d.value} value={d.value}>{d.label}</SelectItem>
+                {DAY_KEYS.map((d) => (
+                  <SelectItem key={d.value} value={d.value}>{t(d.key as any)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Input
-              type="time"
-              value={entry.time}
-              onChange={(e) => updateScheduleEntry(idx, "time", e.target.value)}
-              className="w-32"
-              dir="ltr"
-            />
+            <Input type="time" value={entry.time} onChange={(e) => updateScheduleEntry(idx, "time", e.target.value)} className="w-32" dir="ltr" />
             {entry.time && timezone !== "Africa/Cairo" && (
               <span className="text-[10px] text-muted-foreground whitespace-nowrap">
-                مصر: {convertTimeToEgypt(entry.time, timezone)}
+                {t("egyptTime")}: {convertTimeToEgypt(entry.time, timezone)}
               </span>
             )}
             {schedule.length > 1 && (
@@ -324,14 +251,14 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
             )}
           </div>
         ))}
-        <Button variant="outline" size="sm" onClick={addScheduleEntry}>+ إضافة موعد</Button>
+        <Button variant="outline" size="sm" onClick={addScheduleEntry}>{t("addSlot")}</Button>
       </div>
 
       <div className="flex gap-2 mt-2">
         <Button onClick={handleSubmit} disabled={loading} className="flex-1">
-          {loading ? "جاري الحفظ..." : "حفظ الطالب"}
+          {loading ? t("saving") : t("saveStudent")}
         </Button>
-        <Button variant="outline" onClick={onCancel}>إلغاء</Button>
+        <Button variant="outline" onClick={onCancel}>{t("cancel")}</Button>
       </div>
     </div>
   );
