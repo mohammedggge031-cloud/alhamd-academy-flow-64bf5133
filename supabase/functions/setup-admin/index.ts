@@ -18,6 +18,14 @@ serve(async (req) => {
 
     const { email, password } = await req.json();
 
+    // Input validation
+    if (!email || typeof email !== "string" || !email.includes("@") || email.length > 255) {
+      throw new Error("بريد إلكتروني غير صالح");
+    }
+    if (!password || typeof password !== "string" || password.length < 8 || password.length > 128) {
+      throw new Error("كلمة المرور يجب أن تكون بين 8 و 128 حرف");
+    }
+
     // Check if any admin already exists
     const { data: existingAdmins } = await adminClient
       .from("user_roles")
@@ -31,7 +39,7 @@ serve(async (req) => {
 
     // Create admin user
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-      email,
+      email: email.trim().toLowerCase(),
       password,
       email_confirm: true,
       user_metadata: { full_name: "المدير" },
