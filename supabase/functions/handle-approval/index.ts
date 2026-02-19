@@ -16,7 +16,9 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
     // Verify caller is admin
-    const authHeader = req.headers.get("Authorization")!;
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("غير مصرح - لم يتم تقديم رمز المصادقة");
+
     const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
       global: { headers: { Authorization: authHeader } },
     });
@@ -33,7 +35,15 @@ serve(async (req) => {
       .maybeSingle();
     if (!roleData) throw new Error("غير مصرح - المدير فقط");
 
-    const { request_id, action } = await req.json(); // action: 'approved' | 'rejected'
+    const { request_id, action } = await req.json();
+
+    // Input validation
+    if (!request_id || typeof request_id !== "string") {
+      throw new Error("معرف الطلب مطلوب");
+    }
+    if (!action || !["approved", "rejected"].includes(action)) {
+      throw new Error("الإجراء يجب أن يكون 'approved' أو 'rejected'");
+    }
 
     // Get the approval request
     const { data: request, error: reqError } = await adminClient
@@ -51,20 +61,17 @@ serve(async (req) => {
 
     if (request.session_id) {
       if (action === "approved") {
-        // Keep the changes, clear pending status
         await adminClient
           .from("sessions")
           .update({ pending_approval: false, approval_status: "approved", original_data: null })
           .eq("id", request.session_id);
       } else if (action === "rejected" && request.original_data) {
-        // Rollback to original data
-        const rollback: any = {
+        const rollback: Record<string, unknown> = {
           pending_approval: false,
           approval_status: "rejected",
           original_data: null,
         };
-        // Restore original fields
-        const orig = request.original_data;
+        const orig = request.original_data as Record<string, unknown>;
         if (orig.session_date) rollback.session_date = orig.session_date;
         if (orig.start_time !== undefined) rollback.start_time = orig.start_time;
         if (orig.duration_minutes) rollback.duration_minutes = orig.duration_minutes;
@@ -75,7 +82,6 @@ serve(async (req) => {
           .update(rollback)
           .eq("id", request.session_id);
       } else {
-        // Rejected but no original data, just clear pending
         await adminClient
           .from("sessions")
           .update({ pending_approval: false, approval_status: "rejected" })

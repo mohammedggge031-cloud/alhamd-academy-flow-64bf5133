@@ -14,9 +14,28 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Verify caller is authenticated
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("غير مصرح");
+
+    const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user: caller } } = await callerClient.auth.getUser();
+    if (!caller) throw new Error("غير مصرح");
+
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const { student_id, homework, student_name } = await req.json();
+
+    // Input validation
+    if (!student_id || typeof student_id !== "string") {
+      throw new Error("معرف الطالب مطلوب");
+    }
+    if (!homework || typeof homework !== "string" || homework.length > 2000) {
+      throw new Error("الواجب مطلوب ويجب أن يكون أقل من 2000 حرف");
+    }
 
     // Get student's WhatsApp number
     const { data: student } = await adminClient
@@ -25,26 +44,19 @@ serve(async (req) => {
       .eq("id", student_id)
       .single();
 
-    if (!student) throw new Error("Student not found");
+    if (!student) throw new Error("الطالب غير موجود");
 
     const phone = student.whatsapp || student.guardian_whatsapp;
     if (!phone) {
-      // No WhatsApp number, just log and return
-      console.log(`No WhatsApp number for student ${student.name}, skipping notification`);
       return new Response(JSON.stringify({ success: true, whatsapp_sent: false, reason: "no_phone" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Check if WhatsApp API key is configured
     const whatsappApiKey = Deno.env.get("WHATSAPP_API_KEY");
     const whatsappPhoneId = Deno.env.get("WHATSAPP_PHONE_ID");
 
     if (!whatsappApiKey || !whatsappPhoneId) {
-      console.log("WhatsApp API not configured, logging homework for:", student.name);
-      console.log("Homework:", homework);
-      
-      // Mark as sent in DB anyway (for demo/development)
       await adminClient
         .from("session_reports")
         .update({ homework_sent: true })
@@ -56,18 +68,18 @@ serve(async (req) => {
         success: true, 
         whatsapp_sent: false, 
         reason: "api_not_configured",
-        message: `واجب الطالب ${student.name}: ${homework}`
       }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
-    // Send via WhatsApp Business API
     const cleanPhone = phone.replace(/[^0-9]/g, "");
-    const message = `📚 *واجب أكاديمية الحمد*\n\nالسلام عليكم يا ${student_name || student.name}\n\n📝 الواجب:\n${homework}\n\nبالتوفيق! 🌟`;
+    const safeName = String(student_name || student.name).slice(0, 100);
+    const safeHomework = homework.slice(0, 2000);
+    const message = `📚 *واجب أكاديمية الحمد*\n\nالسلام عليكم يا ${safeName}\n\n📝 الواجب:\n${safeHomework}\n\nبالتوفيق! 🌟`;
 
     const waResponse = await fetch(
-      `https://graph.facebook.com/v18.0/${whatsappPhoneId}/messages`,
+      `https://graph.facebook.com/v18.0/${encodeURIComponent(whatsappPhoneId)}/messages`,
       {
         method: "POST",
         headers: {
@@ -83,14 +95,12 @@ serve(async (req) => {
       }
     );
 
-    const waData = await waResponse.json();
-
     if (!waResponse.ok) {
+      const waData = await waResponse.json();
       console.error("WhatsApp API error:", waData);
-      throw new Error(`WhatsApp API error: ${JSON.stringify(waData)}`);
+      throw new Error("فشل إرسال رسالة الواتساب");
     }
 
-    // Mark homework as sent
     await adminClient
       .from("session_reports")
       .update({ homework_sent: true })

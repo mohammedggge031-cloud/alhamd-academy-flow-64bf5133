@@ -18,7 +18,7 @@ function formatTimeInTz(time: string, date: string, tz: string): string {
 async function sendWhatsApp(phone: string, message: string, apiKey: string, phoneId: string) {
   const cleanPhone = phone.replace(/[^0-9]/g, "");
   const res = await fetch(
-    `https://graph.facebook.com/v18.0/${phoneId}/messages`,
+    `https://graph.facebook.com/v18.0/${encodeURIComponent(phoneId)}/messages`,
     {
       method: "POST",
       headers: {
@@ -45,7 +45,7 @@ async function trySend(phone: string, message: string, apiKey: string | undefine
     }
     return true;
   } else {
-    console.log(`[${label}] API not configured. Message: ${message}`);
+    console.log(`[${label}] API not configured.`);
     return false;
   }
 }
@@ -58,10 +58,27 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
+    // Verify caller is authenticated
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) throw new Error("غير مصرح");
+
+    const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user: caller } } = await callerClient.auth.getUser();
+    if (!caller) throw new Error("غير مصرح");
+
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const body = await req.json();
     const { type, session_id } = body;
+
+    // Validate type
+    const validTypes = ["daily_reminder", "teacher_joined", "invoice_reminders"];
+    if (!type || !validTypes.includes(type)) {
+      throw new Error("Invalid type. Use 'daily_reminder', 'teacher_joined', or 'invoice_reminders'");
+    }
 
     const whatsappApiKey = Deno.env.get("WHATSAPP_API_KEY");
     const whatsappPhoneId = Deno.env.get("WHATSAPP_PHONE_ID");
@@ -96,7 +113,7 @@ serve(async (req) => {
         const studentTime = formatTimeInTz(timeStr, today, studentTz);
         const egyptTime = formatTimeInTz(timeStr, today, "Africa/Cairo");
 
-        const message = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\nالسلام عليكم يا ${student.name} 🌟\n\n📅 موعد الحصة اليوم:\n⏰ بتوقيتك: ${studentTime}\n🇪🇬 بتوقيت مصر: ${egyptTime}\n👨‍🏫 المعلم: ${teacherName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nنتمنى لك حصة موفقة! 📚`;
+        const message = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\nالسلام عليكم يا ${String(student.name).slice(0, 100)} 🌟\n\n📅 موعد الحصة اليوم:\n⏰ بتوقيتك: ${studentTime}\n🇪🇬 بتوقيت مصر: ${egyptTime}\n👨‍🏫 المعلم: ${teacherName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nنتمنى لك حصة موفقة! 📚`;
 
         await trySend(phone, message, whatsappApiKey, whatsappPhoneId, "Daily Reminder");
         sentCount++;
@@ -109,7 +126,7 @@ serve(async (req) => {
 
     // ─── TEACHER JOINED ───
     if (type === "teacher_joined") {
-      if (!session_id) throw new Error("session_id required");
+      if (!session_id || typeof session_id !== "string") throw new Error("session_id required");
 
       const { data: session } = await adminClient
         .from("sessions")
@@ -131,7 +148,7 @@ serve(async (req) => {
       }
 
       const teacherName = teacher?.profiles?.full_name || "المعلم";
-      const message = `🔔 *المعلم دخل الحصة الآن!*\n\nالسلام عليكم يا ${student.name}\n\n👨‍🏫 المعلم ${teacherName} في انتظارك الآن\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nيرجى الدخول فوراً 🚀`;
+      const message = `🔔 *المعلم دخل الحصة الآن!*\n\nالسلام عليكم يا ${String(student.name).slice(0, 100)}\n\n👨‍🏫 المعلم ${teacherName} في انتظارك الآن\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nيرجى الدخول فوراً 🚀`;
 
       const sent = await trySend(phone, message, whatsappApiKey, whatsappPhoneId, "Teacher Joined");
 
@@ -149,7 +166,6 @@ serve(async (req) => {
 
       let sentCount = 0;
 
-      // 1. Invoices due tomorrow (24h before)
       const { data: dueTomorrow } = await adminClient
         .from("invoices")
         .select("id, total, due_date, student_id, students:student_id(name, whatsapp, guardian_whatsapp)")
@@ -162,13 +178,12 @@ serve(async (req) => {
           if (!student) continue;
           const phone = student.whatsapp || student.guardian_whatsapp;
           if (!phone) continue;
-          const message = `⏰ *تذكير بموعد السداد - أكاديمية الحمد*\n\nالسلام عليكم يا ${student.name}\n\n💳 لديك فاتورة مستحقة غداً بمبلغ $${inv.total}\n📅 تاريخ الاستحقاق: ${inv.due_date}\n\nيرجى السداد في الموعد لضمان استمرار الحصص 🙏`;
+          const message = `⏰ *تذكير بموعد السداد - أكاديمية الحمد*\n\nالسلام عليكم يا ${String(student.name).slice(0, 100)}\n\n💳 لديك فاتورة مستحقة غداً بمبلغ $${inv.total}\n📅 تاريخ الاستحقاق: ${inv.due_date}\n\nيرجى السداد في الموعد لضمان استمرار الحصص 🙏`;
           await trySend(phone, message, whatsappApiKey, whatsappPhoneId, "Invoice Due Tomorrow");
           sentCount++;
         }
       }
 
-      // 2. Invoices overdue since yesterday (24h late)
       const { data: overdue } = await adminClient
         .from("invoices")
         .select("id, total, due_date, student_id, students:student_id(name, whatsapp, guardian_whatsapp)")
@@ -177,20 +192,18 @@ serve(async (req) => {
 
       if (overdue) {
         for (const inv of overdue) {
-          // Mark as overdue
           await adminClient.from("invoices").update({ status: "overdue" }).eq("id", inv.id);
 
           const student = (inv as any).students;
           if (!student) continue;
           const phone = student.whatsapp || student.guardian_whatsapp;
           if (!phone) continue;
-          const message = `🔴 *تنبيه تأخر السداد - أكاديمية الحمد*\n\nالسلام عليكم يا ${student.name}\n\n⚠️ لديك فاتورة متأخرة بمبلغ $${inv.total}\n📅 كان الموعد: ${inv.due_date}\n\nيرجى التواصل مع الإدارة للسداد في أقرب وقت 📞`;
+          const message = `🔴 *تنبيه تأخر السداد - أكاديمية الحمد*\n\nالسلام عليكم يا ${String(student.name).slice(0, 100)}\n\n⚠️ لديك فاتورة متأخرة بمبلغ $${inv.total}\n📅 كان الموعد: ${inv.due_date}\n\nيرجى التواصل مع الإدارة للسداد في أقرب وقت 📞`;
           await trySend(phone, message, whatsappApiKey, whatsappPhoneId, "Invoice Overdue");
           sentCount++;
         }
       }
 
-      // 3. Students with only 1 session remaining (before last session)
       const { data: lowBalance } = await adminClient
         .from("students")
         .select("id, name, whatsapp, guardian_whatsapp, remaining_hours, session_duration_minutes")
@@ -200,11 +213,10 @@ serve(async (req) => {
         for (const student of lowBalance) {
           const remaining = Number(student.remaining_hours) || 0;
           const sessionHours = (Number(student.session_duration_minutes) || 60) / 60;
-          // If exactly 1 session remaining (between 0 exclusive and 1 session inclusive)
           if (remaining > 0 && remaining <= sessionHours) {
             const phone = student.whatsapp || student.guardian_whatsapp;
             if (!phone) continue;
-            const message = `⚠️ *تنبيه رصيد الساعات - أكاديمية الحمد*\n\nالسلام عليكم يا ${student.name}\n\n📊 تبقى لك حصة واحدة فقط!\n⏱ الرصيد المتبقي: ${remaining} ساعة\n\nيرجى تجديد الباقة لضمان استمرار الحصص 💪`;
+            const message = `⚠️ *تنبيه رصيد الساعات - أكاديمية الحمد*\n\nالسلام عليكم يا ${String(student.name).slice(0, 100)}\n\n📊 تبقى لك حصة واحدة فقط!\n⏱ الرصيد المتبقي: ${remaining} ساعة\n\nيرجى تجديد الباقة لضمان استمرار الحصص 💪`;
             await trySend(phone, message, whatsappApiKey, whatsappPhoneId, "Low Balance");
             sentCount++;
           }
@@ -216,7 +228,7 @@ serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ error: "Invalid type. Use 'daily_reminder', 'teacher_joined', or 'invoice_reminders'" }), {
+    return new Response(JSON.stringify({ error: "Invalid type" }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

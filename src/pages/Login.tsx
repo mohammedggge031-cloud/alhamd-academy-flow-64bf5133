@@ -29,12 +29,27 @@ const Login = () => {
     setIsLoading(true);
 
     try {
+      // Client-side validation
       if (mode === "email") {
-        const { error } = await signIn(email, password);
+        const trimmedEmail = email.trim().toLowerCase();
+        if (!trimmedEmail || trimmedEmail.length > 255 || !trimmedEmail.includes("@")) {
+          throw new Error(t("loginInvalidEmail"));
+        }
+        if (!password || password.length > 128) {
+          throw new Error(t("loginInvalidEmail"));
+        }
+        const { error } = await signIn(trimmedEmail, password);
         if (error) throw new Error(t("loginInvalidEmail"));
       } else {
+        const sanitizedPhone = phone.replace(/[^0-9+]/g, "");
+        if (!sanitizedPhone || sanitizedPhone.length < 8 || sanitizedPhone.length > 20) {
+          throw new Error(t("loginInvalidEmail"));
+        }
+        if (!password || password.length > 128) {
+          throw new Error(t("loginInvalidEmail"));
+        }
         const { data, error } = await supabase.functions.invoke("login-by-phone", {
-          body: { phone, password },
+          body: { phone: sanitizedPhone, password },
         });
         if (error) throw new Error(t("loginConnectionError"));
         if (data?.error) throw new Error(data.error);

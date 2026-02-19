@@ -18,20 +18,29 @@ serve(async (req) => {
 
     const { phone, password } = await req.json();
 
-    if (!phone || !password) throw new Error("رقم الموبايل وكلمة المرور مطلوبين");
+    // Input validation
+    if (!phone || typeof phone !== "string" || phone.length < 8 || phone.length > 20) {
+      throw new Error("رقم الموبايل غير صالح");
+    }
+    if (!password || typeof password !== "string" || password.length < 1 || password.length > 128) {
+      throw new Error("كلمة المرور مطلوبة");
+    }
+
+    // Sanitize phone - only allow digits and +
+    const sanitizedPhone = phone.replace(/[^0-9+]/g, "");
 
     // Find user by whatsapp number in profiles
     const { data: profile } = await adminClient
       .from("profiles")
       .select("user_id")
-      .eq("whatsapp", phone)
+      .eq("whatsapp", sanitizedPhone)
       .maybeSingle();
 
-    if (!profile) throw new Error("رقم الموبايل غير مسجل");
+    if (!profile) throw new Error("بيانات الدخول غير صحيحة");
 
     // Get user email from auth
     const { data: { user } } = await adminClient.auth.admin.getUserById(profile.user_id);
-    if (!user) throw new Error("المستخدم غير موجود");
+    if (!user) throw new Error("بيانات الدخول غير صحيحة");
 
     // Sign in with the user's email and provided password
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -41,7 +50,7 @@ serve(async (req) => {
       password,
     });
 
-    if (signInError) throw new Error("كلمة المرور غير صحيحة");
+    if (signInError) throw new Error("بيانات الدخول غير صحيحة");
 
     return new Response(JSON.stringify({
       success: true,
