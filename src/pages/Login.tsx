@@ -5,12 +5,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock } from "lucide-react";
+import { Lock, Mail, Phone } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 import logo from "@/assets/logo.jpeg";
 
+type LoginMode = "email" | "phone";
+
 const Login = () => {
+  const [mode, setMode] = useState<LoginMode>("phone");
   const [email, setEmail] = useState("");
+  const [phone, setPhone] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
@@ -20,17 +25,31 @@ const Login = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
-    const { error } = await signIn(email, password);
-    setIsLoading(false);
 
-    if (error) {
+    try {
+      if (mode === "email") {
+        const { error } = await signIn(email, password);
+        if (error) throw new Error("البريد الإلكتروني أو كلمة المرور غير صحيحة");
+      } else {
+        // Login by phone via edge function
+        const { data, error } = await supabase.functions.invoke("login-by-phone", {
+          body: { phone, password },
+        });
+        if (error) throw new Error("خطأ في الاتصال");
+        if (data?.error) throw new Error(data.error);
+        if (data?.session) {
+          await supabase.auth.setSession(data.session);
+        }
+      }
+      navigate("/");
+    } catch (err: any) {
       toast({
         title: "خطأ في تسجيل الدخول",
-        description: "البريد الإلكتروني أو كلمة المرور غير صحيحة",
+        description: err.message,
         variant: "destructive",
       });
-    } else {
-      navigate("/");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -47,18 +66,56 @@ const Login = () => {
           </div>
         </CardHeader>
         <CardContent>
+          {/* Login mode tabs */}
+          <div className="grid grid-cols-2 gap-2 mb-6">
+            <Button
+              type="button"
+              variant={mode === "phone" ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+              onClick={() => setMode("phone")}
+            >
+              <Phone className="h-4 w-4" />
+              رقم الموبايل
+            </Button>
+            <Button
+              type="button"
+              variant={mode === "email" ? "default" : "outline"}
+              size="sm"
+              className="gap-2"
+              onClick={() => setMode("email")}
+            >
+              <Mail className="h-4 w-4" />
+              البريد الإلكتروني
+            </Button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="space-y-2">
-              <Label>البريد الإلكتروني</Label>
-              <Input
-                type="email"
-                placeholder="admin@alhamd.academy"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                dir="ltr"
-                required
-              />
-            </div>
+            {mode === "email" ? (
+              <div className="space-y-2">
+                <Label>البريد الإلكتروني</Label>
+                <Input
+                  type="email"
+                  placeholder="admin@alhamd.academy"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  dir="ltr"
+                  required
+                />
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <Label>رقم الموبايل (الواتساب)</Label>
+                <Input
+                  type="tel"
+                  placeholder="+201001234567"
+                  value={phone}
+                  onChange={(e) => setPhone(e.target.value)}
+                  dir="ltr"
+                  required
+                />
+              </div>
+            )}
             <div className="space-y-2">
               <Label>كلمة المرور</Label>
               <Input
