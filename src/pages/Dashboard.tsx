@@ -7,46 +7,106 @@ import {
   AlertTriangle,
   CheckCircle2,
   CalendarDays,
+  Loader2,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-const stats = [
-  { label: "الطلاب النشطون", value: "47", icon: Users, trend: "+3 هذا الشهر" },
-  { label: "المعلمون", value: "12", icon: GraduationCap, trend: "نشطون" },
-  { label: "الفواتير المستحقة اليوم", value: "5", icon: Receipt, trend: "بقيمة $750" },
-  { label: "ساعات التدريس هذا الشهر", value: "186", icon: Clock, trend: "+12% عن الشهر الماضي" },
-];
-
-const todaySessions = [
-  { student: "أحمد محمد", teacher: "أ. عبدالله", time: "10:00 ص", status: "upcoming" },
-  { student: "فاطمة علي", teacher: "أ. سارة", time: "11:30 ص", status: "completed" },
-  { student: "يوسف إبراهيم", teacher: "أ. عبدالله", time: "02:00 م", status: "upcoming" },
-  { student: "مريم حسن", teacher: "أ. خالد", time: "03:30 م", status: "upcoming" },
-  { student: "عمر خالد", teacher: "أ. سارة", time: "05:00 م", status: "cancelled" },
-];
-
-const overdueInvoices = [
-  { student: "أحمد محمد", amount: "$120", dueDate: "15 فبراير", days: 4 },
-  { student: "نور الدين", amount: "$80", dueDate: "12 فبراير", days: 7 },
-  { student: "ليلى سعيد", amount: "$150", dueDate: "10 فبراير", days: 9 },
-];
-
-const lowBalanceStudents = [
-  { name: "يوسف إبراهيم", remaining: "0.5 ساعة" },
-  { name: "عمر خالد", remaining: "1 ساعة" },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 
 const statusMap: Record<string, { label: string; className: string }> = {
   upcoming: { label: "قادمة", className: "bg-accent text-accent-foreground" },
+  confirmed: { label: "مقبولة", className: "bg-primary text-primary-foreground" },
   completed: { label: "مكتملة", className: "bg-success text-success-foreground" },
   cancelled: { label: "ملغاة", className: "bg-destructive text-destructive-foreground" },
+  absent_student: { label: "غياب", className: "bg-destructive text-destructive-foreground" },
+  postponed: { label: "مؤجلة", className: "bg-warning text-warning-foreground" },
 };
 
 const Dashboard = () => {
+  const today = new Date().toISOString().slice(0, 10);
+  const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+
+  const { data: activeStudents = 0 } = useQuery({
+    queryKey: ["dash-students"],
+    queryFn: async () => {
+      const { count } = await supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true);
+      return count ?? 0;
+    },
+  });
+
+  const { data: teacherCount = 0 } = useQuery({
+    queryKey: ["dash-teachers"],
+    queryFn: async () => {
+      const { count } = await supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true);
+      return count ?? 0;
+    },
+  });
+
+  const { data: dueInvoices = 0 } = useQuery({
+    queryKey: ["dash-due-invoices"],
+    queryFn: async () => {
+      const { count } = await supabase.from("invoices").select("*", { count: "exact", head: true }).eq("status", "pending").lte("due_date", today);
+      return count ?? 0;
+    },
+  });
+
+  const { data: monthlyHours = 0 } = useQuery({
+    queryKey: ["dash-monthly-hours"],
+    queryFn: async () => {
+      const { data } = await supabase.from("sessions").select("duration_minutes").eq("status", "completed").gte("session_date", monthStart);
+      return data ? Math.round(data.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / 60) : 0;
+    },
+  });
+
+  const { data: todaySessions = [], isLoading: sessionsLoading } = useQuery({
+    queryKey: ["dash-today-sessions"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("sessions")
+        .select("*, students:student_id(name), teachers:teacher_id(user_id, profiles:user_id(full_name))")
+        .eq("session_date", today)
+        .order("start_time");
+      return data ?? [];
+    },
+  });
+
+  const { data: overdueInvoices = [] } = useQuery({
+    queryKey: ["dash-overdue"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("invoices")
+        .select("*, students:student_id(name)")
+        .eq("status", "pending")
+        .lt("due_date", today)
+        .order("due_date")
+        .limit(5);
+      return data ?? [];
+    },
+  });
+
+  const { data: lowBalance = [] } = useQuery({
+    queryKey: ["dash-low-balance"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("name, remaining_hours, session_duration_minutes")
+        .eq("is_active", true)
+        .lte("remaining_hours", 1)
+        .order("remaining_hours");
+      return data ?? [];
+    },
+  });
+
+  const stats = [
+    { label: "الطلاب النشطون", value: String(activeStudents), icon: Users, trend: "" },
+    { label: "المعلمون", value: String(teacherCount), icon: GraduationCap, trend: "نشطون" },
+    { label: "الفواتير المستحقة", value: String(dueInvoices), icon: Receipt, trend: "" },
+    { label: "ساعات التدريس هذا الشهر", value: String(monthlyHours), icon: Clock, trend: "" },
+  ];
+
   return (
     <div className="space-y-6 animate-fade-in">
-      {/* Page title */}
       <div>
         <h1 className="text-2xl font-bold">لوحة التحكم</h1>
         <p className="text-muted-foreground">مرحباً بك في أكاديمية الحمد لتحفيظ القرآن الكريم</p>
@@ -63,10 +123,12 @@ const Dashboard = () => {
               <div>
                 <p className="text-2xl font-bold">{stat.value}</p>
                 <p className="text-xs text-muted-foreground">{stat.label}</p>
-                <p className="mt-0.5 text-xs text-primary flex items-center gap-1">
-                  <TrendingUp className="h-3 w-3" />
-                  {stat.trend}
-                </p>
+                {stat.trend && (
+                  <p className="mt-0.5 text-xs text-primary flex items-center gap-1">
+                    <TrendingUp className="h-3 w-3" />
+                    {stat.trend}
+                  </p>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -84,32 +146,35 @@ const Dashboard = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-3">
-              {todaySessions.map((session, i) => (
-                <div
-                  key={i}
-                  className="flex items-center justify-between rounded-lg bg-muted/50 p-3"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center">
-                      <span className="text-sm font-bold text-primary">
-                        {session.student[0]}
-                      </span>
+            {sessionsLoading ? (
+              <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+            ) : todaySessions.length === 0 ? (
+              <p className="text-center text-sm text-muted-foreground py-6">لا توجد حصص اليوم</p>
+            ) : (
+              <div className="space-y-3">
+                {todaySessions.map((session: any) => (
+                  <div key={session.id} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                    <div className="flex items-center gap-3">
+                      <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">
+                          {(session.students?.name ?? "?")[0]}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{session.students?.name}</p>
+                        <p className="text-xs text-muted-foreground">{session.teachers?.profiles?.full_name}</p>
+                      </div>
                     </div>
-                    <div>
-                      <p className="text-sm font-medium">{session.student}</p>
-                      <p className="text-xs text-muted-foreground">{session.teacher}</p>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-muted-foreground">{session.start_time?.slice(0, 5) ?? "—"}</span>
+                      <Badge variant="secondary" className={statusMap[session.status]?.className ?? ""}>
+                        {statusMap[session.status]?.label ?? session.status}
+                      </Badge>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-muted-foreground">{session.time}</span>
-                    <Badge variant="secondary" className={statusMap[session.status].className}>
-                      {statusMap[session.status].label}
-                    </Badge>
-                  </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -124,15 +189,20 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {overdueInvoices.map((inv, i) => (
-                <div key={i} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
-                  <div>
-                    <p className="text-sm font-medium">{inv.student}</p>
-                    <p className="text-xs text-muted-foreground">متأخر {inv.days} أيام</p>
+              {overdueInvoices.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-3">لا توجد فواتير متأخرة</p>
+              ) : overdueInvoices.map((inv: any) => {
+                const days = Math.ceil((Date.now() - new Date(inv.due_date).getTime()) / 86400000);
+                return (
+                  <div key={inv.id} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                    <div>
+                      <p className="text-sm font-medium">{inv.students?.name}</p>
+                      <p className="text-xs text-muted-foreground">متأخر {days} أيام</p>
+                    </div>
+                    <span className="text-sm font-bold text-destructive">${inv.total}</span>
                   </div>
-                  <span className="text-sm font-bold text-destructive">{inv.amount}</span>
-                </div>
-              ))}
+                );
+              })}
             </CardContent>
           </Card>
 
@@ -145,11 +215,13 @@ const Dashboard = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
-              {lowBalanceStudents.map((s, i) => (
+              {lowBalance.length === 0 ? (
+                <p className="text-center text-sm text-muted-foreground py-3">لا يوجد طلاب برصيد منخفض</p>
+              ) : lowBalance.map((s: any, i: number) => (
                 <div key={i} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
                   <p className="text-sm font-medium">{s.name}</p>
                   <Badge variant="secondary" className="bg-warning/10 text-warning">
-                    {s.remaining}
+                    {s.remaining_hours} ساعة
                   </Badge>
                 </div>
               ))}
