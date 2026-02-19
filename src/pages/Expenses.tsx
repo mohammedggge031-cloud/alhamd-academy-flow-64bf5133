@@ -9,27 +9,24 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
-
-const categoryLabels: Record<string, { label: string; icon: any }> = {
-  advertising: { label: "إعلانات", icon: Megaphone },
-  admin_salary: { label: "رواتب إدارة", icon: UserCog },
-  other: { label: "مصاريف أخرى", icon: MoreHorizontal },
-};
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Expenses = () => {
   const queryClient = useQueryClient();
+  const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState({ category: "other", description: "", amount: "", expense_month: new Date().toISOString().slice(0, 7) });
 
-  const monthStart = form.expense_month + "-01";
+  const categoryLabels: Record<string, { label: string; icon: any }> = {
+    advertising: { label: t("advertising"), icon: Megaphone },
+    admin_salary: { label: t("adminSalary"), icon: UserCog },
+    other: { label: t("otherExpenses"), icon: MoreHorizontal },
+  };
 
   const { data: expenses = [], isLoading } = useQuery({
     queryKey: ["expenses"],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from("expenses")
-        .select("*")
-        .order("expense_month", { ascending: false });
+      const { data, error } = await supabase.from("expenses").select("*").order("expense_month", { ascending: false });
       if (error) throw error;
       return data;
     },
@@ -38,20 +35,18 @@ const Expenses = () => {
   const addMutation = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("expenses").insert({
-        category: form.category,
-        description: form.description,
-        amount: Number(form.amount),
-        expense_month: form.expense_month + "-01",
+        category: form.category, description: form.description,
+        amount: Number(form.amount), expense_month: form.expense_month + "-01",
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      toast.success("تمت إضافة المصروف");
+      toast.success(t("expenseAdded"));
       setOpen(false);
       setForm({ category: "other", description: "", amount: "", expense_month: new Date().toISOString().slice(0, 7) });
     },
-    onError: () => toast.error("حدث خطأ"),
+    onError: () => toast.error(t("error")),
   });
 
   const deleteMutation = useMutation({
@@ -61,7 +56,7 @@ const Expenses = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["expenses"] });
-      toast.success("تم الحذف");
+      toast.success(t("deleted"));
     },
   });
 
@@ -76,55 +71,54 @@ const Expenses = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <DollarSign className="h-6 w-6 text-primary" />
-            المصاريف والنفقات
+            {t("expensesTitle")}
           </h1>
-          <p className="text-muted-foreground">إدارة الإعلانات ورواتب الإدارة والمصاريف الأخرى</p>
+          <p className="text-muted-foreground">{t("expensesSubtitle")}</p>
         </div>
         <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" /> إضافة مصروف</Button>
+            <Button className="gap-2"><Plus className="h-4 w-4" /> {t("addExpense")}</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>إضافة مصروف جديد</DialogTitle></DialogHeader>
+            <DialogHeader><DialogTitle>{t("addExpenseTitle")}</DialogTitle></DialogHeader>
             <div className="space-y-4">
               <div className="grid gap-2">
-                <Label>التصنيف</Label>
+                <Label>{t("category")}</Label>
                 <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="advertising">إعلانات</SelectItem>
-                    <SelectItem value="admin_salary">رواتب إدارة</SelectItem>
-                    <SelectItem value="other">مصاريف أخرى</SelectItem>
+                    <SelectItem value="advertising">{t("advertising")}</SelectItem>
+                    <SelectItem value="admin_salary">{t("adminSalary")}</SelectItem>
+                    <SelectItem value="other">{t("otherExpenses")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="grid gap-2">
-                <Label>الوصف</Label>
-                <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} placeholder="وصف المصروف" />
+                <Label>{t("description")}</Label>
+                <Input value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
               </div>
               <div className="grid gap-2">
-                <Label>المبلغ ($)</Label>
+                <Label>{t("amount")}</Label>
                 <Input type="number" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} placeholder="0" />
               </div>
               <div className="grid gap-2">
-                <Label>الشهر</Label>
+                <Label>{t("month")}</Label>
                 <Input type="month" value={form.expense_month} onChange={e => setForm(f => ({ ...f, expense_month: e.target.value }))} />
               </div>
               <Button className="w-full" onClick={() => addMutation.mutate()} disabled={!form.description || !form.amount || addMutation.isPending}>
-                {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : "إضافة"}
+                {addMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : t("add")}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Summary */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          { label: "إعلانات", value: totalAds, color: "text-primary" },
-          { label: "رواتب إدارة", value: totalSalaries, color: "text-primary" },
-          { label: "مصاريف أخرى", value: totalOther, color: "text-primary" },
-          { label: "إجمالي المصاريف", value: grandTotal, color: "text-destructive" },
+          { label: t("advertising"), value: totalAds, color: "text-primary" },
+          { label: t("adminSalary"), value: totalSalaries, color: "text-primary" },
+          { label: t("otherExpenses"), value: totalOther, color: "text-primary" },
+          { label: t("totalExpenses"), value: grandTotal, color: "text-destructive" },
         ].map(c => (
           <Card key={c.label} className="border-none shadow-sm">
             <CardContent className="p-5">
@@ -135,14 +129,13 @@ const Expenses = () => {
         ))}
       </div>
 
-      {/* List */}
       <Card className="border-none shadow-sm">
-        <CardHeader><CardTitle className="text-lg">كل المصاريف</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="text-lg">{t("allExpenses")}</CardTitle></CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
           ) : expenses.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-6">لا توجد مصاريف مسجلة</p>
+            <p className="text-center text-sm text-muted-foreground py-6">{t("noExpenses")}</p>
           ) : (
             <div className="divide-y">
               {expenses.map((exp: any) => {

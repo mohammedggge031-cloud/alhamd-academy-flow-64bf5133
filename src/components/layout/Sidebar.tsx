@@ -14,27 +14,30 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/hooks/useAuth";
+import { useLanguage } from "@/i18n/LanguageContext";
+import type { TranslationKey } from "@/i18n/translations";
 import logo from "@/assets/logo.jpeg";
 
 interface SidebarProps {
   onClose?: () => void;
 }
 
-const allNavItems = [
-  { to: "/", icon: LayoutDashboard, label: "لوحة التحكم", roles: ["admin", "manager"] },
-  { to: "/students", icon: Users, label: "الطلاب", roles: ["admin", "manager"] },
-  { to: "/teachers", icon: GraduationCap, label: "المعلمون", roles: ["admin", "manager"] },
-  { to: "/sessions", icon: CalendarDays, label: "الحصص", roles: ["admin", "manager"] },
-  { to: "/invoices", icon: Receipt, label: "الفواتير", roles: ["admin", "manager"] },
-  { to: "/expenses", icon: DollarSign, label: "المصاريف", roles: ["admin"] },
-  { to: "/reports", icon: BarChart3, label: "التقارير", roles: ["admin"] },
-  { to: "/monthly-reports", icon: BookOpen, label: "تقارير الطلاب", roles: ["admin", "manager"] },
-  { to: "/settings", icon: Settings, label: "الإعدادات", roles: ["admin"] },
+const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: string[] }[] = [
+  { to: "/", icon: LayoutDashboard, labelKey: "navDashboard", roles: ["admin", "manager"] },
+  { to: "/students", icon: Users, labelKey: "navStudents", roles: ["admin", "manager"] },
+  { to: "/teachers", icon: GraduationCap, labelKey: "navTeachers", roles: ["admin", "manager"] },
+  { to: "/sessions", icon: CalendarDays, labelKey: "navSessions", roles: ["admin", "manager"] },
+  { to: "/invoices", icon: Receipt, labelKey: "navInvoices", roles: ["admin", "manager"] },
+  { to: "/expenses", icon: DollarSign, labelKey: "navExpenses", roles: ["admin"] },
+  { to: "/reports", icon: BarChart3, labelKey: "navReports", roles: ["admin"] },
+  { to: "/monthly-reports", icon: BookOpen, labelKey: "navStudentReports", roles: ["admin", "manager"] },
+  { to: "/settings", icon: Settings, labelKey: "navSettings", roles: ["admin"] },
 ];
 
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const location = useLocation();
   const { signOut, role } = useAuth();
+  const { t } = useLanguage();
 
   const navItems = allNavItems.filter(item => item.roles.includes(role ?? ""));
 
@@ -45,8 +48,8 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
         <div className="flex items-center gap-3">
           <img src={logo} alt="Alhamd Academy" className="h-10 w-10 rounded-lg object-contain" />
           <div>
-            <h2 className="text-base font-bold text-sidebar-foreground">أكاديمية الحمد</h2>
-            <p className="text-xs text-sidebar-muted">لتحفيظ القرآن الكريم</p>
+            <h2 className="text-base font-bold text-sidebar-foreground">{t("academyName")}</h2>
+            <p className="text-xs text-sidebar-muted">{t("academySubtitle")}</p>
           </div>
         </div>
         <Button
@@ -79,7 +82,7 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
               }`}
             >
               <item.icon className="h-5 w-5 shrink-0" />
-              <span>{item.label}</span>
+              <span>{t(item.labelKey)}</span>
             </NavLink>
           );
         })}
@@ -89,10 +92,10 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
       <div className="border-t border-sidebar-border p-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-sidebar-accent flex items-center justify-center">
-            <span className="text-sm font-bold text-sidebar-primary">{role === "manager" ? "م" : "أ"}</span>
+            <span className="text-sm font-bold text-sidebar-primary">{role === "manager" ? "M" : "A"}</span>
           </div>
           <div>
-            <p className="text-sm font-medium text-sidebar-foreground">{role === "manager" ? "مدير مساعد" : "المدير"}</p>
+            <p className="text-sm font-medium text-sidebar-foreground">{role === "manager" ? t("manager") : t("admin")}</p>
             <p className="text-xs text-sidebar-muted">{role}</p>
           </div>
         </div>
@@ -103,7 +106,7 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
           onClick={signOut}
         >
           <LogOut className="h-4 w-4" />
-          تسجيل الخروج
+          {t("signOut")}
         </Button>
       </div>
     </aside>
