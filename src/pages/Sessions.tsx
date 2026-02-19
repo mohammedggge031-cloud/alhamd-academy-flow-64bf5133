@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send, BookOpen, Eye } from "lucide-react";
+import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send, BookOpen, Eye, DollarSign } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -63,7 +63,7 @@ const Sessions = () => {
         .from("sessions")
         .select(`
           *,
-          students:student_id(name),
+          students:student_id(name, remaining_hours),
           teachers:teacher_id(id, user_id, profiles:user_id(full_name))
         `)
         .order("session_date", { ascending: false });
@@ -537,10 +537,12 @@ const Sessions = () => {
                   postponed: "border-r-4 border-r-warning",
                 };
                 const needsReport = !isAdmin && session.status === "completed" && !reportedSessionIds.has(session.id);
+                const studentRemaining = Number(session.students?.remaining_hours) || 0;
+                const isUnpaid = studentRemaining <= 0 && (session.status === "upcoming" || session.status === "confirmed");
                 return (
                   <div
                     key={session.id}
-                    className={`flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer ${statusBorderColors[session.status] ?? ""} ${needsReport ? "bg-destructive/5" : ""}`}
+                    className={`flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer ${statusBorderColors[session.status] ?? ""} ${needsReport ? "bg-destructive/5" : ""} ${isUnpaid ? "bg-warning/5" : ""}`}
                     onClick={() => setSelectedSession(session)}
                   >
                     <div className="flex items-center gap-4">
@@ -555,6 +557,11 @@ const Sessions = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
+                      {isUnpaid && (
+                        <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30">
+                          <DollarSign className="h-3 w-3 ml-1" />غير مسدد
+                        </Badge>
+                      )}
                       {needsReport && (
                         <Badge variant="secondary" className="text-[10px] bg-destructive/10 text-destructive">
                           <FileText className="h-3 w-3 ml-1" />تقرير
