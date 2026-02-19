@@ -1,4 +1,4 @@
-import { BarChart3, Download, TrendingUp, Users, Clock, DollarSign, Loader2 } from "lucide-react";
+import { BarChart3, Download, TrendingUp, Users, Clock, DollarSign, Loader2, Megaphone } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
@@ -16,7 +16,7 @@ const Reports = () => {
     },
   });
 
-  const { data: totalSalaries = 0 } = useQuery({
+  const { data: totalTeacherSalaries = 0 } = useQuery({
     queryKey: ["report-salaries"],
     queryFn: async () => {
       const { data } = await supabase.from("teachers").select("monthly_salary").eq("is_active", true);
@@ -32,13 +32,23 @@ const Reports = () => {
     },
   });
 
-  const netProfit = totalIncome - totalSalaries;
+  const { data: totalExpenses = 0 } = useQuery({
+    queryKey: ["report-expenses"],
+    queryFn: async () => {
+      const { data } = await supabase.from("expenses").select("amount").gte("expense_month", monthStart).lte("expense_month", monthEnd);
+      return data ? data.reduce((sum, e) => sum + Number(e.amount), 0) : 0;
+    },
+  });
+
+  const totalCosts = totalTeacherSalaries + totalExpenses;
+  const netProfit = totalIncome - totalCosts;
 
   const reportCards = [
-    { title: "إجمالي الدخل", value: `$${totalIncome.toLocaleString()}`, icon: DollarSign, change: "", color: "text-success" },
-    { title: "رواتب المعلمين", value: `$${totalSalaries.toLocaleString()}`, icon: Users, change: "", color: "text-primary" },
-    { title: "صافي الربح", value: `$${netProfit.toLocaleString()}`, icon: TrendingUp, change: "", color: netProfit >= 0 ? "text-success" : "text-destructive" },
-    { title: "ساعات التدريس", value: String(totalHours), icon: Clock, change: "", color: "text-primary" },
+    { title: "إجمالي الدخل", value: `$${totalIncome.toLocaleString()}`, icon: DollarSign, color: "text-success" },
+    { title: "رواتب المعلمين", value: `$${totalTeacherSalaries.toLocaleString()}`, icon: Users, color: "text-primary" },
+    { title: "مصاريف وإعلانات", value: `$${totalExpenses.toLocaleString()}`, icon: Megaphone, color: "text-primary" },
+    { title: "صافي الربح", value: `$${netProfit.toLocaleString()}`, icon: TrendingUp, color: netProfit >= 0 ? "text-success" : "text-destructive" },
+    { title: "ساعات التدريس", value: String(totalHours), icon: Clock, color: "text-primary" },
   ];
 
   const generateCSV = async (type: string) => {
@@ -93,7 +103,8 @@ const Reports = () => {
     } else if (type === "pnl") {
       csvContent = "البند,المبلغ\n";
       csvContent += `إجمالي الدخل,$${totalIncome}\n`;
-      csvContent += `رواتب المعلمين,$${totalSalaries}\n`;
+      csvContent += `رواتب المعلمين,$${totalTeacherSalaries}\n`;
+      csvContent += `مصاريف وإعلانات,$${totalExpenses}\n`;
       csvContent += `صافي الربح,$${netProfit}\n`;
       filename = "profit_loss.csv";
     }

@@ -11,6 +11,7 @@ import Teachers from "./pages/Teachers";
 import Sessions from "./pages/Sessions";
 import Invoices from "./pages/Invoices";
 import Reports from "./pages/Reports";
+import Expenses from "./pages/Expenses";
 import MonthlyReports from "./pages/MonthlyReports";
 import SettingsPage from "./pages/SettingsPage";
 import Login from "./pages/Login";
@@ -43,6 +44,7 @@ const App = () => (
                     <Route path="/teachers" element={<Teachers />} />
                     <Route path="/sessions" element={<Sessions />} />
                     <Route path="/invoices" element={<Invoices />} />
+                    <Route path="/expenses" element={<Expenses />} />
                     <Route path="/reports" element={<Reports />} />
                     <Route path="/monthly-reports" element={<MonthlyReports />} />
                     <Route path="/settings" element={<SettingsPage />} />
