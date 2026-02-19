@@ -8,8 +8,10 @@ import {
   BarChart3,
   Settings,
   X,
+  LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/hooks/useAuth";
 import logo from "@/assets/logo.jpeg";
 
 interface SidebarProps {
@@ -28,6 +30,7 @@ const navItems = [
 
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const location = useLocation();
+  const { signOut } = useAuth();
 
   return (
     <aside className="flex h-full flex-col bg-sidebar text-sidebar-foreground">
@@ -77,7 +80,7 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
       </nav>
 
       {/* Footer */}
-      <div className="border-t border-sidebar-border p-4">
+      <div className="border-t border-sidebar-border p-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-sidebar-accent flex items-center justify-center">
             <span className="text-sm font-bold text-sidebar-primary">أ</span>
@@ -87,6 +90,15 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
             <p className="text-xs text-sidebar-muted">admin@alhamd.academy</p>
           </div>
         </div>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-start gap-2 text-sidebar-muted hover:text-destructive hover:bg-sidebar-accent"
+          onClick={signOut}
+        >
+          <LogOut className="h-4 w-4" />
+          تسجيل الخروج
+        </Button>
       </div>
     </aside>
   );
