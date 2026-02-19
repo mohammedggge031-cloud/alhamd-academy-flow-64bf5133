@@ -17,31 +17,34 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import SurahPicker from "@/components/SurahPicker";
-
-const statusConfig: Record<string, { label: string; className: string }> = {
-  upcoming: { label: "قادمة", className: "bg-accent text-accent-foreground" },
-  confirmed: { label: "مقبولة", className: "bg-primary text-primary-foreground" },
-  completed: { label: "مكتملة", className: "bg-success text-success-foreground" },
-  absent_student: { label: "غياب طالب", className: "bg-destructive text-destructive-foreground" },
-  absent_teacher: { label: "غياب معلم", className: "bg-destructive text-destructive-foreground" },
-  cancelled: { label: "ملغاة", className: "bg-muted text-muted-foreground" },
-  postponed: { label: "مؤجلة", className: "bg-warning text-warning-foreground" },
-};
-
-const levelLabels: Record<string, { label: string; className: string }> = {
-  excellent: { label: "ممتاز", className: "bg-success text-success-foreground" },
-  very_good: { label: "جيد جداً", className: "bg-primary text-primary-foreground" },
-  good: { label: "جيد", className: "bg-accent text-accent-foreground" },
-  weak: { label: "ضعيف", className: "bg-destructive text-destructive-foreground" },
-};
-
-interface EditFields {
-  session_date: string;
-  start_time: string;
-  duration_minutes: string;
-}
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Sessions = () => {
+  const { t } = useLanguage();
+
+  const statusConfig: Record<string, { label: string; className: string }> = {
+    upcoming: { label: t("upcoming"), className: "bg-accent text-accent-foreground" },
+    confirmed: { label: t("confirmed"), className: "bg-primary text-primary-foreground" },
+    completed: { label: t("completed"), className: "bg-success text-success-foreground" },
+    absent_student: { label: t("absent_student"), className: "bg-destructive text-destructive-foreground" },
+    absent_teacher: { label: t("absent_teacher"), className: "bg-destructive text-destructive-foreground" },
+    cancelled: { label: t("cancelled"), className: "bg-muted text-muted-foreground" },
+    postponed: { label: t("postponed"), className: "bg-warning text-warning-foreground" },
+  };
+
+  const levelLabels: Record<string, { label: string; className: string }> = {
+    excellent: { label: t("excellent"), className: "bg-success text-success-foreground" },
+    very_good: { label: t("very_good"), className: "bg-primary text-primary-foreground" },
+    good: { label: t("good"), className: "bg-accent text-accent-foreground" },
+    weak: { label: t("weak"), className: "bg-destructive text-destructive-foreground" },
+  };
+
+  const requestTypeLabels: Record<string, string> = {
+    reschedule: t("rescheduleLabel"),
+    transfer: t("transferLabel"),
+    join_postponed: t("joinPostponedLabel"),
+  };
+
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
   const [approvalDialog, setApprovalDialog] = useState<{ type: string; sessionId: string } | null>(null);
@@ -55,27 +58,20 @@ const Sessions = () => {
   const queryClient = useQueryClient();
   const isAdmin = role === "admin";
 
-  // Fetch sessions with student and teacher names
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["sessions"],
     queryFn: async () => {
       const { data, error } = await supabase
         .from("sessions")
-        .select(`
-          *,
-          students:student_id(name, remaining_hours),
-          teachers:teacher_id(id, user_id, profiles:user_id(full_name))
-        `)
+        .select(`*, students:student_id(name, remaining_hours), teachers:teacher_id(id, user_id, profiles:user_id(full_name))`)
         .order("session_date", { ascending: false });
       if (error) throw error;
       return data ?? [];
     },
   });
 
-  // Fetch teachers & students for admin add dialog
   const { data: teachers = [] } = useQuery({
-    queryKey: ["teachers-list"],
-    enabled: isAdmin,
+    queryKey: ["teachers-list"], enabled: isAdmin,
     queryFn: async () => {
       const { data } = await supabase.from("teachers").select("id, user_id, profiles:user_id(full_name)");
       return data ?? [];
@@ -83,45 +79,33 @@ const Sessions = () => {
   });
 
   const { data: students = [] } = useQuery({
-    queryKey: ["students-list"],
-    enabled: isAdmin,
+    queryKey: ["students-list"], enabled: isAdmin,
     queryFn: async () => {
       const { data } = await supabase.from("students").select("id, name");
       return data ?? [];
     },
   });
 
-  // Fetch teacher's approval requests
   const { data: approvalRequests = [] } = useQuery({
-    queryKey: ["approval-requests"],
-    enabled: !isAdmin,
+    queryKey: ["approval-requests"], enabled: !isAdmin,
     queryFn: async () => {
-      const { data } = await supabase
-        .from("approval_requests")
-        .select("*")
-        .order("created_at", { ascending: false });
+      const { data } = await supabase.from("approval_requests").select("*").order("created_at", { ascending: false });
       return data ?? [];
     },
   });
 
-  // Fetch existing reports (full data for teacher view)
   const { data: existingReports = [] } = useQuery({
     queryKey: ["session-reports"],
     queryFn: async () => {
       const { data } = await supabase
         .from("session_reports")
-        .select(`
-          *,
-          students:student_id(name),
-          sessions:session_id(session_date, start_time)
-        `)
+        .select(`*, students:student_id(name), sessions:session_id(session_date, start_time)`)
         .order("created_at", { ascending: false });
       return data ?? [];
     },
   });
   const reportedSessionIds = new Set(existingReports.map((r: any) => r.session_id));
 
-  // Sessions that need reports (completed but no report yet)
   const pendingReportSessions = useMemo(() => {
     if (isAdmin) return [];
     return sessions.filter((s: any) => s.status === "completed" && !reportedSessionIds.has(s.id));
@@ -129,36 +113,21 @@ const Sessions = () => {
 
   const [showMyReports, setShowMyReports] = useState(false);
 
-  // Submit session report
   const submitReport = useMutation({
     mutationFn: async (session: any) => {
-      const { data: teacher } = await supabase
-        .from("teachers")
-        .select("id")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-        .single();
-      if (!teacher) throw new Error("لم يتم العثور على بيانات المعلم");
-
+      const { data: teacher } = await supabase.from("teachers").select("id")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id).single();
+      if (!teacher) throw new Error(t("teacherNotFound"));
       const { error } = await supabase.from("session_reports").insert({
-        session_id: session.id,
-        teacher_id: teacher.id,
-        student_id: session.student_id,
-        student_level: report.student_level,
-        session_notes: report.session_notes || null,
-        homework: report.homework || null,
-        admin_alert: report.admin_alert,
+        session_id: session.id, teacher_id: teacher.id, student_id: session.student_id,
+        student_level: report.student_level, session_notes: report.session_notes || null,
+        homework: report.homework || null, admin_alert: report.admin_alert,
         admin_alert_reason: report.admin_alert ? report.admin_alert_reason : null,
       });
       if (error) throw error;
-
-      // Send homework via WhatsApp if provided
       if (report.homework) {
         await supabase.functions.invoke("send-homework-whatsapp", {
-          body: {
-            student_id: session.student_id,
-            homework: report.homework,
-            student_name: session.students?.name,
-          },
+          body: { student_id: session.student_id, homework: report.homework, student_name: session.students?.name },
         });
       }
     },
@@ -166,9 +135,9 @@ const Sessions = () => {
       queryClient.invalidateQueries({ queryKey: ["session-reports"] });
       setReportDialog(null);
       setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
-      toast({ title: "تم إرسال التقرير بنجاح" });
+      toast({ title: t("reportSent") });
     },
-    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
   });
 
   const updateStatus = useMutation({
@@ -181,72 +150,46 @@ const Sessions = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       setSelectedSession(null);
-      toast({ title: "تم تحديث حالة الحصة" });
+      toast({ title: t("statusUpdated") });
     },
-    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
   });
 
-  // Teacher: create approval request with pending changes
   const createApproval = useMutation({
     mutationFn: async ({ type, sessionId, details, changes }: { type: string; sessionId: string; details: string; changes?: any }) => {
-      const { data: teacher } = await supabase
-        .from("teachers")
-        .select("id")
-        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
-        .single();
-      if (!teacher) throw new Error("لم يتم العثور على بيانات المعلم");
-
-      // Get original session data before changes
-      const { data: originalSession } = await supabase
-        .from("sessions")
-        .select("session_date, start_time, duration_minutes, status")
-        .eq("id", sessionId)
-        .single();
-
-      // Apply changes to session temporarily
+      const { data: teacher } = await supabase.from("teachers").select("id")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id).single();
+      if (!teacher) throw new Error(t("teacherNotFound"));
+      const { data: originalSession } = await supabase.from("sessions")
+        .select("session_date, start_time, duration_minutes, status").eq("id", sessionId).single();
       if (changes) {
         await supabase.from("sessions").update({
-          ...changes,
-          pending_approval: true,
-          approval_status: "pending",
-          original_data: originalSession,
+          ...changes, pending_approval: true, approval_status: "pending", original_data: originalSession,
         }).eq("id", sessionId);
       } else if (type === "join_postponed") {
         await supabase.from("sessions").update({
-          status: "completed",
-          pending_approval: true,
-          approval_status: "pending",
-          original_data: originalSession,
+          status: "completed", pending_approval: true, approval_status: "pending", original_data: originalSession,
         }).eq("id", sessionId);
       }
-
       const { error } = await supabase.from("approval_requests").insert({
-        teacher_id: teacher.id,
-        session_id: sessionId,
-        request_type: type,
-        details: { reason: details, ...(changes || {}) },
-        original_data: originalSession,
+        teacher_id: teacher.id, session_id: sessionId, request_type: type,
+        details: { reason: details, ...(changes || {}) }, original_data: originalSession,
       });
       if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions", "approval-requests", "admin-approvals"] });
-      setApprovalDialog(null);
-      setApprovalDetails("");
-      setSelectedSession(null);
-      toast({ title: "تم التعديل مؤقتاً وإرسال طلب الموافقة للمدير" });
+      setApprovalDialog(null); setApprovalDetails(""); setSelectedSession(null);
+      toast({ title: t("approvalSent") });
     },
-    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
   });
 
-  // Admin: add session
   const addSession = useMutation({
     mutationFn: async () => {
       const { error } = await supabase.from("sessions").insert({
-        student_id: newSession.student_id,
-        teacher_id: newSession.teacher_id,
-        session_date: newSession.session_date,
-        start_time: newSession.start_time || null,
+        student_id: newSession.student_id, teacher_id: newSession.teacher_id,
+        session_date: newSession.session_date, start_time: newSession.start_time || null,
         duration_minutes: parseInt(newSession.duration_minutes),
       });
       if (error) throw error;
@@ -255,57 +198,38 @@ const Sessions = () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       setAddDialog(false);
       setNewSession({ student_id: "", teacher_id: "", session_date: "", start_time: "", duration_minutes: "60" });
-      toast({ title: "تم إضافة الحصة" });
+      toast({ title: t("sessionAdded") });
     },
-    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
   });
 
-  // Admin: handle approval via edge function (handles rollback)
   const handleApproval = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const res = await supabase.functions.invoke("handle-approval", {
-        body: { request_id: id, action: status },
-      });
+      const res = await supabase.functions.invoke("handle-approval", { body: { request_id: id, action: status } });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin-approvals", "sessions"] });
-      toast({ title: "تم تحديث الطلب" });
+      toast({ title: t("approvalUpdated") });
     },
-    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
   });
 
-  // Admin: fetch pending approvals
   const { data: pendingApprovals = [] } = useQuery({
-    queryKey: ["admin-approvals"],
-    enabled: isAdmin,
+    queryKey: ["admin-approvals"], enabled: isAdmin,
     queryFn: async () => {
       const { data } = await supabase
         .from("approval_requests")
-        .select(`
-          *,
-          teachers:teacher_id(profiles:user_id(full_name)),
-          sessions:session_id(session_date, start_time, students:student_id(name))
-        `)
-        .eq("status", "pending")
-        .order("created_at", { ascending: false });
+        .select(`*, teachers:teacher_id(profiles:user_id(full_name)), sessions:session_id(session_date, start_time, students:student_id(name))`)
+        .eq("status", "pending").order("created_at", { ascending: false });
       return data ?? [];
     },
   });
 
-  const filtered = statusFilter === "all"
-    ? sessions
-    : sessions.filter((s: any) => s.status === statusFilter);
-
+  const filtered = statusFilter === "all" ? sessions : sessions.filter((s: any) => s.status === statusFilter);
   const getTeacherName = (s: any) => s.teachers?.profiles?.full_name ?? "—";
   const getStudentName = (s: any) => s.students?.name ?? "—";
-
-  const requestTypeLabels: Record<string, string> = {
-    reschedule: "تعديل الجدول",
-    transfer: "نقل حصة",
-    join_postponed: "دخول حصة مؤجلة",
-  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -313,22 +237,22 @@ const Sessions = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <CalendarDays className="h-6 w-6 text-primary" />
-            {isAdmin ? "إدارة الحصص" : "حصصي"}
+            {isAdmin ? t("sessionsTitle") : t("mySessions")}
           </h1>
-          <p className="text-muted-foreground">{sessions.length} حصة</p>
+          <p className="text-muted-foreground">{sessions.length} {t("sessionsCount")}</p>
         </div>
         {isAdmin && (
           <Dialog open={addDialog} onOpenChange={setAddDialog}>
             <DialogTrigger asChild>
-              <Button className="gap-2"><Plus className="h-4 w-4" />إضافة حصة</Button>
+              <Button className="gap-2"><Plus className="h-4 w-4" />{t("addSession")}</Button>
             </DialogTrigger>
             <DialogContent className="max-w-md">
-              <DialogHeader><DialogTitle>إضافة حصة جديدة</DialogTitle></DialogHeader>
+              <DialogHeader><DialogTitle>{t("addSessionTitle")}</DialogTitle></DialogHeader>
               <div className="grid gap-4 py-4">
                 <div className="grid gap-2">
-                  <Label>المعلم</Label>
+                  <Label>{t("teacher")}</Label>
                   <Select value={newSession.teacher_id} onValueChange={(v) => setNewSession({ ...newSession, teacher_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="اختر المعلم" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("selectTeacher")} /></SelectTrigger>
                     <SelectContent>
                       {teachers.map((t: any) => (
                         <SelectItem key={t.id} value={t.id}>{t.profiles?.full_name}</SelectItem>
@@ -337,9 +261,9 @@ const Sessions = () => {
                   </Select>
                 </div>
                 <div className="grid gap-2">
-                  <Label>الطالب</Label>
+                  <Label>{t("student")}</Label>
                   <Select value={newSession.student_id} onValueChange={(v) => setNewSession({ ...newSession, student_id: v })}>
-                    <SelectTrigger><SelectValue placeholder="اختر الطالب" /></SelectTrigger>
+                    <SelectTrigger><SelectValue placeholder={t("selectStudent")} /></SelectTrigger>
                     <SelectContent>
                       {students.map((s: any) => (
                         <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
@@ -349,21 +273,21 @@ const Sessions = () => {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>التاريخ</Label>
+                    <Label>{t("date")}</Label>
                     <Input type="date" value={newSession.session_date} onChange={(e) => setNewSession({ ...newSession, session_date: e.target.value })} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>الوقت</Label>
+                    <Label>{t("time")}</Label>
                     <Input type="time" value={newSession.start_time} onChange={(e) => setNewSession({ ...newSession, start_time: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label>المدة (دقيقة)</Label>
+                  <Label>{t("durationMin")}</Label>
                   <Input type="number" value={newSession.duration_minutes} onChange={(e) => setNewSession({ ...newSession, duration_minutes: e.target.value })} />
                 </div>
                 <Button onClick={() => addSession.mutate()} disabled={addSession.isPending}>
                   {addSession.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                  حفظ الحصة
+                  {t("saveSession")}
                 </Button>
               </div>
             </DialogContent>
@@ -377,7 +301,7 @@ const Sessions = () => {
           <CardContent className="p-4 space-y-3">
             <h3 className="text-sm font-bold flex items-center gap-2 text-warning">
               <ShieldAlert className="h-4 w-4" />
-              طلبات موافقة معلقة ({pendingApprovals.length})
+              {t("pendingApprovals")} ({pendingApprovals.length})
             </h3>
             <div className="divide-y divide-border">
               {pendingApprovals.map((req: any) => (
@@ -392,11 +316,11 @@ const Sessions = () => {
                   <div className="flex gap-2 shrink-0">
                     <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground h-8"
                       onClick={() => handleApproval.mutate({ id: req.id, status: "approved" })}>
-                      قبول
+                      {t("approve")}
                     </Button>
                     <Button size="sm" variant="destructive" className="h-8"
                       onClick={() => handleApproval.mutate({ id: req.id, status: "rejected" })}>
-                      رفض
+                      {t("reject")}
                     </Button>
                   </div>
                 </div>
@@ -412,7 +336,7 @@ const Sessions = () => {
           <CardContent className="p-4 space-y-2">
             <h3 className="text-sm font-bold text-primary flex items-center gap-2">
               <Clock className="h-4 w-4" />
-              طلباتي المعلقة
+              {t("myPendingRequests")}
             </h3>
             {approvalRequests.filter((r: any) => r.status === "pending").map((r: any) => (
               <div key={r.id} className="text-sm py-1">
@@ -430,7 +354,7 @@ const Sessions = () => {
           <CardContent className="p-4 space-y-3">
             <h3 className="text-sm font-bold flex items-center gap-2 text-destructive">
               <FileText className="h-4 w-4" />
-              حصص تحتاج تقرير ({pendingReportSessions.length})
+              {t("sessionsNeedReport")} ({pendingReportSessions.length})
             </h3>
             <div className="divide-y divide-border">
               {pendingReportSessions.map((session: any) => (
@@ -441,7 +365,7 @@ const Sessions = () => {
                   </div>
                   <Button size="sm" variant="outline" className="gap-1 text-xs border-destructive/30 text-destructive hover:bg-destructive hover:text-destructive-foreground"
                     onClick={() => { setReportDialog(session); }}>
-                    <FileText className="h-3 w-3" />إرسال التقرير
+                    <FileText className="h-3 w-3" />{t("sendReport")}
                   </Button>
                 </div>
               ))}
@@ -456,21 +380,21 @@ const Sessions = () => {
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الحالات</SelectItem>
-            <SelectItem value="upcoming">قادمة</SelectItem>
-            <SelectItem value="confirmed">مقبولة</SelectItem>
-            <SelectItem value="completed">مكتملة</SelectItem>
-            <SelectItem value="absent_student">غياب طالب</SelectItem>
-            <SelectItem value="absent_teacher">غياب معلم</SelectItem>
-            <SelectItem value="cancelled">ملغاة</SelectItem>
-            <SelectItem value="postponed">مؤجلة</SelectItem>
+            <SelectItem value="all">{t("allStatuses")}</SelectItem>
+            <SelectItem value="upcoming">{t("upcoming")}</SelectItem>
+            <SelectItem value="confirmed">{t("confirmed")}</SelectItem>
+            <SelectItem value="completed">{t("completed")}</SelectItem>
+            <SelectItem value="absent_student">{t("absent_student")}</SelectItem>
+            <SelectItem value="absent_teacher">{t("absent_teacher")}</SelectItem>
+            <SelectItem value="cancelled">{t("cancelled")}</SelectItem>
+            <SelectItem value="postponed">{t("postponed")}</SelectItem>
           </SelectContent>
         </Select>
         {!isAdmin && (
           <Button size="sm" variant={showMyReports ? "default" : "outline"} className="gap-1 mr-auto"
             onClick={() => setShowMyReports(!showMyReports)}>
             <Eye className="h-3.5 w-3.5" />
-            تقاريري
+            {t("myReports")}
           </Button>
         )}
       </div>
@@ -481,10 +405,10 @@ const Sessions = () => {
           <CardContent className="p-4 space-y-3">
             <h3 className="text-base font-bold flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              تقاريري السابقة ({existingReports.length})
+              {t("myPreviousReports")} ({existingReports.length})
             </h3>
             {existingReports.length === 0 && (
-              <p className="text-center text-muted-foreground py-6">لا توجد تقارير بعد</p>
+              <p className="text-center text-muted-foreground py-6">{t("noReportsYet")}</p>
             )}
             <div className="divide-y divide-border">
               {existingReports.map((r: any) => (
@@ -499,14 +423,14 @@ const Sessions = () => {
                     </Badge>
                     {r.admin_alert && (
                       <Badge variant="secondary" className="bg-warning/10 text-warning text-[10px]">
-                        <AlertTriangle className="h-3 w-3 ml-1" />تنبيه إدارة
+                        <AlertTriangle className="h-3 w-3 ml-1" />{t("adminAlertBadge")}
                       </Badge>
                     )}
                   </div>
                   {r.session_notes && <p className="text-xs text-muted-foreground">{r.session_notes}</p>}
                   {r.homework && (
                     <div className="text-xs bg-muted/50 rounded-lg p-2">
-                      <span className="font-medium text-foreground">الواجب: </span>{r.homework}
+                      <span className="font-medium text-foreground">{t("homeworkLabel")} </span>{r.homework}
                     </div>
                   )}
                 </div>
@@ -524,7 +448,7 @@ const Sessions = () => {
           <CardContent className="p-0">
             <div className="divide-y">
               {filtered.length === 0 && (
-                <p className="text-center text-muted-foreground py-8">لا توجد حصص</p>
+                <p className="text-center text-muted-foreground py-8">{t("noSessions")}</p>
               )}
               {filtered.map((session: any) => {
                 const statusBorderColors: Record<string, string> = {
@@ -552,24 +476,24 @@ const Sessions = () => {
                       <div>
                         <p className="text-sm font-medium">{getStudentName(session)}</p>
                         <p className="text-xs text-muted-foreground">
-                          {getTeacherName(session)} · {session.start_time?.slice(0, 5) ?? ""} · {session.duration_minutes} دقيقة
+                          {getTeacherName(session)} · {session.start_time?.slice(0, 5) ?? ""} · {session.duration_minutes} {t("minutes")}
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
                       {isUnpaid && (
                         <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30">
-                          <DollarSign className="h-3 w-3 ml-1" />غير مسدد
+                          <DollarSign className="h-3 w-3 ml-1" />{t("unpaid")}
                         </Badge>
                       )}
                       {needsReport && (
                         <Badge variant="secondary" className="text-[10px] bg-destructive/10 text-destructive">
-                          <FileText className="h-3 w-3 ml-1" />تقرير
+                          <FileText className="h-3 w-3 ml-1" />{t("reportLabel")}
                         </Badge>
                       )}
                       {session.pending_approval && (
                         <Badge variant="secondary" className="text-[10px] bg-warning/10 text-warning">
-                          ⏳ معلق
+                          {t("pendingLabel")}
                         </Badge>
                       )}
                       <span className="text-xs text-muted-foreground hidden sm:block">{session.session_date}</span>
@@ -588,24 +512,24 @@ const Sessions = () => {
       {/* Session detail dialog */}
       <Dialog open={!!selectedSession} onOpenChange={() => setSelectedSession(null)}>
         <DialogContent className="max-w-md">
-          <DialogHeader><DialogTitle>تفاصيل الحصة</DialogTitle></DialogHeader>
+          <DialogHeader><DialogTitle>{t("sessionDetails")}</DialogTitle></DialogHeader>
           {selectedSession && (
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
-                  <p className="text-muted-foreground">الطالب</p>
+                  <p className="text-muted-foreground">{t("student")}</p>
                   <p className="font-medium">{getStudentName(selectedSession)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">المعلم</p>
+                  <p className="text-muted-foreground">{t("teacher")}</p>
                   <p className="font-medium">{getTeacherName(selectedSession)}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">التاريخ</p>
+                  <p className="text-muted-foreground">{t("date")}</p>
                   <p className="font-medium">{selectedSession.session_date}</p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">الوقت</p>
+                  <p className="text-muted-foreground">{t("time")}</p>
                   <p className="font-medium">{selectedSession.start_time?.slice(0, 5) ?? "—"}</p>
                 </div>
               </div>
@@ -617,21 +541,20 @@ const Sessions = () => {
               {/* Teacher actions */}
               {!isAdmin && selectedSession.status === "upcoming" && (
                 <div className="space-y-3 pt-2">
-                  <Label className="text-sm font-medium">إجراءات</Label>
+                  <Label className="text-sm font-medium">{t("adminActionsLabel")}</Label>
                   <div className="grid grid-cols-2 gap-2">
                     <Button size="sm" className="gap-1"
                       onClick={async () => {
                         await updateStatus.mutateAsync({ id: selectedSession.id, status: "confirmed" });
-                        // Send WhatsApp reminder to student that teacher joined
                         supabase.functions.invoke("send-session-reminder", {
                           body: { type: "teacher_joined", session_id: selectedSession.id },
                         });
                       }}>
-                      <Check className="h-3 w-3" />قبول الحصة
+                      <Check className="h-3 w-3" />{t("acceptSession")}
                     </Button>
                     <Button size="sm" variant="destructive" className="gap-1"
                       onClick={() => updateStatus.mutate({ id: selectedSession.id, status: "absent_student" })}>
-                      <XCircle className="h-3 w-3" />غياب طالب
+                      <XCircle className="h-3 w-3" />{t("markAbsent")}
                     </Button>
                   </div>
                 </div>
@@ -640,22 +563,22 @@ const Sessions = () => {
               {!isAdmin && selectedSession.status === "confirmed" && (
                 <Button size="sm" className="w-full bg-success hover:bg-success/90 text-success-foreground gap-1"
                   onClick={() => updateStatus.mutate({ id: selectedSession.id, status: "completed" })}>
-                  <Check className="h-3 w-3" />تم إكمال الحصة
+                  <Check className="h-3 w-3" />{t("markComplete")}
                 </Button>
               )}
 
               {/* Teacher: needs approval actions */}
               {!isAdmin && (selectedSession.status === "upcoming" || selectedSession.status === "confirmed") && (
                 <div className="space-y-2 pt-2 border-t border-border">
-                  <p className="text-xs text-muted-foreground">يتطلب موافقة المدير:</p>
+                  <p className="text-xs text-muted-foreground">{t("needsApproval")}</p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button size="sm" variant="outline" className="text-xs"
                       onClick={() => setApprovalDialog({ type: "reschedule", sessionId: selectedSession.id })}>
-                      تعديل الجدول
+                      {t("reschedule")}
                     </Button>
                     <Button size="sm" variant="outline" className="text-xs"
                       onClick={() => setApprovalDialog({ type: "transfer", sessionId: selectedSession.id })}>
-                      نقل الحصة
+                      {t("transferSession")}
                     </Button>
                   </div>
                 </div>
@@ -664,54 +587,51 @@ const Sessions = () => {
               {!isAdmin && selectedSession.status === "postponed" && !selectedSession.pending_approval && (
                 <Button size="sm" className="w-full bg-success hover:bg-success/90 text-success-foreground gap-1"
                   onClick={() => createApproval.mutate({
-                    type: "join_postponed",
-                    sessionId: selectedSession.id,
-                    details: "دخول حصة مؤجلة",
+                    type: "join_postponed", sessionId: selectedSession.id, details: t("joinPostponedLabel"),
                   })}>
-                  <Check className="h-3 w-3" />دخول الحصة المؤجلة (ينتظر موافقة)
+                  <Check className="h-3 w-3" />{t("joinPostponed")}
                 </Button>
               )}
 
               {!isAdmin && selectedSession.pending_approval && (
                 <Badge variant="secondary" className="w-full justify-center py-1.5 bg-warning/10 text-warning">
-                  <Clock className="h-3 w-3 ml-1" />في انتظار موافقة المدير
+                  <Clock className="h-3 w-3 ml-1" />{t("awaitingApproval")}
                 </Badge>
               )}
 
-              {/* Teacher: report button for completed sessions */}
               {!isAdmin && selectedSession.status === "completed" && !reportedSessionIds.has(selectedSession.id) && (
                 <Button size="sm" className="w-full gap-1" variant="outline"
                   onClick={() => { setReportDialog(selectedSession); setSelectedSession(null); }}>
-                  <FileText className="h-3 w-3" />إرسال تقرير الحصة
+                  <FileText className="h-3 w-3" />{t("sendReport")}
                 </Button>
               )}
 
               {!isAdmin && selectedSession.status === "completed" && reportedSessionIds.has(selectedSession.id) && (
                 <Badge variant="secondary" className="w-full justify-center py-1.5 bg-success/10 text-success">
-                  <Check className="h-3 w-3 ml-1" />تم إرسال التقرير
+                  <Check className="h-3 w-3 ml-1" />{t("reportSentBadge")}
                 </Badge>
               )}
 
               {/* Admin actions */}
               {isAdmin && selectedSession.status === "upcoming" && (
                 <div className="space-y-3 pt-2">
-                  <Label className="text-sm font-medium">إجراءات المدير</Label>
+                  <Label className="text-sm font-medium">{t("adminActions")}</Label>
                   <div className="grid grid-cols-2 gap-2">
                     <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground"
                       onClick={() => updateStatus.mutate({ id: selectedSession.id, status: "completed" })}>
-                      تمت
+                      {t("done")}
                     </Button>
                     <Button size="sm" variant="destructive"
                       onClick={() => updateStatus.mutate({ id: selectedSession.id, status: "absent_student" })}>
-                      غياب طالب
+                      {t("markAbsent")}
                     </Button>
                     <Button size="sm" variant="secondary"
                       onClick={() => updateStatus.mutate({ id: selectedSession.id, status: "cancelled" })}>
-                      إلغاء
+                      {t("cancelSession")}
                     </Button>
                     <Button size="sm" variant="outline"
                       onClick={() => updateStatus.mutate({ id: selectedSession.id, status: "postponed" })}>
-                      تأجيل
+                      {t("postponeSession")}
                     </Button>
                   </div>
                 </div>
@@ -719,7 +639,7 @@ const Sessions = () => {
 
               {selectedSession.notes && (
                 <div className="rounded-lg bg-muted/50 p-3 text-sm">
-                  <p className="text-muted-foreground">ملاحظات</p>
+                  <p className="text-muted-foreground">{t("notes")}</p>
                   <p className="font-medium">{selectedSession.notes}</p>
                 </div>
               )}
@@ -734,7 +654,7 @@ const Sessions = () => {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              تقرير الحصة
+              {t("sessionReport")}
             </DialogTitle>
           </DialogHeader>
           {reportDialog && (
@@ -744,7 +664,7 @@ const Sessions = () => {
               </div>
 
               <div className="grid gap-2">
-                <Label>مستوى الطالب</Label>
+                <Label>{t("studentLevel")}</Label>
                 <div className="grid grid-cols-4 gap-2">
                   {Object.entries(levelLabels).map(([key, val]) => (
                     <Button key={key} size="sm" type="button"
@@ -758,23 +678,20 @@ const Sessions = () => {
               </div>
 
               <div className="grid gap-2">
-                <Label>ماذا حدث في الحصة</Label>
-                <Textarea placeholder="مثال: مراجعة سورة البقرة، الحفظ من آية 50 إلى 60..."
-                  value={report.session_notes} onChange={(e) => setReport({ ...report, session_notes: e.target.value })} />
+                <Label>{t("whatHappened")}</Label>
+                <Textarea value={report.session_notes} onChange={(e) => setReport({ ...report, session_notes: e.target.value })} />
               </div>
 
               <div className="grid gap-2">
                 <Label className="flex items-center gap-1">
                   <Send className="h-3 w-3" />
-                  الواجب (يُرسل للطالب عبر الواتساب)
+                  {t("homework")}
                 </Label>
-                <Textarea placeholder="اكتب الواجب هنا..."
-                  value={report.homework} onChange={(e) => setReport({ ...report, homework: e.target.value })} />
-                {/* Quran Surahs quick-pick */}
+                <Textarea value={report.homework} onChange={(e) => setReport({ ...report, homework: e.target.value })} />
                 <div className="space-y-1.5">
                   <p className="text-xs text-muted-foreground flex items-center gap-1">
                     <BookOpen className="h-3 w-3" />
-                    اختر سورة لإضافتها للواجب:
+                    {t("selectSurah")}
                   </p>
                   <SurahPicker onSelect={(text) => setReport({ ...report, homework: report.homework ? `${report.homework}\n${text}` : text })} />
                 </div>
@@ -787,12 +704,11 @@ const Sessions = () => {
                     onChange={(e) => setReport({ ...report, admin_alert: e.target.checked })} />
                   <Label htmlFor="admin-alert" className="flex items-center gap-1 text-sm cursor-pointer">
                     <AlertTriangle className="h-3 w-3 text-warning" />
-                    تنبيه الإدارة
+                    {t("adminAlert")}
                   </Label>
                 </div>
                 {report.admin_alert && (
-                  <Textarea placeholder="مثال: الطالب كان متأخر 10 دقائق، الطالب غير مركز..."
-                    className="text-sm"
+                  <Textarea className="text-sm"
                     value={report.admin_alert_reason} onChange={(e) => setReport({ ...report, admin_alert_reason: e.target.value })} />
                 )}
               </div>
@@ -800,45 +716,45 @@ const Sessions = () => {
               <Button className="w-full gap-2" disabled={!report.student_level || !report.session_notes?.trim() || !report.homework?.trim() || submitReport.isPending}
                 onClick={() => submitReport.mutate(reportDialog)}>
                 {submitReport.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                إرسال التقرير
+                {t("sendReport")}
               </Button>
             </div>
           )}
         </DialogContent>
       </Dialog>
 
-      {/* Approval request dialog - with edit fields for reschedule */}
+      {/* Approval request dialog */}
       <Dialog open={!!approvalDialog} onOpenChange={() => { setApprovalDialog(null); setApprovalDetails(""); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
             <DialogTitle>
-              {approvalDialog?.type === "reschedule" ? "تعديل الجدول" : `طلب موافقة — ${approvalDialog ? requestTypeLabels[approvalDialog.type] : ""}`}
+              {approvalDialog?.type === "reschedule" ? t("reschedule") : `${t("submitRequest")} — ${approvalDialog ? requestTypeLabels[approvalDialog.type] : ""}`}
             </DialogTitle>
           </DialogHeader>
           {approvalDialog && (
             <div className="space-y-4">
               {approvalDialog.type === "reschedule" && (
                 <div className="space-y-3">
-                  <p className="text-xs text-muted-foreground">التعديل يتنفذ مؤقتاً وينتظر موافقة المدير. لو رفض يرجع زي ما كان.</p>
+                  <p className="text-xs text-muted-foreground">{t("rescheduleNote")}</p>
                   <div className="grid gap-2">
-                    <Label>التاريخ الجديد</Label>
+                    <Label>{t("newDate")}</Label>
                     <Input type="date" id="edit-date" />
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="grid gap-2">
-                      <Label>الوقت الجديد</Label>
+                      <Label>{t("newTime")}</Label>
                       <Input type="time" id="edit-time" />
                     </div>
                     <div className="grid gap-2">
-                      <Label>المدة (دقيقة)</Label>
+                      <Label>{t("durationMin")}</Label>
                       <Input type="number" id="edit-duration" defaultValue="60" />
                     </div>
                   </div>
                 </div>
               )}
               <div className="grid gap-2">
-                <Label>السبب / التفاصيل</Label>
-                <Textarea placeholder="اكتب سبب الطلب..." value={approvalDetails} onChange={(e) => setApprovalDetails(e.target.value)} />
+                <Label>{t("reason")}</Label>
+                <Textarea value={approvalDetails} onChange={(e) => setApprovalDetails(e.target.value)} />
               </div>
               <Button className="w-full" disabled={createApproval.isPending}
                 onClick={() => {
@@ -848,14 +764,12 @@ const Sessions = () => {
                     duration_minutes: parseInt((document.getElementById("edit-duration") as HTMLInputElement)?.value) || undefined,
                   } : undefined;
                   createApproval.mutate({
-                    type: approvalDialog.type,
-                    sessionId: approvalDialog.sessionId,
-                    details: approvalDetails,
-                    changes,
+                    type: approvalDialog.type, sessionId: approvalDialog.sessionId,
+                    details: approvalDetails, changes,
                   });
                 }}>
                 {createApproval.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                {approvalDialog.type === "reschedule" ? "تعديل وإرسال للموافقة" : "إرسال الطلب"}
+                {approvalDialog.type === "reschedule" ? t("editAndSubmit") : t("submitRequest")}
               </Button>
             </div>
           )}

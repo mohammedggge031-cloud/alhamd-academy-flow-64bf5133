@@ -14,14 +14,10 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
-
-const statusConfig: Record<string, { label: string; className: string }> = {
-  paid: { label: "مدفوعة", className: "bg-success text-success-foreground" },
-  pending: { label: "معلقة", className: "bg-warning text-warning-foreground" },
-  overdue: { label: "متأخرة", className: "bg-destructive text-destructive-foreground" },
-};
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Invoices = () => {
+  const { t } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -29,14 +25,18 @@ const Invoices = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  // Form state for new invoice
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
   const [amount, setAmount] = useState("");
   const [hours, setHours] = useState("");
   const [discount, setDiscount] = useState("0");
   const [dueDate, setDueDate] = useState("");
 
-  // Fetch students
+  const statusConfig: Record<string, { label: string; className: string }> = {
+    paid: { label: t("paid"), className: "bg-success text-success-foreground" },
+    pending: { label: t("pending"), className: "bg-warning text-warning-foreground" },
+    overdue: { label: t("overdue"), className: "bg-destructive text-destructive-foreground" },
+  };
+
   const { data: allStudents = [] } = useQuery({
     queryKey: ["students-for-invoices"],
     queryFn: async () => {
@@ -45,7 +45,6 @@ const Invoices = () => {
     },
   });
 
-  // Fetch invoices with student info
   const { data: invoices = [], isLoading } = useQuery({
     queryKey: ["invoices"],
     queryFn: async () => {
@@ -58,14 +57,12 @@ const Invoices = () => {
     },
   });
 
-  // Today's due invoices
   const todayStr = new Date().toISOString().split("T")[0];
   const todayDue = useMemo(() =>
     invoices.filter((i: any) => i.due_date === todayStr && i.status !== "paid"),
     [invoices, todayStr]
   );
 
-  // Filter
   const filtered = useMemo(() => {
     let list = invoices;
     if (statusFilter !== "all") list = list.filter((i: any) => i.status === statusFilter);
@@ -92,7 +89,7 @@ const Invoices = () => {
 
   const createInvoice = useMutation({
     mutationFn: async () => {
-      if (selectedStudents.length === 0) throw new Error("يجب اختيار طالب واحد على الأقل");
+      if (selectedStudents.length === 0) throw new Error(t("mustSelectStudent"));
       const amountNum = parseFloat(amount) || 0;
       const discountNum = parseFloat(discount) || 0;
       const hoursNum = parseFloat(hours) || 0;
@@ -101,41 +98,28 @@ const Invoices = () => {
         .from("invoices")
         .insert([{
           student_id: selectedStudents.length === 1 ? selectedStudents[0] : null,
-          amount: amountNum,
-          discount: discountNum,
-          total: finalAmount,
-          hours: hoursNum,
-          due_date: dueDate || null,
-          status: "pending",
+          amount: amountNum, discount: discountNum, total: finalAmount,
+          hours: hoursNum, due_date: dueDate || null, status: "pending",
         }])
-        .select()
-        .single();
+        .select().single();
       if (error) throw error;
 
-      // Add invoice_students entries
       if (selectedStudents.length > 0 && invoice) {
         const perStudentHours = hoursNum / selectedStudents.length;
         const perStudentAmount = amountNum / selectedStudents.length;
         const entries = selectedStudents.map((sid) => ({
-          invoice_id: invoice.id,
-          student_id: sid,
-          hours: perStudentHours,
-          amount: perStudentAmount,
+          invoice_id: invoice.id, student_id: sid,
+          hours: perStudentHours, amount: perStudentAmount,
         }));
         await supabase.from("invoice_students").insert(entries);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      setDialogOpen(false);
-      setSelectedStudents([]);
-      setAmount("");
-      setHours("");
-      setDiscount("0");
-      setDueDate("");
-      toast({ title: "تم إنشاء الفاتورة بنجاح" });
+      setDialogOpen(false); setSelectedStudents([]); setAmount(""); setHours(""); setDiscount("0"); setDueDate("");
+      toast({ title: t("invoiceCreated") });
     },
-    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
   });
 
   const markPaid = useMutation({
@@ -146,25 +130,18 @@ const Invoices = () => {
         .eq("id", invoiceId);
       if (error) throw error;
 
-      // Renew student hours
       const inv = invoices.find((i: any) => i.id === invoiceId);
       if (inv) {
         const studentIds: string[] = [];
         if (inv.student_id) studentIds.push(inv.student_id);
         const invStudents = (inv as any).invoice_students || [];
         for (const is2 of invStudents) {
-          if (is2.student_id && !studentIds.includes(is2.student_id)) {
-            studentIds.push(is2.student_id);
-          }
+          if (is2.student_id && !studentIds.includes(is2.student_id)) studentIds.push(is2.student_id);
         }
         const totalHours = Number(inv.hours) || 0;
         const perStudent = totalHours / (studentIds.length || 1);
         for (const sid of studentIds) {
-          const { data: student } = await supabase
-            .from("students")
-            .select("remaining_hours, paid_hours")
-            .eq("id", sid)
-            .single();
+          const { data: student } = await supabase.from("students").select("remaining_hours, paid_hours").eq("id", sid).single();
           if (student) {
             await supabase.from("students").update({
               remaining_hours: (Number(student.remaining_hours) || 0) + perStudent,
@@ -176,9 +153,9 @@ const Invoices = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
-      toast({ title: "تم تسجيل الدفع وتجديد رصيد الساعات" });
+      toast({ title: t("paymentRecorded") });
     },
-    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+    onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
   });
 
   const getStudentNames = (invoice: any): string => {
@@ -199,79 +176,74 @@ const Invoices = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <Receipt className="h-6 w-6 text-primary" />
-            إدارة الفواتير
+            {t("invoicesTitle")}
           </h1>
-          <p className="text-muted-foreground">{invoices.length} فاتورة</p>
+          <p className="text-muted-foreground">{invoices.length} {t("invoicesCount")}</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" />إنشاء فاتورة</Button>
+            <Button className="gap-2"><Plus className="h-4 w-4" />{t("createInvoice")}</Button>
           </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
-              <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
+              <DialogTitle>{t("createInvoiceTitle")}</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label>الطالب/الطلاب (اضغط للاختيار)</Label>
+                <Label>{t("selectStudents")}</Label>
                 <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px]">
                   {allStudents.map((s: any) => (
-                    <Badge
-                      key={s.id}
-                      variant={selectedStudents.includes(s.id) ? "default" : "outline"}
-                      className="cursor-pointer select-none"
-                      onClick={() => toggleStudent(s.id)}
-                    >
+                    <Badge key={s.id} variant={selectedStudents.includes(s.id) ? "default" : "outline"}
+                      className="cursor-pointer select-none" onClick={() => toggleStudent(s.id)}>
                       {s.name}
                     </Badge>
                   ))}
                 </div>
                 {selectedStudents.length > 1 && (
-                  <p className="text-xs text-muted-foreground">فاتورة مجمعة لـ {selectedStudents.length} طلاب</p>
+                  <p className="text-xs text-muted-foreground">{t("mergedInvoice")} {selectedStudents.length} {t("studentsLabel2")}</p>
                 )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label>عدد الساعات</Label>
+                  <Label>{t("hoursCount")}</Label>
                   <Input type="number" placeholder="0" value={hours} onChange={(e) => setHours(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
-                  <Label>المبلغ ($)</Label>
+                  <Label>{t("amount")}</Label>
                   <Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
-                  <Label>نسبة الخصم (%)</Label>
+                  <Label>{t("discountPercent")}</Label>
                   <Input type="number" placeholder="0" value={discount} onChange={(e) => setDiscount(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
-                  <Label>تاريخ الاستحقاق</Label>
+                  <Label>{t("dueDate")}</Label>
                   <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} dir="ltr" />
                 </div>
               </div>
               {parseFloat(discount) > 0 && (
                 <div className="rounded-lg bg-accent/50 p-3 text-center">
-                  <p className="text-xs text-muted-foreground">المبلغ بعد الخصم</p>
+                  <p className="text-xs text-muted-foreground">{t("afterDiscount")}</p>
                   <p className="text-xl font-bold text-primary">${finalAmount.toFixed(2)}</p>
                 </div>
               )}
               <Button onClick={() => createInvoice.mutate()} disabled={createInvoice.isPending}>
                 {createInvoice.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                إنشاء الفاتورة
+                {t("createInvoice")}
               </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
 
-      {/* Today's due alert */}
       {todayDue.length > 0 && (
         <Card className="border-warning/30 bg-warning/5 shadow-sm">
           <CardContent className="p-4">
             <div className="flex items-center gap-2 text-warning font-medium text-sm mb-2">
               <AlertTriangle className="h-4 w-4" />
-              فواتير مستحقة اليوم ({todayDue.length})
+              {t("todayDueAlert")} ({todayDue.length})
             </div>
             {todayDue.map((inv: any) => (
               <p key={inv.id} className="text-xs text-muted-foreground">
@@ -282,12 +254,11 @@ const Invoices = () => {
         </Card>
       )}
 
-      {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-3">
         <Card className="border-none shadow-sm">
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-xs text-muted-foreground">مدفوعة</p>
+              <p className="text-xs text-muted-foreground">{t("paid")}</p>
               <p className="text-xl font-bold text-success">${totalPaid}</p>
             </div>
             <Badge variant="secondary" className="bg-success/10 text-success">
@@ -298,7 +269,7 @@ const Invoices = () => {
         <Card className="border-none shadow-sm">
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-xs text-muted-foreground">معلقة</p>
+              <p className="text-xs text-muted-foreground">{t("pending")}</p>
               <p className="text-xl font-bold text-warning">${totalPending}</p>
             </div>
             <Badge variant="secondary" className="bg-warning/10 text-warning">
@@ -309,7 +280,7 @@ const Invoices = () => {
         <Card className="border-none shadow-sm">
           <CardContent className="flex items-center justify-between p-4">
             <div>
-              <p className="text-xs text-muted-foreground">متأخرة</p>
+              <p className="text-xs text-muted-foreground">{t("overdue")}</p>
               <p className="text-xl font-bold text-destructive">${totalOverdue}</p>
             </div>
             <Badge variant="secondary" className="bg-destructive/10 text-destructive">
@@ -319,29 +290,25 @@ const Invoices = () => {
         </Card>
       </div>
 
-      {/* Filters */}
       <div className="flex flex-wrap items-center gap-3">
         <Filter className="h-4 w-4 text-muted-foreground" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-36">
-            <SelectValue />
-          </SelectTrigger>
+          <SelectTrigger className="w-36"><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="all">جميع الحالات</SelectItem>
-            <SelectItem value="paid">مدفوعة</SelectItem>
-            <SelectItem value="pending">معلقة</SelectItem>
-            <SelectItem value="overdue">متأخرة</SelectItem>
+            <SelectItem value="all">{t("allStatuses")}</SelectItem>
+            <SelectItem value="paid">{t("paid")}</SelectItem>
+            <SelectItem value="pending">{t("pending")}</SelectItem>
+            <SelectItem value="overdue">{t("overdue")}</SelectItem>
           </SelectContent>
         </Select>
         <div className="flex items-center gap-2">
           <CalendarDays className="h-4 w-4 text-muted-foreground" />
-          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" dir="ltr" placeholder="من" />
-          <span className="text-xs text-muted-foreground">إلى</span>
-          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" dir="ltr" placeholder="إلى" />
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" dir="ltr" />
+          <span className="text-xs text-muted-foreground">{t("to")}</span>
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" dir="ltr" />
         </div>
       </div>
 
-      {/* Invoices list */}
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -351,7 +318,7 @@ const Invoices = () => {
           <CardContent className="p-0">
             <div className="divide-y">
               {filtered.length === 0 ? (
-                <p className="text-center text-muted-foreground py-8">لا توجد فواتير</p>
+                <p className="text-center text-muted-foreground py-8">{t("noData")}</p>
               ) : filtered.map((invoice: any) => {
                 const status = statusConfig[invoice.status] || statusConfig.pending;
                 const discountPct = Number(invoice.discount) || 0;
@@ -366,13 +333,13 @@ const Invoices = () => {
                           <p className="text-sm font-medium">{getStudentNames(invoice)}</p>
                           {discountPct > 0 && (
                             <Badge variant="secondary" className="text-[10px] bg-accent text-accent-foreground">
-                              خصم {discountPct}%
+                              {t("discount")} {discountPct}%
                             </Badge>
                           )}
                         </div>
                         <p className="text-xs text-muted-foreground">
-                          {invoice.hours ? `${invoice.hours} ساعة · ` : ""}
-                          استحقاق: {invoice.due_date || "—"}
+                          {invoice.hours ? `${invoice.hours} ${t("hours")} · ` : ""}
+                          {t("dueDateLabel")} {invoice.due_date || "—"}
                         </p>
                       </div>
                     </div>
@@ -387,14 +354,9 @@ const Invoices = () => {
                         {status.label}
                       </Badge>
                       {invoice.status !== "paid" && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          className="h-7 text-xs"
-                          onClick={() => markPaid.mutate(invoice.id)}
-                          disabled={markPaid.isPending}
-                        >
-                          تسجيل دفع
+                        <Button size="sm" variant="outline" className="h-7 text-xs"
+                          onClick={() => markPaid.mutate(invoice.id)} disabled={markPaid.isPending}>
+                          {t("markPaid")}
                         </Button>
                       )}
                     </div>

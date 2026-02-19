@@ -12,27 +12,25 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface TeacherRow {
-  id: string;
-  user_id: string;
-  age: number | null;
-  qualification: string | null;
-  subjects: string[];
-  hourly_rate: number;
-  rating: number | null;
-  students_count: number | null;
-  monthly_hours: number | null;
-  monthly_waiting_minutes: number | null;
-  monthly_absence_hours: number | null;
-  monthly_salary: number | null;
-  is_active: boolean | null;
+  id: string; user_id: string; age: number | null; qualification: string | null;
+  subjects: string[]; hourly_rate: number; rating: number | null;
+  students_count: number | null; monthly_hours: number | null;
+  monthly_waiting_minutes: number | null; monthly_absence_hours: number | null;
+  monthly_salary: number | null; is_active: boolean | null;
   profiles: { full_name: string; whatsapp: string | null } | null;
 }
 
-const AVAILABLE_SUBJECTS = [
-  "تجويد", "حفظ قرآن", "تفسير", "عقيدة", "فقه", "سيرة نبوية",
-  "لغة عربية", "نحو وصرف", "قراءات",
+const SUBJECT_KEYS = [
+  "tajweed", "quranMemorization", "tafseer", "aqeedah", "fiqh",
+  "seerah", "arabicLang", "grammar", "qiraat",
+] as const;
+
+const SUBJECT_VALUES = [
+  "تجويد", "حفظ قرآن", "تفسير", "عقيدة", "فقه",
+  "سيرة نبوية", "لغة عربية", "نحو وصرف", "قراءات",
 ];
 
 const Teachers = () => {
@@ -46,6 +44,7 @@ const Teachers = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isAdmin = role === "admin";
+  const { t } = useLanguage();
 
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ["teachers"],
@@ -63,14 +62,10 @@ const Teachers = () => {
     mutationFn: async () => {
       const res = await supabase.functions.invoke("create-teacher", {
         body: {
-          email: form.email,
-          password: form.password,
-          full_name: form.name,
-          whatsapp: form.whatsapp,
-          age: form.age ? Number(form.age) : null,
+          email: form.email, password: form.password, full_name: form.name,
+          whatsapp: form.whatsapp, age: form.age ? Number(form.age) : null,
           hourly_rate: form.rate ? Number(form.rate) : 0,
-          qualification: form.qualification,
-          subjects: form.subjects,
+          qualification: form.qualification, subjects: form.subjects,
         },
       });
       if (res.error) throw new Error(res.error.message);
@@ -81,10 +76,10 @@ const Teachers = () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
       setDialogOpen(false);
       setForm({ name: "", email: "", password: "", age: "", rate: "", whatsapp: "", qualification: "", subjects: [], rating: "" });
-      toast({ title: "تم إنشاء حساب المعلم بنجاح" });
+      toast({ title: t("teacherCreated") });
     },
     onError: (err: Error) => {
-      toast({ title: "خطأ", description: err.message, variant: "destructive" });
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
     },
   });
 
@@ -108,80 +103,80 @@ const Teachers = () => {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <GraduationCap className="h-6 w-6 text-primary" />
-            إدارة المعلمين
+            {t("teachersTitle")}
           </h1>
-          <p className="text-muted-foreground">{teachers.length} معلمين</p>
+          <p className="text-muted-foreground">{teachers.length} {t("teachersCount")}</p>
         </div>
         {isAdmin && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button className="gap-2"><Plus className="h-4 w-4" />إضافة معلم</Button>
+              <Button className="gap-2"><Plus className="h-4 w-4" />{t("addTeacher")}</Button>
             </DialogTrigger>
             <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>إضافة معلم جديد</DialogTitle>
+                <DialogTitle>{t("addTeacherTitle")}</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-4">
-                <h3 className="font-bold text-sm text-primary border-b pb-1">البيانات الأساسية</h3>
+                <h3 className="font-bold text-sm text-primary border-b pb-1">{t("basicInfo")}</h3>
                 <div className="grid gap-2">
-                  <Label>الاسم الكامل *</Label>
-                  <Input placeholder="أدخل اسم المعلم" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
+                  <Label>{t("fullName")} *</Label>
+                  <Input placeholder={t("enterTeacherName")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>البريد الإلكتروني *</Label>
+                    <Label>{t("email")} *</Label>
                     <Input type="email" placeholder="teacher@example.com" dir="ltr" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>كلمة المرور *</Label>
+                    <Label>{t("password")} *</Label>
                     <Input type="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>السن</Label>
-                    <Input type="number" placeholder="العمر" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
+                    <Label>{t("age")}</Label>
+                    <Input type="number" placeholder={t("enterAge")} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>رقم الواتساب *</Label>
+                    <Label>{t("whatsapp")} *</Label>
                     <Input placeholder="+201..." dir="ltr" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid gap-2">
-                  <Label>المؤهل الدراسي</Label>
-                  <Input placeholder="مثال: إجازة في حفص عن عاصم" value={form.qualification} onChange={(e) => setForm({ ...form, qualification: e.target.value })} />
+                  <Label>{t("qualification")}</Label>
+                  <Input placeholder={t("qualificationPlaceholder")} value={form.qualification} onChange={(e) => setForm({ ...form, qualification: e.target.value })} />
                 </div>
 
-                <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">بيانات إدارية (مرئية للإدارة فقط)</h3>
+                <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">{t("adminOnly")}</h3>
                 <div className="grid gap-2">
-                  <Label>المواد التي يدرسها</Label>
+                  <Label>{t("subjects")}</Label>
                   <div className="flex flex-wrap gap-2">
-                    {AVAILABLE_SUBJECTS.map((subject) => (
+                    {SUBJECT_VALUES.map((subject, idx) => (
                       <Badge
                         key={subject}
                         variant={form.subjects.includes(subject) ? "default" : "outline"}
                         className="cursor-pointer select-none"
                         onClick={() => toggleSubject(subject)}
                       >
-                        {subject}
+                        {t(SUBJECT_KEYS[idx])}
                       </Badge>
                     ))}
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>ريت الساعة ($)</Label>
+                    <Label>{t("hourlyRate")}</Label>
                     <Input type="number" placeholder="0" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>التقييم الداخلي (1-5)</Label>
+                    <Label>{t("internalRating")}</Label>
                     <Input type="number" min="1" max="5" step="0.1" placeholder="0" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
                   </div>
                 </div>
 
                 <Button onClick={() => createTeacher.mutate()} disabled={createTeacher.isPending}>
                   {createTeacher.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                  حفظ المعلم
+                  {t("saveTeacher")}
                 </Button>
               </div>
             </DialogContent>
@@ -191,7 +186,7 @@ const Teachers = () => {
 
       <div className="relative max-w-md">
         <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="بحث بالاسم أو رقم الهاتف..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-10" />
+        <Input placeholder={t("searchTeachers")} value={search} onChange={(e) => setSearch(e.target.value)} className="pr-10" />
       </div>
 
       {isLoading ? (
@@ -207,7 +202,7 @@ const Teachers = () => {
                   <div className="flex items-center gap-3">
                     <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center">
                       <span className="text-sm font-bold text-primary">
-                        {(teacher.profiles?.full_name ?? "م")[0]}
+                        {(teacher.profiles?.full_name ?? "T")[0]}
                       </span>
                     </div>
                     <div>
@@ -244,24 +239,24 @@ const Teachers = () => {
                     <div className="grid grid-cols-2 gap-2 rounded-lg bg-muted/50 p-3 text-center">
                       <div>
                         <p className="text-lg font-bold text-primary">{teacher.students_count ?? 0}</p>
-                        <p className="text-[10px] text-muted-foreground">طلاب</p>
+                        <p className="text-[10px] text-muted-foreground">{t("studentsLabel")}</p>
                       </div>
                       <div>
                         <p className="text-lg font-bold text-success">{teacher.monthly_hours ?? 0}</p>
-                        <p className="text-[10px] text-muted-foreground">ساعة/شهر</p>
+                        <p className="text-[10px] text-muted-foreground">{t("hoursPerMonth")}</p>
                       </div>
                     </div>
 
                     <div className="rounded-lg border border-border p-3 space-y-2">
-                      <p className="text-xs font-medium text-muted-foreground">إحصائيات الشهر</p>
+                      <p className="text-xs font-medium text-muted-foreground">{t("monthlyStats")}</p>
                       <div className="grid grid-cols-2 gap-y-1 text-xs">
-                        <span className="text-muted-foreground">ساعات الغياب:</span>
-                        <span className="font-medium">{teacher.monthly_absence_hours ?? 0} ساعات</span>
-                        <span className="text-muted-foreground">وقت الانتظار:</span>
-                        <span className="font-medium">{teacher.monthly_waiting_minutes ?? 0} دقيقة</span>
-                        <span className="text-muted-foreground">ريت الساعة:</span>
+                        <span className="text-muted-foreground">{t("absenceHours")}:</span>
+                        <span className="font-medium">{teacher.monthly_absence_hours ?? 0} {t("hours")}</span>
+                        <span className="text-muted-foreground">{t("waitingTime")}:</span>
+                        <span className="font-medium">{teacher.monthly_waiting_minutes ?? 0} {t("minutes")}</span>
+                        <span className="text-muted-foreground">{t("hourlyRate")}:</span>
                         <span className="font-bold text-primary">${teacher.hourly_rate}</span>
-                        <span className="text-muted-foreground">المرتب:</span>
+                        <span className="text-muted-foreground">{t("salary")}:</span>
                         <span className="font-bold text-primary">${teacher.monthly_salary ?? 0}</span>
                       </div>
                     </div>
