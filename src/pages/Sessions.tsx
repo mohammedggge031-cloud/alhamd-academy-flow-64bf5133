@@ -34,6 +34,12 @@ const levelLabels: Record<string, { label: string; className: string }> = {
   weak: { label: "ضعيف", className: "bg-destructive text-destructive-foreground" },
 };
 
+interface EditFields {
+  session_date: string;
+  start_time: string;
+  duration_minutes: string;
+}
+
 const Sessions = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
@@ -164,10 +170,9 @@ const Sessions = () => {
     onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
   });
 
-  // Teacher: create approval request
+  // Teacher: create approval request with pending changes
   const createApproval = useMutation({
-    mutationFn: async ({ type, sessionId, details }: { type: string; sessionId: string; details: string }) => {
-      // Get teacher id
+    mutationFn: async ({ type, sessionId, details, changes }: { type: string; sessionId: string; details: string; changes?: any }) => {
       const { data: teacher } = await supabase
         .from("teachers")
         .select("id")
@@ -175,19 +180,45 @@ const Sessions = () => {
         .single();
       if (!teacher) throw new Error("لم يتم العثور على بيانات المعلم");
 
+      // Get original session data before changes
+      const { data: originalSession } = await supabase
+        .from("sessions")
+        .select("session_date, start_time, duration_minutes, status")
+        .eq("id", sessionId)
+        .single();
+
+      // Apply changes to session temporarily
+      if (changes) {
+        await supabase.from("sessions").update({
+          ...changes,
+          pending_approval: true,
+          approval_status: "pending",
+          original_data: originalSession,
+        }).eq("id", sessionId);
+      } else if (type === "join_postponed") {
+        await supabase.from("sessions").update({
+          status: "completed",
+          pending_approval: true,
+          approval_status: "pending",
+          original_data: originalSession,
+        }).eq("id", sessionId);
+      }
+
       const { error } = await supabase.from("approval_requests").insert({
         teacher_id: teacher.id,
         session_id: sessionId,
         request_type: type,
-        details: { reason: details },
+        details: { reason: details, ...(changes || {}) },
+        original_data: originalSession,
       });
       if (error) throw error;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["approval-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["sessions", "approval-requests", "admin-approvals"] });
       setApprovalDialog(null);
       setApprovalDetails("");
-      toast({ title: "تم إرسال طلب الموافقة للمدير" });
+      setSelectedSession(null);
+      toast({ title: "تم التعديل مؤقتاً وإرسال طلب الموافقة للمدير" });
     },
     onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
   });
@@ -213,16 +244,20 @@ const Sessions = () => {
     onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
   });
 
-  // Admin: handle approval
+  // Admin: handle approval via edge function (handles rollback)
   const handleApproval = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
-      const { error } = await supabase.from("approval_requests").update({ status }).eq("id", id);
-      if (error) throw error;
+      const res = await supabase.functions.invoke("handle-approval", {
+        body: { request_id: id, action: status },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["admin-approvals"] });
+      queryClient.invalidateQueries({ queryKey: ["admin-approvals", "sessions"] });
       toast({ title: "تم تحديث الطلب" });
     },
+    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
   });
 
   // Admin: fetch pending approvals
@@ -417,7 +452,12 @@ const Sessions = () => {
                       </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    {session.pending_approval && (
+                      <Badge variant="secondary" className="text-[10px] bg-warning/10 text-warning">
+                        ⏳ معلق
+                      </Badge>
+                    )}
                     <span className="text-xs text-muted-foreground hidden sm:block">{session.session_date}</span>
                     <Badge variant="secondary" className={statusConfig[session.status]?.className ?? ""}>
                       {statusConfig[session.status]?.label ?? session.status}
@@ -500,11 +540,21 @@ const Sessions = () => {
                 </div>
               )}
 
-              {!isAdmin && selectedSession.status === "postponed" && (
+              {!isAdmin && selectedSession.status === "postponed" && !selectedSession.pending_approval && (
                 <Button size="sm" className="w-full bg-success hover:bg-success/90 text-success-foreground gap-1"
-                  onClick={() => updateStatus.mutate({ id: selectedSession.id, status: "completed" })}>
-                  <Check className="h-3 w-3" />دخول الحصة المؤجلة
+                  onClick={() => createApproval.mutate({
+                    type: "join_postponed",
+                    sessionId: selectedSession.id,
+                    details: "دخول حصة مؤجلة",
+                  })}>
+                  <Check className="h-3 w-3" />دخول الحصة المؤجلة (ينتظر موافقة)
                 </Button>
+              )}
+
+              {!isAdmin && selectedSession.pending_approval && (
+                <Badge variant="secondary" className="w-full justify-center py-1.5 bg-warning/10 text-warning">
+                  <Clock className="h-3 w-3 ml-1" />في انتظار موافقة المدير
+                </Badge>
               )}
 
               {/* Teacher: report button for completed sessions */}
@@ -628,27 +678,58 @@ const Sessions = () => {
         </DialogContent>
       </Dialog>
 
-      {/* Approval request dialog */}
+      {/* Approval request dialog - with edit fields for reschedule */}
       <Dialog open={!!approvalDialog} onOpenChange={() => { setApprovalDialog(null); setApprovalDetails(""); }}>
         <DialogContent className="max-w-sm">
           <DialogHeader>
-            <DialogTitle>طلب موافقة — {approvalDialog ? requestTypeLabels[approvalDialog.type] : ""}</DialogTitle>
+            <DialogTitle>
+              {approvalDialog?.type === "reschedule" ? "تعديل الجدول" : `طلب موافقة — ${approvalDialog ? requestTypeLabels[approvalDialog.type] : ""}`}
+            </DialogTitle>
           </DialogHeader>
-          <div className="space-y-4">
-            <div className="grid gap-2">
-              <Label>السبب / التفاصيل</Label>
-              <Textarea placeholder="اكتب سبب الطلب..." value={approvalDetails} onChange={(e) => setApprovalDetails(e.target.value)} />
+          {approvalDialog && (
+            <div className="space-y-4">
+              {approvalDialog.type === "reschedule" && (
+                <div className="space-y-3">
+                  <p className="text-xs text-muted-foreground">التعديل يتنفذ مؤقتاً وينتظر موافقة المدير. لو رفض يرجع زي ما كان.</p>
+                  <div className="grid gap-2">
+                    <Label>التاريخ الجديد</Label>
+                    <Input type="date" id="edit-date" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="grid gap-2">
+                      <Label>الوقت الجديد</Label>
+                      <Input type="time" id="edit-time" />
+                    </div>
+                    <div className="grid gap-2">
+                      <Label>المدة (دقيقة)</Label>
+                      <Input type="number" id="edit-duration" defaultValue="60" />
+                    </div>
+                  </div>
+                </div>
+              )}
+              <div className="grid gap-2">
+                <Label>السبب / التفاصيل</Label>
+                <Textarea placeholder="اكتب سبب الطلب..." value={approvalDetails} onChange={(e) => setApprovalDetails(e.target.value)} />
+              </div>
+              <Button className="w-full" disabled={createApproval.isPending}
+                onClick={() => {
+                  const changes = approvalDialog.type === "reschedule" ? {
+                    session_date: (document.getElementById("edit-date") as HTMLInputElement)?.value || undefined,
+                    start_time: (document.getElementById("edit-time") as HTMLInputElement)?.value || undefined,
+                    duration_minutes: parseInt((document.getElementById("edit-duration") as HTMLInputElement)?.value) || undefined,
+                  } : undefined;
+                  createApproval.mutate({
+                    type: approvalDialog.type,
+                    sessionId: approvalDialog.sessionId,
+                    details: approvalDetails,
+                    changes,
+                  });
+                }}>
+                {createApproval.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+                {approvalDialog.type === "reschedule" ? "تعديل وإرسال للموافقة" : "إرسال الطلب"}
+              </Button>
             </div>
-            <Button className="w-full" disabled={createApproval.isPending}
-              onClick={() => approvalDialog && createApproval.mutate({
-                type: approvalDialog.type,
-                sessionId: approvalDialog.sessionId,
-                details: approvalDetails,
-              })}>
-              {createApproval.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-              إرسال الطلب
-            </Button>
-          </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
