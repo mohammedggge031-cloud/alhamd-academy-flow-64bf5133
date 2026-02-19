@@ -170,6 +170,79 @@ export type Database = {
           },
         ]
       }
+      monthly_reports: {
+        Row: {
+          attendance_rating: string | null
+          behavior_notes: string | null
+          created_at: string
+          id: string
+          overall_grade: string | null
+          quran_progress: string | null
+          recommendations: string | null
+          report_month: string
+          strengths: string | null
+          student_id: string
+          tajweed_level: string | null
+          teacher_id: string
+          updated_at: string
+          weaknesses: string | null
+        }
+        Insert: {
+          attendance_rating?: string | null
+          behavior_notes?: string | null
+          created_at?: string
+          id?: string
+          overall_grade?: string | null
+          quran_progress?: string | null
+          recommendations?: string | null
+          report_month: string
+          strengths?: string | null
+          student_id: string
+          tajweed_level?: string | null
+          teacher_id: string
+          updated_at?: string
+          weaknesses?: string | null
+        }
+        Update: {
+          attendance_rating?: string | null
+          behavior_notes?: string | null
+          created_at?: string
+          id?: string
+          overall_grade?: string | null
+          quran_progress?: string | null
+          recommendations?: string | null
+          report_month?: string
+          strengths?: string | null
+          student_id?: string
+          tajweed_level?: string | null
+          teacher_id?: string
+          updated_at?: string
+          weaknesses?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "monthly_reports_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_reports_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_reports_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_self_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       profiles: {
         Row: {
           created_at: string

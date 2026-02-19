@@ -6,6 +6,7 @@ import {
   CalendarDays,
   Receipt,
   BarChart3,
+  BookOpen,
   Settings,
   X,
   LogOut,
@@ -25,6 +26,7 @@ const navItems = [
   { to: "/sessions", icon: CalendarDays, label: "الحصص" },
   { to: "/invoices", icon: Receipt, label: "الفواتير" },
   { to: "/reports", icon: BarChart3, label: "التقارير" },
+  { to: "/monthly-reports", icon: BookOpen, label: "تقارير الطلاب" },
   { to: "/settings", icon: Settings, label: "الإعدادات" },
 ];
 
