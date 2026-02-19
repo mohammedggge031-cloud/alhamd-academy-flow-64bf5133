@@ -20,6 +20,7 @@ export type Database = {
           created_at: string
           details: Json | null
           id: string
+          original_data: Json | null
           request_type: string
           session_id: string | null
           status: string
@@ -31,6 +32,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
+          original_data?: Json | null
           request_type: string
           session_id?: string | null
           status?: string
@@ -42,6 +44,7 @@ export type Database = {
           created_at?: string
           details?: Json | null
           id?: string
+          original_data?: Json | null
           request_type?: string
           session_id?: string | null
           status?: string
@@ -222,10 +225,13 @@ export type Database = {
       }
       sessions: {
         Row: {
+          approval_status: string | null
           created_at: string
           duration_minutes: number
           id: string
           notes: string | null
+          original_data: Json | null
+          pending_approval: boolean | null
           session_date: string
           start_time: string | null
           status: string
@@ -236,10 +242,13 @@ export type Database = {
           waiting_minutes: number | null
         }
         Insert: {
+          approval_status?: string | null
           created_at?: string
           duration_minutes?: number
           id?: string
           notes?: string | null
+          original_data?: Json | null
+          pending_approval?: boolean | null
           session_date: string
           start_time?: string | null
           status?: string
@@ -250,10 +259,13 @@ export type Database = {
           waiting_minutes?: number | null
         }
         Update: {
+          approval_status?: string | null
           created_at?: string
           duration_minutes?: number
           id?: string
           notes?: string | null
+          original_data?: Json | null
+          pending_approval?: boolean | null
           session_date?: string
           start_time?: string | null
           status?: string
