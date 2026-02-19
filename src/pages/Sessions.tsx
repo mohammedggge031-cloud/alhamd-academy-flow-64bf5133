@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send } from "lucide-react";
+import { useState, useMemo } from "react";
+import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send, BookOpen } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,6 +16,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
+import SurahPicker from "@/components/SurahPicker";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   upcoming: { label: "قادمة", className: "bg-accent text-accent-foreground" },
@@ -649,6 +650,14 @@ const Sessions = () => {
                 </Label>
                 <Textarea placeholder="اكتب الواجب هنا..."
                   value={report.homework} onChange={(e) => setReport({ ...report, homework: e.target.value })} />
+                {/* Quran Surahs quick-pick */}
+                <div className="space-y-1.5">
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <BookOpen className="h-3 w-3" />
+                    اختر سورة لإضافتها للواجب:
+                  </p>
+                  <SurahPicker onSelect={(text) => setReport({ ...report, homework: report.homework ? `${report.homework}\n${text}` : text })} />
+                </div>
               </div>
 
               <div className="rounded-lg border border-border p-3 space-y-2">
