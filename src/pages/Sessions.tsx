@@ -441,9 +441,9 @@ const Sessions = () => {
               )}
 
               {!isAdmin && selectedSession.status === "postponed" && (
-                <Button size="sm" variant="outline" className="w-full text-xs"
-                  onClick={() => setApprovalDialog({ type: "join_postponed", sessionId: selectedSession.id })}>
-                  طلب دخول الحصة المؤجلة (يتطلب موافقة)
+                <Button size="sm" className="w-full bg-success hover:bg-success/90 text-success-foreground gap-1"
+                  onClick={() => updateStatus.mutate({ id: selectedSession.id, status: "completed" })}>
+                  <Check className="h-3 w-3" />دخول الحصة المؤجلة
                 </Button>
               )}
 
