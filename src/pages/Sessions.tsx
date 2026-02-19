@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert } from "lucide-react";
+import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +27,13 @@ const statusConfig: Record<string, { label: string; className: string }> = {
   postponed: { label: "مؤجلة", className: "bg-warning text-warning-foreground" },
 };
 
+const levelLabels: Record<string, { label: string; className: string }> = {
+  excellent: { label: "ممتاز", className: "bg-success text-success-foreground" },
+  very_good: { label: "جيد جداً", className: "bg-primary text-primary-foreground" },
+  good: { label: "جيد", className: "bg-accent text-accent-foreground" },
+  weak: { label: "ضعيف", className: "bg-destructive text-destructive-foreground" },
+};
+
 const Sessions = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
@@ -34,6 +41,8 @@ const Sessions = () => {
   const [approvalDetails, setApprovalDetails] = useState("");
   const [addDialog, setAddDialog] = useState(false);
   const [newSession, setNewSession] = useState({ student_id: "", teacher_id: "", session_date: "", start_time: "", duration_minutes: "60" });
+  const [reportDialog, setReportDialog] = useState<any | null>(null);
+  const [report, setReport] = useState({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
   const { role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -88,7 +97,58 @@ const Sessions = () => {
     },
   });
 
-  // Teacher: update session status
+  // Fetch existing reports
+  const { data: existingReports = [] } = useQuery({
+    queryKey: ["session-reports"],
+    queryFn: async () => {
+      const { data } = await supabase.from("session_reports").select("session_id");
+      return data ?? [];
+    },
+  });
+  const reportedSessionIds = new Set(existingReports.map((r: any) => r.session_id));
+
+  // Submit session report
+  const submitReport = useMutation({
+    mutationFn: async (session: any) => {
+      const { data: teacher } = await supabase
+        .from("teachers")
+        .select("id")
+        .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+        .single();
+      if (!teacher) throw new Error("لم يتم العثور على بيانات المعلم");
+
+      const { error } = await supabase.from("session_reports").insert({
+        session_id: session.id,
+        teacher_id: teacher.id,
+        student_id: session.student_id,
+        student_level: report.student_level,
+        session_notes: report.session_notes || null,
+        homework: report.homework || null,
+        admin_alert: report.admin_alert,
+        admin_alert_reason: report.admin_alert ? report.admin_alert_reason : null,
+      });
+      if (error) throw error;
+
+      // Send homework via WhatsApp if provided
+      if (report.homework) {
+        await supabase.functions.invoke("send-homework-whatsapp", {
+          body: {
+            student_id: session.student_id,
+            homework: report.homework,
+            student_name: session.students?.name,
+          },
+        });
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["session-reports"] });
+      setReportDialog(null);
+      setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
+      toast({ title: "تم إرسال التقرير بنجاح" });
+    },
+    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+  });
+
   const updateStatus = useMutation({
     mutationFn: async ({ id, status, waiting_minutes }: { id: string; status: string; waiting_minutes?: number }) => {
       const update: any = { status };
@@ -447,6 +507,20 @@ const Sessions = () => {
                 </Button>
               )}
 
+              {/* Teacher: report button for completed sessions */}
+              {!isAdmin && selectedSession.status === "completed" && !reportedSessionIds.has(selectedSession.id) && (
+                <Button size="sm" className="w-full gap-1" variant="outline"
+                  onClick={() => { setReportDialog(selectedSession); setSelectedSession(null); }}>
+                  <FileText className="h-3 w-3" />إرسال تقرير الحصة
+                </Button>
+              )}
+
+              {!isAdmin && selectedSession.status === "completed" && reportedSessionIds.has(selectedSession.id) && (
+                <Badge variant="secondary" className="w-full justify-center py-1.5 bg-success/10 text-success">
+                  <Check className="h-3 w-3 ml-1" />تم إرسال التقرير
+                </Badge>
+              )}
+
               {/* Admin actions */}
               {isAdmin && selectedSession.status === "upcoming" && (
                 <div className="space-y-3 pt-2">
@@ -478,6 +552,77 @@ const Sessions = () => {
                   <p className="font-medium">{selectedSession.notes}</p>
                 </div>
               )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Session report dialog */}
+      <Dialog open={!!reportDialog} onOpenChange={() => { setReportDialog(null); setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" }); }}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <FileText className="h-5 w-5 text-primary" />
+              تقرير الحصة
+            </DialogTitle>
+          </DialogHeader>
+          {reportDialog && (
+            <div className="space-y-4">
+              <div className="rounded-lg bg-muted/50 p-3 text-sm">
+                <p className="font-medium">{getStudentName(reportDialog)} · {reportDialog.session_date}</p>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>مستوى الطالب</Label>
+                <div className="grid grid-cols-4 gap-2">
+                  {Object.entries(levelLabels).map(([key, val]) => (
+                    <Button key={key} size="sm" type="button"
+                      variant={report.student_level === key ? "default" : "outline"}
+                      className={report.student_level === key ? val.className : "text-xs"}
+                      onClick={() => setReport({ ...report, student_level: key })}>
+                      {val.label}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="grid gap-2">
+                <Label>ماذا حدث في الحصة</Label>
+                <Textarea placeholder="مثال: مراجعة سورة البقرة، الحفظ من آية 50 إلى 60..."
+                  value={report.session_notes} onChange={(e) => setReport({ ...report, session_notes: e.target.value })} />
+              </div>
+
+              <div className="grid gap-2">
+                <Label className="flex items-center gap-1">
+                  <Send className="h-3 w-3" />
+                  الواجب (يُرسل للطالب عبر الواتساب)
+                </Label>
+                <Textarea placeholder="اكتب الواجب هنا..."
+                  value={report.homework} onChange={(e) => setReport({ ...report, homework: e.target.value })} />
+              </div>
+
+              <div className="rounded-lg border border-border p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <input type="checkbox" id="admin-alert" className="rounded"
+                    checked={report.admin_alert}
+                    onChange={(e) => setReport({ ...report, admin_alert: e.target.checked })} />
+                  <Label htmlFor="admin-alert" className="flex items-center gap-1 text-sm cursor-pointer">
+                    <AlertTriangle className="h-3 w-3 text-warning" />
+                    تنبيه الإدارة
+                  </Label>
+                </div>
+                {report.admin_alert && (
+                  <Textarea placeholder="مثال: الطالب كان متأخر 10 دقائق، الطالب غير مركز..."
+                    className="text-sm"
+                    value={report.admin_alert_reason} onChange={(e) => setReport({ ...report, admin_alert_reason: e.target.value })} />
+                )}
+              </div>
+
+              <Button className="w-full gap-2" disabled={!report.student_level || submitReport.isPending}
+                onClick={() => submitReport.mutate(reportDialog)}>
+                {submitReport.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                إرسال التقرير
+              </Button>
             </div>
           )}
         </DialogContent>
