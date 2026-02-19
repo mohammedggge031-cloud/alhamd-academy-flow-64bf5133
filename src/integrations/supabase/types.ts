@@ -149,6 +149,77 @@ export type Database = {
         }
         Relationships: []
       }
+      session_reports: {
+        Row: {
+          admin_alert: boolean | null
+          admin_alert_reason: string | null
+          created_at: string
+          homework: string | null
+          homework_sent: boolean | null
+          id: string
+          session_id: string
+          session_notes: string | null
+          student_id: string
+          student_level: string
+          teacher_id: string
+        }
+        Insert: {
+          admin_alert?: boolean | null
+          admin_alert_reason?: string | null
+          created_at?: string
+          homework?: string | null
+          homework_sent?: boolean | null
+          id?: string
+          session_id: string
+          session_notes?: string | null
+          student_id: string
+          student_level: string
+          teacher_id: string
+        }
+        Update: {
+          admin_alert?: boolean | null
+          admin_alert_reason?: string | null
+          created_at?: string
+          homework?: string | null
+          homework_sent?: boolean | null
+          id?: string
+          session_id?: string
+          session_notes?: string | null
+          student_id?: string
+          student_level?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_reports_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: true
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_reports_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_reports_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_reports_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_self_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sessions: {
         Row: {
           created_at: string
