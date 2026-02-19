@@ -13,19 +13,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-
-const statusMap: Record<string, { label: string; className: string }> = {
-  upcoming: { label: "قادمة", className: "bg-accent text-accent-foreground" },
-  confirmed: { label: "مقبولة", className: "bg-primary text-primary-foreground" },
-  completed: { label: "مكتملة", className: "bg-success text-success-foreground" },
-  cancelled: { label: "ملغاة", className: "bg-destructive text-destructive-foreground" },
-  absent_student: { label: "غياب", className: "bg-destructive text-destructive-foreground" },
-  postponed: { label: "مؤجلة", className: "bg-warning text-warning-foreground" },
-};
+import { useLanguage } from "@/i18n/LanguageContext";
 
 const Dashboard = () => {
+  const { t } = useLanguage();
   const today = new Date().toISOString().slice(0, 10);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+
+  const statusMap: Record<string, { label: string; className: string }> = {
+    upcoming: { label: t("upcoming"), className: "bg-accent text-accent-foreground" },
+    confirmed: { label: t("confirmed"), className: "bg-primary text-primary-foreground" },
+    completed: { label: t("completed"), className: "bg-success text-success-foreground" },
+    cancelled: { label: t("cancelled"), className: "bg-destructive text-destructive-foreground" },
+    absent_student: { label: t("absent_student"), className: "bg-destructive text-destructive-foreground" },
+    postponed: { label: t("postponed"), className: "bg-warning text-warning-foreground" },
+  };
 
   const { data: activeStudents = 0 } = useQuery({
     queryKey: ["dash-students"],
@@ -99,20 +101,19 @@ const Dashboard = () => {
   });
 
   const stats = [
-    { label: "الطلاب النشطون", value: String(activeStudents), icon: Users, trend: "" },
-    { label: "المعلمون", value: String(teacherCount), icon: GraduationCap, trend: "نشطون" },
-    { label: "الفواتير المستحقة", value: String(dueInvoices), icon: Receipt, trend: "" },
-    { label: "ساعات التدريس هذا الشهر", value: String(monthlyHours), icon: Clock, trend: "" },
+    { label: t("dashActiveStudents"), value: String(activeStudents), icon: Users, trend: "" },
+    { label: t("dashTeachers"), value: String(teacherCount), icon: GraduationCap, trend: t("dashActiveLabel") },
+    { label: t("dashDueInvoices"), value: String(dueInvoices), icon: Receipt, trend: "" },
+    { label: t("dashMonthlyHours"), value: String(monthlyHours), icon: Clock, trend: "" },
   ];
 
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
-        <h1 className="text-2xl font-bold">لوحة التحكم</h1>
-        <p className="text-muted-foreground">مرحباً بك في أكاديمية الحمد لتحفيظ القرآن الكريم</p>
+        <h1 className="text-2xl font-bold">{t("navDashboard")}</h1>
+        <p className="text-muted-foreground">{t("dashWelcome")}</p>
       </div>
 
-      {/* Stats cards */}
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat) => (
           <Card key={stat.label} className="border-none shadow-sm">
@@ -135,21 +136,19 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Main content grid */}
       <div className="grid gap-6 lg:grid-cols-3">
-        {/* Today's sessions */}
         <Card className="border-none shadow-sm lg:col-span-2">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <CalendarDays className="h-5 w-5 text-primary" />
-              حصص اليوم
+              {t("dashTodaySessions")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {sessionsLoading ? (
               <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
             ) : todaySessions.length === 0 ? (
-              <p className="text-center text-sm text-muted-foreground py-6">لا توجد حصص اليوم</p>
+              <p className="text-center text-sm text-muted-foreground py-6">{t("dashNoSessions")}</p>
             ) : (
               <div className="space-y-3">
                 {todaySessions.map((session: any) => (
@@ -178,26 +177,24 @@ const Dashboard = () => {
           </CardContent>
         </Card>
 
-        {/* Alerts column */}
         <div className="space-y-6">
-          {/* Overdue invoices */}
           <Card className="border-none shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <AlertTriangle className="h-5 w-5 text-warning" />
-                فواتير متأخرة
+                {t("dashOverdueInvoices")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {overdueInvoices.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-3">لا توجد فواتير متأخرة</p>
+                <p className="text-center text-sm text-muted-foreground py-3">{t("dashNoOverdue")}</p>
               ) : overdueInvoices.map((inv: any) => {
                 const days = Math.ceil((Date.now() - new Date(inv.due_date).getTime()) / 86400000);
                 return (
                   <div key={inv.id} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
                     <div>
                       <p className="text-sm font-medium">{inv.students?.name}</p>
-                      <p className="text-xs text-muted-foreground">متأخر {days} أيام</p>
+                      <p className="text-xs text-muted-foreground">{days} {t("dashOverdueDays")}</p>
                     </div>
                     <span className="text-sm font-bold text-destructive">${inv.total}</span>
                   </div>
@@ -206,22 +203,21 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          {/* Low balance */}
           <Card className="border-none shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="flex items-center gap-2 text-lg">
                 <CheckCircle2 className="h-5 w-5 text-warning" />
-                رصيد منخفض
+                {t("dashLowBalance")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               {lowBalance.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-3">لا يوجد طلاب برصيد منخفض</p>
+                <p className="text-center text-sm text-muted-foreground py-3">{t("dashNoLowBalance")}</p>
               ) : lowBalance.map((s: any, i: number) => (
                 <div key={i} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
                   <p className="text-sm font-medium">{s.name}</p>
                   <Badge variant="secondary" className="bg-warning/10 text-warning">
-                    {s.remaining_hours} ساعة
+                    {s.remaining_hours} {t("hour")}
                   </Badge>
                 </div>
               ))}

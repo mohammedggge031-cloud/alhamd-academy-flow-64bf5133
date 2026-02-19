@@ -2,6 +2,7 @@ import { useState } from "react";
 import { Sidebar } from "./Sidebar";
 import { Menu } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { useLanguage } from "@/i18n/LanguageContext";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -9,6 +10,7 @@ interface AppLayoutProps {
 
 const AppLayout = ({ children }: AppLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { t, isRtl } = useLanguage();
 
   return (
     <div className="flex min-h-screen">
@@ -22,8 +24,10 @@ const AppLayout = ({ children }: AppLayoutProps) => {
 
       {/* Sidebar */}
       <div
-        className={`fixed inset-y-0 right-0 z-50 w-64 transform transition-transform duration-300 lg:relative lg:right-auto lg:translate-x-0 ${
-          sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"
+        className={`fixed inset-y-0 z-50 w-64 transform transition-transform duration-300 lg:relative lg:translate-x-0 ${
+          isRtl
+            ? `right-0 ${sidebarOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}`
+            : `left-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}`
         }`}
       >
         <Sidebar onClose={() => setSidebarOpen(false)} />
@@ -40,7 +44,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           >
             <Menu className="h-5 w-5" />
           </Button>
-          <h1 className="text-lg font-bold text-primary">أكاديمية الحمد</h1>
+          <h1 className="text-lg font-bold text-primary">{t("academyName")}</h1>
         </header>
 
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">

@@ -94,11 +94,8 @@
     @apply border-border;
   }
 
-  html {
-    direction: rtl;
-  }
-
   body {
-    @apply bg-background text-foreground font-cairo antialiased;
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', 'Cairo', sans-serif;
   }
 }
