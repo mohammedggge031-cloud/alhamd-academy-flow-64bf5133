@@ -1,45 +1,19 @@
-import { useState } from "react";
-import { Receipt, Filter, Plus, Download } from "lucide-react";
+import { useState, useMemo } from "react";
+import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
+  Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
-
-interface Invoice {
-  id: string;
-  students: string[];
-  amount: number;
-  discount: number;
-  finalAmount: number;
-  status: "paid" | "pending" | "overdue";
-  issueDate: string;
-  dueDate: string;
-  paidDate?: string;
-  hours: number;
-}
-
-const mockInvoices: Invoice[] = [
-  { id: "INV-001", students: ["أحمد محمد"], amount: 200, discount: 0, finalAmount: 200, status: "paid", issueDate: "2026-01-15", dueDate: "2026-02-15", paidDate: "2026-02-14", hours: 20 },
-  { id: "INV-002", students: ["فاطمة علي"], amount: 160, discount: 0, finalAmount: 160, status: "pending", issueDate: "2026-01-20", dueDate: "2026-02-20", hours: 16 },
-  { id: "INV-003", students: ["يوسف إبراهيم"], amount: 120, discount: 0, finalAmount: 120, status: "overdue", issueDate: "2026-01-10", dueDate: "2026-02-10", hours: 12 },
-  { id: "INV-004", students: ["مريم حسن", "نور حسن"], amount: 400, discount: 10, finalAmount: 360, status: "paid", issueDate: "2026-02-01", dueDate: "2026-03-01", paidDate: "2026-02-01", hours: 40 },
-  { id: "INV-005", students: ["عمر خالد"], amount: 120, discount: 0, finalAmount: 120, status: "pending", issueDate: "2026-02-05", dueDate: "2026-03-05", hours: 12 },
-];
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 
 const statusConfig: Record<string, { label: string; className: string }> = {
   paid: { label: "مدفوعة", className: "bg-success text-success-foreground" },
@@ -49,15 +23,175 @@ const statusConfig: Record<string, { label: string; className: string }> = {
 
 const Invoices = () => {
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
-  const filtered = statusFilter === "all"
-    ? mockInvoices
-    : mockInvoices.filter((i) => i.status === statusFilter);
+  // Form state for new invoice
+  const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [amount, setAmount] = useState("");
+  const [hours, setHours] = useState("");
+  const [discount, setDiscount] = useState("0");
+  const [dueDate, setDueDate] = useState("");
 
-  const totalPaid = mockInvoices.filter(i => i.status === "paid").reduce((s, i) => s + i.finalAmount, 0);
-  const totalPending = mockInvoices.filter(i => i.status === "pending").reduce((s, i) => s + i.finalAmount, 0);
-  const totalOverdue = mockInvoices.filter(i => i.status === "overdue").reduce((s, i) => s + i.finalAmount, 0);
+  // Fetch students
+  const { data: allStudents = [] } = useQuery({
+    queryKey: ["students-for-invoices"],
+    queryFn: async () => {
+      const { data } = await supabase.from("students").select("id, name").eq("is_active", true);
+      return data ?? [];
+    },
+  });
+
+  // Fetch invoices with student info
+  const { data: invoices = [], isLoading } = useQuery({
+    queryKey: ["invoices"],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from("invoices")
+        .select("*, students:student_id(name), invoice_students(student_id, hours, amount, students:student_id(name))")
+        .order("created_at", { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  // Today's due invoices
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayDue = useMemo(() =>
+    invoices.filter((i: any) => i.due_date === todayStr && i.status !== "paid"),
+    [invoices, todayStr]
+  );
+
+  // Filter
+  const filtered = useMemo(() => {
+    let list = invoices;
+    if (statusFilter !== "all") list = list.filter((i: any) => i.status === statusFilter);
+    if (dateFrom) list = list.filter((i: any) => i.created_at >= dateFrom);
+    if (dateTo) list = list.filter((i: any) => i.created_at <= dateTo + "T23:59:59");
+    return list;
+  }, [invoices, statusFilter, dateFrom, dateTo]);
+
+  const totalPaid = invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + Number(i.total), 0);
+  const totalPending = invoices.filter((i: any) => i.status === "pending").reduce((s: number, i: any) => s + Number(i.total), 0);
+  const totalOverdue = invoices.filter((i: any) => i.status === "overdue").reduce((s: number, i: any) => s + Number(i.total), 0);
+
+  const finalAmount = useMemo(() => {
+    const a = parseFloat(amount) || 0;
+    const d = parseFloat(discount) || 0;
+    return a - (a * d / 100);
+  }, [amount, discount]);
+
+  const toggleStudent = (id: string) => {
+    setSelectedStudents((prev) =>
+      prev.includes(id) ? prev.filter((s) => s !== id) : [...prev, id]
+    );
+  };
+
+  const createInvoice = useMutation({
+    mutationFn: async () => {
+      if (selectedStudents.length === 0) throw new Error("يجب اختيار طالب واحد على الأقل");
+      const amountNum = parseFloat(amount) || 0;
+      const discountNum = parseFloat(discount) || 0;
+      const hoursNum = parseFloat(hours) || 0;
+
+      const { data: invoice, error } = await supabase
+        .from("invoices")
+        .insert([{
+          student_id: selectedStudents.length === 1 ? selectedStudents[0] : null,
+          amount: amountNum,
+          discount: discountNum,
+          total: finalAmount,
+          hours: hoursNum,
+          due_date: dueDate || null,
+          status: "pending",
+        }])
+        .select()
+        .single();
+      if (error) throw error;
+
+      // Add invoice_students entries
+      if (selectedStudents.length > 0 && invoice) {
+        const perStudentHours = hoursNum / selectedStudents.length;
+        const perStudentAmount = amountNum / selectedStudents.length;
+        const entries = selectedStudents.map((sid) => ({
+          invoice_id: invoice.id,
+          student_id: sid,
+          hours: perStudentHours,
+          amount: perStudentAmount,
+        }));
+        await supabase.from("invoice_students").insert(entries);
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      setDialogOpen(false);
+      setSelectedStudents([]);
+      setAmount("");
+      setHours("");
+      setDiscount("0");
+      setDueDate("");
+      toast({ title: "تم إنشاء الفاتورة بنجاح" });
+    },
+    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+  });
+
+  const markPaid = useMutation({
+    mutationFn: async (invoiceId: string) => {
+      const { error } = await supabase
+        .from("invoices")
+        .update({ status: "paid", paid_at: new Date().toISOString() })
+        .eq("id", invoiceId);
+      if (error) throw error;
+
+      // Renew student hours
+      const inv = invoices.find((i: any) => i.id === invoiceId);
+      if (inv) {
+        const studentIds: string[] = [];
+        if (inv.student_id) studentIds.push(inv.student_id);
+        const invStudents = (inv as any).invoice_students || [];
+        for (const is2 of invStudents) {
+          if (is2.student_id && !studentIds.includes(is2.student_id)) {
+            studentIds.push(is2.student_id);
+          }
+        }
+        const totalHours = Number(inv.hours) || 0;
+        const perStudent = totalHours / (studentIds.length || 1);
+        for (const sid of studentIds) {
+          const { data: student } = await supabase
+            .from("students")
+            .select("remaining_hours, paid_hours")
+            .eq("id", sid)
+            .single();
+          if (student) {
+            await supabase.from("students").update({
+              remaining_hours: (Number(student.remaining_hours) || 0) + perStudent,
+              paid_hours: (Number(student.paid_hours) || 0) + perStudent,
+            }).eq("id", sid);
+          }
+        }
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      toast({ title: "تم تسجيل الدفع وتجديد رصيد الساعات" });
+    },
+    onError: (err: Error) => toast({ title: "خطأ", description: err.message, variant: "destructive" }),
+  });
+
+  const getStudentNames = (invoice: any): string => {
+    const names: string[] = [];
+    if (invoice.students?.name) names.push(invoice.students.name);
+    if (invoice.invoice_students?.length) {
+      for (const is2 of invoice.invoice_students) {
+        const n = is2.students?.name;
+        if (n && !names.includes(n)) names.push(n);
+      }
+    }
+    return names.length > 0 ? names.join("، ") : "—";
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -67,44 +201,86 @@ const Invoices = () => {
             <Receipt className="h-6 w-6 text-primary" />
             إدارة الفواتير
           </h1>
-          <p className="text-muted-foreground">{mockInvoices.length} فاتورة</p>
+          <p className="text-muted-foreground">{invoices.length} فاتورة</p>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2"><Plus className="h-4 w-4" />إنشاء فاتورة</Button>
           </DialogTrigger>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>إنشاء فاتورة جديدة</DialogTitle>
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label>الطالب/الطلاب</Label>
-                <Input placeholder="اختر طالب أو أكثر" />
+                <Label>الطالب/الطلاب (اضغط للاختيار)</Label>
+                <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px]">
+                  {allStudents.map((s: any) => (
+                    <Badge
+                      key={s.id}
+                      variant={selectedStudents.includes(s.id) ? "default" : "outline"}
+                      className="cursor-pointer select-none"
+                      onClick={() => toggleStudent(s.id)}
+                    >
+                      {s.name}
+                    </Badge>
+                  ))}
+                </div>
+                {selectedStudents.length > 1 && (
+                  <p className="text-xs text-muted-foreground">فاتورة مجمعة لـ {selectedStudents.length} طلاب</p>
+                )}
               </div>
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>عدد الساعات</Label>
-                  <Input type="number" placeholder="0" />
+                  <Input type="number" placeholder="0" value={hours} onChange={(e) => setHours(e.target.value)} />
                 </div>
                 <div className="grid gap-2">
                   <Label>المبلغ ($)</Label>
-                  <Input type="number" placeholder="0" />
+                  <Input type="number" placeholder="0" value={amount} onChange={(e) => setAmount(e.target.value)} />
                 </div>
               </div>
-              <div className="grid gap-2">
-                <Label>نسبة الخصم (%)</Label>
-                <Input type="number" placeholder="0" />
+              <div className="grid grid-cols-2 gap-4">
+                <div className="grid gap-2">
+                  <Label>نسبة الخصم (%)</Label>
+                  <Input type="number" placeholder="0" value={discount} onChange={(e) => setDiscount(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>تاريخ الاستحقاق</Label>
+                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} dir="ltr" />
+                </div>
               </div>
-              <div className="grid gap-2">
-                <Label>تاريخ الاستحقاق</Label>
-                <Input type="date" />
-              </div>
-              <Button onClick={() => setDialogOpen(false)}>إنشاء الفاتورة</Button>
+              {parseFloat(discount) > 0 && (
+                <div className="rounded-lg bg-accent/50 p-3 text-center">
+                  <p className="text-xs text-muted-foreground">المبلغ بعد الخصم</p>
+                  <p className="text-xl font-bold text-primary">${finalAmount.toFixed(2)}</p>
+                </div>
+              )}
+              <Button onClick={() => createInvoice.mutate()} disabled={createInvoice.isPending}>
+                {createInvoice.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+                إنشاء الفاتورة
+              </Button>
             </div>
           </DialogContent>
         </Dialog>
       </div>
+
+      {/* Today's due alert */}
+      {todayDue.length > 0 && (
+        <Card className="border-warning/30 bg-warning/5 shadow-sm">
+          <CardContent className="p-4">
+            <div className="flex items-center gap-2 text-warning font-medium text-sm mb-2">
+              <AlertTriangle className="h-4 w-4" />
+              فواتير مستحقة اليوم ({todayDue.length})
+            </div>
+            {todayDue.map((inv: any) => (
+              <p key={inv.id} className="text-xs text-muted-foreground">
+                {getStudentNames(inv)} — ${inv.total}
+              </p>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Summary cards */}
       <div className="grid gap-4 sm:grid-cols-3">
@@ -115,7 +291,7 @@ const Invoices = () => {
               <p className="text-xl font-bold text-success">${totalPaid}</p>
             </div>
             <Badge variant="secondary" className="bg-success/10 text-success">
-              {mockInvoices.filter(i => i.status === "paid").length}
+              {invoices.filter((i: any) => i.status === "paid").length}
             </Badge>
           </CardContent>
         </Card>
@@ -126,7 +302,7 @@ const Invoices = () => {
               <p className="text-xl font-bold text-warning">${totalPending}</p>
             </div>
             <Badge variant="secondary" className="bg-warning/10 text-warning">
-              {mockInvoices.filter(i => i.status === "pending").length}
+              {invoices.filter((i: any) => i.status === "pending").length}
             </Badge>
           </CardContent>
         </Card>
@@ -137,17 +313,17 @@ const Invoices = () => {
               <p className="text-xl font-bold text-destructive">${totalOverdue}</p>
             </div>
             <Badge variant="secondary" className="bg-destructive/10 text-destructive">
-              {mockInvoices.filter(i => i.status === "overdue").length}
+              {invoices.filter((i: any) => i.status === "overdue").length}
             </Badge>
           </CardContent>
         </Card>
       </div>
 
-      {/* Filter */}
-      <div className="flex items-center gap-3">
+      {/* Filters */}
+      <div className="flex flex-wrap items-center gap-3">
         <Filter className="h-4 w-4 text-muted-foreground" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-36">
             <SelectValue />
           </SelectTrigger>
           <SelectContent>
@@ -157,51 +333,78 @@ const Invoices = () => {
             <SelectItem value="overdue">متأخرة</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex items-center gap-2">
+          <CalendarDays className="h-4 w-4 text-muted-foreground" />
+          <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-36" dir="ltr" placeholder="من" />
+          <span className="text-xs text-muted-foreground">إلى</span>
+          <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-36" dir="ltr" placeholder="إلى" />
+        </div>
       </div>
 
       {/* Invoices list */}
-      <Card className="border-none shadow-sm">
-        <CardContent className="p-0">
-          <div className="divide-y">
-            {filtered.map((invoice) => (
-              <div key={invoice.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
-                <div className="flex items-center gap-4">
-                  <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
-                    <Receipt className="h-5 w-5 text-primary" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="text-sm font-medium">{invoice.id}</p>
-                      {invoice.discount > 0 && (
-                        <Badge variant="secondary" className="text-[10px] bg-accent text-accent-foreground">
-                          خصم {invoice.discount}%
-                        </Badge>
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : (
+        <Card className="border-none shadow-sm">
+          <CardContent className="p-0">
+            <div className="divide-y">
+              {filtered.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">لا توجد فواتير</p>
+              ) : filtered.map((invoice: any) => {
+                const status = statusConfig[invoice.status] || statusConfig.pending;
+                const discountPct = Number(invoice.discount) || 0;
+                return (
+                  <div key={invoice.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
+                    <div className="flex items-center gap-4">
+                      <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
+                        <Receipt className="h-5 w-5 text-primary" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium">{getStudentNames(invoice)}</p>
+                          {discountPct > 0 && (
+                            <Badge variant="secondary" className="text-[10px] bg-accent text-accent-foreground">
+                              خصم {discountPct}%
+                            </Badge>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground">
+                          {invoice.hours ? `${invoice.hours} ساعة · ` : ""}
+                          استحقاق: {invoice.due_date || "—"}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <div className="text-left">
+                        <p className="text-sm font-bold">${invoice.total}</p>
+                        {discountPct > 0 && (
+                          <p className="text-xs text-muted-foreground line-through">${invoice.amount}</p>
+                        )}
+                      </div>
+                      <Badge variant="secondary" className={status.className}>
+                        {status.label}
+                      </Badge>
+                      {invoice.status !== "paid" && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-7 text-xs"
+                          onClick={() => markPaid.mutate(invoice.id)}
+                          disabled={markPaid.isPending}
+                        >
+                          تسجيل دفع
+                        </Button>
                       )}
                     </div>
-                    <p className="text-xs text-muted-foreground">
-                      {invoice.students.join("، ")} · {invoice.hours} ساعة
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      استحقاق: {invoice.dueDate}
-                    </p>
                   </div>
-                </div>
-                <div className="flex items-center gap-3 text-left">
-                  <div>
-                    <p className="text-sm font-bold">${invoice.finalAmount}</p>
-                    {invoice.discount > 0 && (
-                      <p className="text-xs text-muted-foreground line-through">${invoice.amount}</p>
-                    )}
-                  </div>
-                  <Badge variant="secondary" className={statusConfig[invoice.status].className}>
-                    {statusConfig[invoice.status].label}
-                  </Badge>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
+      )}
     </div>
   );
 };

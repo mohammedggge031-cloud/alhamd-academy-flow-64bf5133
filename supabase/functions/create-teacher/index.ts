@@ -35,7 +35,7 @@ serve(async (req) => {
 
     if (!roleData) throw new Error("غير مصرح - المدير فقط يمكنه إنشاء حسابات");
 
-    const { email, password, full_name, whatsapp, age, hourly_rate, qualification } = await req.json();
+    const { email, password, full_name, whatsapp, age, hourly_rate, qualification, subjects } = await req.json();
 
     // Create user
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
@@ -61,6 +61,7 @@ serve(async (req) => {
       age,
       hourly_rate: hourly_rate || 0,
       qualification,
+      subjects: subjects || [],
     });
 
     return new Response(JSON.stringify({ success: true, user_id: userId }), {

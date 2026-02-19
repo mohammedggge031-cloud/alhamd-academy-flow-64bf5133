@@ -30,10 +30,18 @@ interface TeacherRow {
   profiles: { full_name: string; whatsapp: string | null } | null;
 }
 
+const AVAILABLE_SUBJECTS = [
+  "تجويد", "حفظ قرآن", "تفسير", "عقيدة", "فقه", "سيرة نبوية",
+  "لغة عربية", "نحو وصرف", "قراءات",
+];
+
 const Teachers = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", password: "", age: "", rate: "", whatsapp: "", qualification: "" });
+  const [form, setForm] = useState({
+    name: "", email: "", password: "", age: "", rate: "",
+    whatsapp: "", qualification: "", subjects: [] as string[], rating: "",
+  });
   const { role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -53,7 +61,6 @@ const Teachers = () => {
 
   const createTeacher = useMutation({
     mutationFn: async () => {
-      // 1. Create auth user via edge function
       const res = await supabase.functions.invoke("create-teacher", {
         body: {
           email: form.email,
@@ -63,6 +70,7 @@ const Teachers = () => {
           age: form.age ? Number(form.age) : null,
           hourly_rate: form.rate ? Number(form.rate) : 0,
           qualification: form.qualification,
+          subjects: form.subjects,
         },
       });
       if (res.error) throw new Error(res.error.message);
@@ -72,7 +80,7 @@ const Teachers = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
       setDialogOpen(false);
-      setForm({ name: "", email: "", password: "", age: "", rate: "", whatsapp: "", qualification: "" });
+      setForm({ name: "", email: "", password: "", age: "", rate: "", whatsapp: "", qualification: "", subjects: [], rating: "" });
       toast({ title: "تم إنشاء حساب المعلم بنجاح" });
     },
     onError: (err: Error) => {
@@ -80,8 +88,18 @@ const Teachers = () => {
     },
   });
 
+  const toggleSubject = (subject: string) => {
+    setForm((prev) => ({
+      ...prev,
+      subjects: prev.subjects.includes(subject)
+        ? prev.subjects.filter((s) => s !== subject)
+        : [...prev.subjects, subject],
+    }));
+  };
+
   const filtered = teachers.filter((t) =>
-    (t.profiles?.full_name ?? "").includes(search)
+    (t.profiles?.full_name ?? "").includes(search) ||
+    (t.profiles?.whatsapp ?? "").includes(search)
   );
 
   return (
@@ -99,22 +117,23 @@ const Teachers = () => {
             <DialogTrigger asChild>
               <Button className="gap-2"><Plus className="h-4 w-4" />إضافة معلم</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>إضافة معلم جديد</DialogTitle>
               </DialogHeader>
               <div className="grid gap-4 py-4">
+                <h3 className="font-bold text-sm text-primary border-b pb-1">البيانات الأساسية</h3>
                 <div className="grid gap-2">
-                  <Label>الاسم الكامل</Label>
+                  <Label>الاسم الكامل *</Label>
                   <Input placeholder="أدخل اسم المعلم" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                   <div className="grid gap-2">
-                    <Label>البريد الإلكتروني</Label>
+                    <Label>البريد الإلكتروني *</Label>
                     <Input type="email" placeholder="teacher@example.com" dir="ltr" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>كلمة المرور</Label>
+                    <Label>كلمة المرور *</Label>
                     <Input type="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                   </div>
                 </div>
@@ -124,18 +143,42 @@ const Teachers = () => {
                     <Input type="number" placeholder="العمر" value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
                   </div>
                   <div className="grid gap-2">
-                    <Label>ريت الساعة ($)</Label>
-                    <Input type="number" placeholder="0" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
+                    <Label>رقم الواتساب *</Label>
+                    <Input placeholder="+201..." dir="ltr" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
                   </div>
-                </div>
-                <div className="grid gap-2">
-                  <Label>رقم الواتساب</Label>
-                  <Input placeholder="+201..." dir="ltr" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
                 </div>
                 <div className="grid gap-2">
                   <Label>المؤهل الدراسي</Label>
                   <Input placeholder="مثال: إجازة في حفص عن عاصم" value={form.qualification} onChange={(e) => setForm({ ...form, qualification: e.target.value })} />
                 </div>
+
+                <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">بيانات إدارية (مرئية للإدارة فقط)</h3>
+                <div className="grid gap-2">
+                  <Label>المواد التي يدرسها</Label>
+                  <div className="flex flex-wrap gap-2">
+                    {AVAILABLE_SUBJECTS.map((subject) => (
+                      <Badge
+                        key={subject}
+                        variant={form.subjects.includes(subject) ? "default" : "outline"}
+                        className="cursor-pointer select-none"
+                        onClick={() => toggleSubject(subject)}
+                      >
+                        {subject}
+                      </Badge>
+                    ))}
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="grid gap-2">
+                    <Label>ريت الساعة ($)</Label>
+                    <Input type="number" placeholder="0" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>التقييم الداخلي (1-5)</Label>
+                    <Input type="number" min="1" max="5" step="0.1" placeholder="0" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
+                  </div>
+                </div>
+
                 <Button onClick={() => createTeacher.mutate()} disabled={createTeacher.isPending}>
                   {createTeacher.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
                   حفظ المعلم
@@ -148,7 +191,7 @@ const Teachers = () => {
 
       <div className="relative max-w-md">
         <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder="بحث بالاسم..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-10" />
+        <Input placeholder="بحث بالاسم أو رقم الهاتف..." value={search} onChange={(e) => setSearch(e.target.value)} className="pr-10" />
       </div>
 
       {isLoading ? (
@@ -172,7 +215,7 @@ const Teachers = () => {
                       <p className="text-xs text-muted-foreground">{teacher.qualification}</p>
                     </div>
                   </div>
-                  {isAdmin && teacher.rating != null && (
+                  {isAdmin && teacher.rating != null && teacher.rating > 0 && (
                     <div className="flex items-center gap-1 text-warning">
                       <Star className="h-4 w-4 fill-current" />
                       <span className="text-sm font-medium">{teacher.rating}</span>
@@ -181,7 +224,7 @@ const Teachers = () => {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                {isAdmin && teacher.subjects.length > 0 && (
+                {isAdmin && teacher.subjects && teacher.subjects.length > 0 && (
                   <div className="flex flex-wrap gap-1.5">
                     {teacher.subjects.map((s) => (
                       <Badge key={s} variant="secondary" className="text-xs bg-accent text-accent-foreground">
@@ -216,6 +259,8 @@ const Teachers = () => {
                         <span className="font-medium">{teacher.monthly_absence_hours ?? 0} ساعات</span>
                         <span className="text-muted-foreground">وقت الانتظار:</span>
                         <span className="font-medium">{teacher.monthly_waiting_minutes ?? 0} دقيقة</span>
+                        <span className="text-muted-foreground">ريت الساعة:</span>
+                        <span className="font-bold text-primary">${teacher.hourly_rate}</span>
                         <span className="text-muted-foreground">المرتب:</span>
                         <span className="font-bold text-primary">${teacher.monthly_salary ?? 0}</span>
                       </div>

@@ -75,17 +75,60 @@ export type Database = {
           },
         ]
       }
+      invoice_students: {
+        Row: {
+          amount: number
+          created_at: string
+          hours: number
+          id: string
+          invoice_id: string
+          student_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          hours?: number
+          id?: string
+          invoice_id: string
+          student_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          hours?: number
+          id?: string
+          invoice_id?: string
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "invoice_students_invoice_id_fkey"
+            columns: ["invoice_id"]
+            isOneToOne: false
+            referencedRelation: "invoices"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "invoice_students_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       invoices: {
         Row: {
           amount: number
           created_at: string
           discount: number | null
           due_date: string | null
+          hours: number | null
           id: string
           notes: string | null
           paid_at: string | null
           status: string
-          student_id: string
+          student_id: string | null
           total: number
           updated_at: string
         }
@@ -94,11 +137,12 @@ export type Database = {
           created_at?: string
           discount?: number | null
           due_date?: string | null
+          hours?: number | null
           id?: string
           notes?: string | null
           paid_at?: string | null
           status?: string
-          student_id: string
+          student_id?: string | null
           total: number
           updated_at?: string
         }
@@ -107,11 +151,12 @@ export type Database = {
           created_at?: string
           discount?: number | null
           due_date?: string | null
+          hours?: number | null
           id?: string
           notes?: string | null
           paid_at?: string | null
           status?: string
-          student_id?: string
+          student_id?: string | null
           total?: number
           updated_at?: string
         }
