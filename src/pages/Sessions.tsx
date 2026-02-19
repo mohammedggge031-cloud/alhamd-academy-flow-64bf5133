@@ -677,7 +677,7 @@ const Sessions = () => {
                 )}
               </div>
 
-              <Button className="w-full gap-2" disabled={!report.student_level || submitReport.isPending}
+              <Button className="w-full gap-2" disabled={!report.student_level || !report.session_notes?.trim() || !report.homework?.trim() || submitReport.isPending}
                 onClick={() => submitReport.mutate(reportDialog)}>
                 {submitReport.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                 إرسال التقرير
