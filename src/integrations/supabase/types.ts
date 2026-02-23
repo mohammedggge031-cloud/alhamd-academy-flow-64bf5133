@@ -582,6 +582,57 @@ export type Database = {
         }
         Relationships: []
       }
+      trial_bookings: {
+        Row: {
+          admin_notes: string | null
+          course_interest: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_read: boolean
+          message: string | null
+          phone: string
+          preferred_date: string | null
+          preferred_time: string | null
+          status: string
+          timezone: string | null
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          course_interest?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          phone: string
+          preferred_date?: string | null
+          preferred_time?: string | null
+          status?: string
+          timezone?: string | null
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          course_interest?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          phone?: string
+          preferred_date?: string | null
+          preferred_time?: string | null
+          status?: string
+          timezone?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       user_roles: {
         Row: {
           created_at: string

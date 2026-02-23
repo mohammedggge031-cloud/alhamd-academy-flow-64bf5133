@@ -15,6 +15,7 @@ import Reports from "./pages/Reports";
 import Expenses from "./pages/Expenses";
 import MonthlyReports from "./pages/MonthlyReports";
 import SettingsPage from "./pages/SettingsPage";
+import Bookings from "./pages/Bookings";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -42,6 +43,7 @@ const App = () => (
                   <AppLayout>
                     <Routes>
                       <Route path="/" element={<Dashboard />} />
+                      <Route path="/bookings" element={<Bookings />} />
                       <Route path="/students" element={<Students />} />
                       <Route path="/teachers" element={<Teachers />} />
                       <Route path="/sessions" element={<Sessions />} />
