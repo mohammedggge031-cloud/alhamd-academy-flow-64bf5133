@@ -9,6 +9,7 @@ import {
   BookOpen,
   Settings,
   DollarSign,
+  CalendarPlus,
   X,
   LogOut,
 } from "lucide-react";
@@ -24,6 +25,7 @@ interface SidebarProps {
 
 const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: string[] }[] = [
   { to: "/", icon: LayoutDashboard, labelKey: "navDashboard", roles: ["admin", "manager"] },
+  { to: "/bookings", icon: CalendarPlus, labelKey: "navBookings", roles: ["admin", "manager"] },
   { to: "/students", icon: Users, labelKey: "navStudents", roles: ["admin", "manager"] },
   { to: "/teachers", icon: GraduationCap, labelKey: "navTeachers", roles: ["admin", "manager"] },
   { to: "/sessions", icon: CalendarDays, labelKey: "navSessions", roles: ["admin", "manager"] },

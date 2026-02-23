@@ -413,6 +413,26 @@ const translations = {
   selectPlaceholder: { en: "Select", ar: "اختر" },
   adminActionsLabel: { en: "Actions", ar: "إجراءات" },
   enterTeacherName: { en: "Enter teacher name", ar: "أدخل اسم المعلم" },
+
+  // Bookings
+  navBookings: { en: "Trial Bookings", ar: "حجوزات تجريبية" },
+  bookingsTitle: { en: "Trial Bookings", ar: "حجوزات الحصص التجريبية" },
+  bookingsSubtitle: { en: "Manage trial class requests from the website", ar: "إدارة طلبات الحصص التجريبية من الموقع" },
+  newTrialBooking: { en: "New Trial Booking!", ar: "حجز تجريبي جديد!" },
+  newLabel: { en: "new", ar: "جديد" },
+  bookingNew: { en: "New", ar: "جديد" },
+  bookingContacted: { en: "Contacted", ar: "تم التواصل" },
+  bookingConverted: { en: "Converted", ar: "تم التحويل" },
+  bookingCancelled: { en: "Cancelled", ar: "ملغي" },
+  searchBookings: { en: "Search by name, phone, or email...", ar: "بحث بالاسم أو الهاتف أو الإيميل..." },
+  noBookings: { en: "No bookings found", ar: "لا توجد حجوزات" },
+  bookingCourse: { en: "Course", ar: "الكورس" },
+  bookingPhone: { en: "Phone", ar: "الهاتف" },
+  bookingDetails: { en: "Booking Details", ar: "تفاصيل الحجز" },
+  bookingMessage: { en: "Message", ar: "الرسالة" },
+  bookingAdminNotes: { en: "Admin Notes", ar: "ملاحظات الإدارة" },
+  bookingNotesPlaceholder: { en: "Add notes about this booking...", ar: "أضف ملاحظات عن هذا الحجز..." },
+  bookingReceivedAt: { en: "Received at", ar: "تم الاستلام في" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
