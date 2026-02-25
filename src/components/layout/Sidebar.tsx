@@ -14,18 +14,21 @@ import {
   LogOut,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
+import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import logo from "@/assets/logo.jpeg";
 
 interface SidebarProps {
   onClose?: () => void;
 }
 
-const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: string[] }[] = [
+const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: string[]; badgeKey?: string }[] = [
   { to: "/", icon: LayoutDashboard, labelKey: "navDashboard", roles: ["admin", "manager"] },
-  { to: "/bookings", icon: CalendarPlus, labelKey: "navBookings", roles: ["admin", "manager"] },
+  { to: "/bookings", icon: CalendarPlus, labelKey: "navBookings", roles: ["admin", "manager"], badgeKey: "bookings" },
   { to: "/students", icon: Users, labelKey: "navStudents", roles: ["admin", "manager"] },
   { to: "/teachers", icon: GraduationCap, labelKey: "navTeachers", roles: ["admin", "manager"] },
   { to: "/sessions", icon: CalendarDays, labelKey: "navSessions", roles: ["admin", "manager"] },
@@ -40,6 +43,20 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
   const location = useLocation();
   const { signOut, role } = useAuth();
   const { t } = useLanguage();
+
+  const { data: unreadCounts = { bookings: 0 } } = useQuery({
+    queryKey: ["sidebar-unread"],
+    queryFn: async () => {
+      const [bookingsRes, subsRes] = await Promise.all([
+        supabase.from("trial_bookings").select("id", { count: "exact", head: true }).eq("is_read", false),
+        supabase.from("subscription_requests").select("id", { count: "exact", head: true }).eq("is_read", false),
+      ]);
+      return {
+        bookings: (bookingsRes.count ?? 0) + (subsRes.count ?? 0),
+      };
+    },
+    refetchInterval: 30000, // refresh every 30s
+  });
 
   const navItems = allNavItems.filter(item => item.roles.includes(role ?? ""));
 
@@ -72,19 +89,28 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
               ? location.pathname === "/"
               : location.pathname.startsWith(item.to);
 
+          const badgeCount = item.badgeKey ? (unreadCounts as any)[item.badgeKey] ?? 0 : 0;
+
           return (
             <NavLink
               key={item.to}
               to={item.to}
               onClick={onClose}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
+              className={`flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                 isActive
                   ? "bg-sidebar-accent text-sidebar-primary"
                   : "text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
               }`}
             >
-              <item.icon className="h-5 w-5 shrink-0" />
-              <span>{t(item.labelKey)}</span>
+              <div className="flex items-center gap-3">
+                <item.icon className="h-5 w-5 shrink-0" />
+                <span>{t(item.labelKey)}</span>
+              </div>
+              {badgeCount > 0 && (
+                <Badge variant="destructive" className="h-5 min-w-5 px-1.5 text-[10px] animate-pulse">
+                  {badgeCount}
+                </Badge>
+              )}
             </NavLink>
           );
         })}
