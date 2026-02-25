@@ -18,13 +18,17 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Navigate } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
 
 const Dashboard = () => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+  const { role } = useAuth();
+
   const today = new Date().toISOString().slice(0, 10);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
+  const isTeacher = role === "teacher";
 
   const statusMap: Record<string, { label: string; className: string }> = {
     upcoming: { label: t("upcoming"), className: "bg-accent text-accent-foreground" },
@@ -140,6 +144,10 @@ const Dashboard = () => {
 
   const newBookingsCount = recentBookings.filter((b: any) => b.status === "new").length;
   const newSubsCount = recentSubs.filter((s: any) => s.status === "new").length;
+
+  if (isTeacher) {
+    return <Navigate to="/teacher-home" replace />;
+  }
 
   return (
     <div className="space-y-6 animate-fade-in">
