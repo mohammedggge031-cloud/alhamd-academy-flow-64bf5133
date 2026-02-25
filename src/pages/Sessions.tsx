@@ -18,6 +18,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import SurahPicker from "@/components/SurahPicker";
 import { useLanguage } from "@/i18n/LanguageContext";
+import TeacherSchedule from "@/components/teachers/TeacherSchedule";
 
 const Sessions = () => {
   const { t } = useLanguage();
@@ -292,8 +293,11 @@ const Sessions = () => {
               </div>
             </DialogContent>
           </Dialog>
-        )}
+      )}
       </div>
+
+      {/* Teacher: Schedule overview */}
+      {!isAdmin && <TeacherSchedule />}
 
       {/* Admin: Pending Approvals */}
       {isAdmin && pendingApprovals.length > 0 && (
@@ -549,6 +553,17 @@ const Sessions = () => {
                         supabase.functions.invoke("send-session-reminder", {
                           body: { type: "teacher_joined", session_id: selectedSession.id },
                         });
+                        // Auto-redirect to Zoom
+                        const { data: teacherData } = await supabase
+                          .from("teachers")
+                          .select("zoom_link")
+                          .eq("user_id", (await supabase.auth.getUser()).data.user?.id)
+                          .maybeSingle();
+                        if (teacherData?.zoom_link) {
+                          window.open(teacherData.zoom_link, "_blank");
+                        } else {
+                          toast({ title: t("setZoomFirst"), variant: "destructive" });
+                        }
                       }}>
                       <Check className="h-3 w-3" />{t("acceptSession")}
                     </Button>
