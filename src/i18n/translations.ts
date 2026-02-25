@@ -471,6 +471,10 @@ const translations = {
   joinZoom: { en: "Join Zoom", ar: "دخول الزوم" },
   setZoomFirst: { en: "Set your Zoom link in your profile first", ar: "أضف رابط الزوم في ملفك الشخصي أولاً" },
   mySchedule: { en: "My Schedule", ar: "جدولي" },
+  nextSession: { en: "Next Session", ar: "الحصة القادمة" },
+  sessionStarted: { en: "Session started!", ar: "بدأت الحصة!" },
+  completeProfile: { en: "Complete your profile", ar: "أكمل ملفك الشخصي" },
+  completeProfileHint: { en: "Add your qualifications, photo, and Zoom link", ar: "أضف مؤهلاتك وصورتك الشخصية ورابط الزوم" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
