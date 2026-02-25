@@ -22,7 +22,7 @@ interface TeacherRow {
   students_count: number | null; monthly_hours: number | null;
   monthly_waiting_minutes: number | null; monthly_absence_hours: number | null;
   monthly_salary: number | null; is_active: boolean | null;
-  profile_completed: boolean | null;
+  profile_completed: boolean | null; gender: string | null;
   profiles: { full_name: string; whatsapp: string | null } | null;
 }
 
@@ -117,15 +117,15 @@ const Teachers = () => {
     }));
   };
 
-  const filtered = teachers.filter((t) => {
-    const matchesSearch = (t.profiles?.full_name ?? "").includes(search) ||
-      (t.profiles?.whatsapp ?? "").includes(search) ||
-      (t.qualification ?? "").includes(search);
-    const matchesSubject = subjectFilter === "all" || (t.subjects ?? []).includes(subjectFilter);
+  const filtered = teachers.filter((teacher) => {
+    const matchesSearch = (teacher.profiles?.full_name ?? "").includes(search) ||
+      (teacher.profiles?.whatsapp ?? "").includes(search) ||
+      (teacher.qualification ?? "").includes(search);
+    const matchesSubject = subjectFilter === "all" || (teacher.subjects ?? []).includes(subjectFilter);
     const matchesProfile = profileFilter === "all" ||
-      (profileFilter === "complete" && t.profile_completed) ||
-      (profileFilter === "incomplete" && !t.profile_completed);
-    const matchesGender = genderFilter === "all" || (t as any).gender === genderFilter;
+      (profileFilter === "complete" && teacher.profile_completed) ||
+      (profileFilter === "incomplete" && !teacher.profile_completed);
+    const matchesGender = genderFilter === "all" || teacher.gender === genderFilter;
     return matchesSearch && matchesSubject && matchesProfile && matchesGender;
   });
 
@@ -297,16 +297,16 @@ const Teachers = () => {
                             className="text-[10px] px-1.5 py-0 cursor-pointer hover:bg-primary/10 transition-colors"
                             onClick={(e) => {
                               e.stopPropagation();
-                              const newGender = (teacher as any).gender === "female" ? "male" : "female";
+                              const newGender = teacher.gender === "female" ? "male" : "female";
                               updateGender.mutate({ teacherId: teacher.id, gender: newGender });
                             }}
                             title="اضغط لتغيير الجنس"
                           >
-                            {(teacher as any).gender === "female" ? t("female") : t("male")}
+                            {teacher.gender === "female" ? t("female") : t("male")}
                           </Badge>
                         ) : (
                           <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                            {(teacher as any).gender === "female" ? t("female") : t("male")}
+                            {teacher.gender === "female" ? t("female") : t("male")}
                           </Badge>
                         )}
                       </CardTitle>
