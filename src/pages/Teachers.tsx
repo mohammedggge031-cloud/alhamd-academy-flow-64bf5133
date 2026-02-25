@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye } from "lucide-react";
+import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger,
 } from "@/components/ui/dialog";
@@ -21,6 +22,7 @@ interface TeacherRow {
   students_count: number | null; monthly_hours: number | null;
   monthly_waiting_minutes: number | null; monthly_absence_hours: number | null;
   monthly_salary: number | null; is_active: boolean | null;
+  profile_completed: boolean | null;
   profiles: { full_name: string; whatsapp: string | null } | null;
 }
 
@@ -38,6 +40,8 @@ const Teachers = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewingTeacherId, setViewingTeacherId] = useState<string | null>(null);
+  const [subjectFilter, setSubjectFilter] = useState<string>("all");
+  const [profileFilter, setProfileFilter] = useState<string>("all");
   const [form, setForm] = useState({
     name: "", email: "", password: "", age: "", rate: "",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "",
@@ -94,10 +98,16 @@ const Teachers = () => {
     }));
   };
 
-  const filtered = teachers.filter((t) =>
-    (t.profiles?.full_name ?? "").includes(search) ||
-    (t.profiles?.whatsapp ?? "").includes(search)
-  );
+  const filtered = teachers.filter((t) => {
+    const matchesSearch = (t.profiles?.full_name ?? "").includes(search) ||
+      (t.profiles?.whatsapp ?? "").includes(search) ||
+      (t.qualification ?? "").includes(search);
+    const matchesSubject = subjectFilter === "all" || (t.subjects ?? []).includes(subjectFilter);
+    const matchesProfile = profileFilter === "all" ||
+      (profileFilter === "complete" && t.profile_completed) ||
+      (profileFilter === "incomplete" && !t.profile_completed);
+    return matchesSearch && matchesSubject && matchesProfile;
+  });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -186,9 +196,40 @@ const Teachers = () => {
         )}
       </div>
 
-      <div className="relative max-w-md">
-        <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-        <Input placeholder={t("searchTeachers")} value={search} onChange={(e) => setSearch(e.target.value)} className="pr-10" />
+      <div className="flex flex-col sm:flex-row gap-3">
+        <div className="relative flex-1 max-w-md">
+          <Search className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <Input placeholder={t("searchTeachers")} value={search} onChange={(e) => setSearch(e.target.value)} className="pr-10" />
+        </div>
+        {isAdmin && (
+          <>
+            <Select value={subjectFilter} onValueChange={setSubjectFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t("subjects")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("all")} - {t("subjects")}</SelectItem>
+                {SUBJECT_VALUES.map((s, idx) => (
+                  <SelectItem key={s} value={s}>{t(SUBJECT_KEYS[idx])}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Select value={profileFilter} onValueChange={setProfileFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t("profileStatus")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("all")}</SelectItem>
+                <SelectItem value="complete">
+                  <span className="flex items-center gap-1.5"><CheckCircle className="h-3.5 w-3.5 text-primary" />{t("profileComplete")}</span>
+                </SelectItem>
+                <SelectItem value="incomplete">
+                  <span className="flex items-center gap-1.5"><XCircle className="h-3.5 w-3.5 text-destructive" />{t("profileIncomplete")}</span>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </>
+        )}
       </div>
 
       {isLoading ? (
@@ -209,7 +250,14 @@ const Teachers = () => {
                     </div>
                     <div>
                       <CardTitle className="text-base">{teacher.profiles?.full_name}</CardTitle>
-                      <p className="text-xs text-muted-foreground">{teacher.qualification}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs text-muted-foreground">{teacher.qualification}</p>
+                        {isAdmin && (
+                          teacher.profile_completed
+                            ? <CheckCircle className="h-3 w-3 text-primary" />
+                            : <XCircle className="h-3 w-3 text-muted-foreground" />
+                        )}
+                      </div>
                     </div>
                   </div>
                   {isAdmin && teacher.rating != null && teacher.rating > 0 && (
