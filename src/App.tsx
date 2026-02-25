@@ -19,6 +19,8 @@ import Bookings from "./pages/Bookings";
 import TeacherProfile from "./pages/TeacherProfile";
 import TeacherDashboardPage from "./pages/TeacherDashboardPage";
 import Login from "./pages/Login";
+import Courses from "./pages/Courses";
+import CourseDetail from "./pages/CourseDetail";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -40,6 +42,8 @@ const App = () => (
           <AuthProvider>
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/courses" element={<Courses />} />
+              <Route path="/courses/:courseId" element={<CourseDetail />} />
               <Route path="/*" element={
                 <ProtectedRoute>
                   <AppLayout>
