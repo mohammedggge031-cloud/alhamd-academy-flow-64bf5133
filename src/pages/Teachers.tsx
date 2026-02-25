@@ -42,9 +42,10 @@ const Teachers = () => {
   const [viewingTeacherId, setViewingTeacherId] = useState<string | null>(null);
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
   const [profileFilter, setProfileFilter] = useState<string>("all");
+  const [genderFilter, setGenderFilter] = useState<string>("all");
   const [form, setForm] = useState({
     name: "", email: "", password: "", age: "", rate: "",
-    whatsapp: "", qualification: "", subjects: [] as string[], rating: "",
+    whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
   });
   const { role } = useAuth();
   const { toast } = useToast();
@@ -72,6 +73,7 @@ const Teachers = () => {
           whatsapp: form.whatsapp, age: form.age ? Number(form.age) : null,
           hourly_rate: form.rate ? Number(form.rate) : 0,
           qualification: form.qualification, subjects: form.subjects,
+          gender: form.gender,
         },
       });
       if (res.error) throw new Error(res.error.message);
@@ -81,7 +83,7 @@ const Teachers = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
       setDialogOpen(false);
-      setForm({ name: "", email: "", password: "", age: "", rate: "", whatsapp: "", qualification: "", subjects: [], rating: "" });
+      setForm({ name: "", email: "", password: "", age: "", rate: "", whatsapp: "", qualification: "", subjects: [], rating: "", gender: "male" });
       toast({ title: t("teacherCreated") });
     },
     onError: (err: Error) => {
@@ -106,7 +108,8 @@ const Teachers = () => {
     const matchesProfile = profileFilter === "all" ||
       (profileFilter === "complete" && t.profile_completed) ||
       (profileFilter === "incomplete" && !t.profile_completed);
-    return matchesSearch && matchesSubject && matchesProfile;
+    const matchesGender = genderFilter === "all" || (t as any).gender === genderFilter;
+    return matchesSearch && matchesSubject && matchesProfile && matchesGender;
   });
 
   return (
@@ -144,10 +147,20 @@ const Teachers = () => {
                     <Input type="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
                     <Label>{t("age")}</Label>
                     <Input type="number" placeholder={t("enterAge")} value={form.age} onChange={(e) => setForm({ ...form, age: e.target.value })} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>{t("gender")}</Label>
+                    <Select value={form.gender} onValueChange={(v) => setForm({ ...form, gender: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="male">{t("male")}</SelectItem>
+                        <SelectItem value="female">{t("female")}</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label>{t("whatsapp")} *</Label>
@@ -228,6 +241,16 @@ const Teachers = () => {
                 </SelectItem>
               </SelectContent>
             </Select>
+            <Select value={genderFilter} onValueChange={setGenderFilter}>
+              <SelectTrigger className="w-[160px]">
+                <SelectValue placeholder={t("gender")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("allGenders")}</SelectItem>
+                <SelectItem value="male">{t("maleTeachers")}</SelectItem>
+                <SelectItem value="female">{t("femaleTeachers")}</SelectItem>
+              </SelectContent>
+            </Select>
           </>
         )}
       </div>
@@ -249,7 +272,12 @@ const Teachers = () => {
                       </span>
                     </div>
                     <div>
-                      <CardTitle className="text-base">{teacher.profiles?.full_name}</CardTitle>
+                      <CardTitle className="text-base flex items-center gap-2">
+                        {teacher.profiles?.full_name}
+                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                          {(teacher as any).gender === "female" ? t("female") : t("male")}
+                        </Badge>
+                      </CardTitle>
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs text-muted-foreground">{teacher.qualification}</p>
                         {isAdmin && (

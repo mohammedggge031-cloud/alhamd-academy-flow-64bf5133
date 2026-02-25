@@ -32,12 +32,12 @@ serve(async (req) => {
       .from("user_roles")
       .select("role")
       .eq("user_id", caller.id)
-      .eq("role", "admin")
+      .in("role", ["admin", "manager"])
       .maybeSingle();
 
-    if (!roleData) throw new Error("غير مصرح - المدير فقط يمكنه إنشاء حسابات");
+    if (!roleData) throw new Error("غير مصرح - المدير أو المشرف فقط يمكنه إنشاء حسابات");
 
-    const { email, password, full_name, whatsapp, age, hourly_rate, qualification, subjects } = await req.json();
+    const { email, password, full_name, whatsapp, age, hourly_rate, qualification, subjects, gender } = await req.json();
 
     // Input validation
     if (!email || typeof email !== "string" || !email.includes("@") || email.length > 255) {
@@ -89,6 +89,7 @@ serve(async (req) => {
       hourly_rate: hourly_rate || 0,
       qualification: qualification ? String(qualification).slice(0, 200) : null,
       subjects: subjects || [],
+      gender: gender === "female" ? "female" : "male",
     });
 
     return new Response(JSON.stringify({ success: true, user_id: userId }), {

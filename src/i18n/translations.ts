@@ -159,6 +159,12 @@ const translations = {
   absenceHours: { en: "Absence Hours", ar: "ساعات الغياب" },
   waitingTime: { en: "Waiting Time", ar: "وقت الانتظار" },
   salary: { en: "Salary", ar: "المرتب" },
+  gender: { en: "Gender", ar: "الجنس" },
+  male: { en: "Male Teacher", ar: "معلم" },
+  female: { en: "Female Teacher", ar: "معلمة" },
+  allGenders: { en: "All", ar: "الكل" },
+  maleTeachers: { en: "Male Teachers", ar: "معلمين" },
+  femaleTeachers: { en: "Female Teachers", ar: "معلمات" },
 
   // Sessions
   sessionsTitle: { en: "Session Management", ar: "إدارة الحصص" },

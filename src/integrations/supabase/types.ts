@@ -624,6 +624,7 @@ export type Database = {
           age: number | null
           bio: string | null
           created_at: string
+          gender: string | null
           hourly_rate: number
           id: string
           ijazat: string | null
@@ -646,6 +647,7 @@ export type Database = {
           age?: number | null
           bio?: string | null
           created_at?: string
+          gender?: string | null
           hourly_rate?: number
           id?: string
           ijazat?: string | null
@@ -668,6 +670,7 @@ export type Database = {
           age?: number | null
           bio?: string | null
           created_at?: string
+          gender?: string | null
           hourly_rate?: number
           id?: string
           ijazat?: string | null
