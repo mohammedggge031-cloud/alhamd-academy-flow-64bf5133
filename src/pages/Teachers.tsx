@@ -53,6 +53,23 @@ const Teachers = () => {
   const isAdmin = role === "admin" || role === "manager";
   const { t } = useLanguage();
 
+  const updateGender = useMutation({
+    mutationFn: async ({ teacherId, gender }: { teacherId: string; gender: string }) => {
+      const { error } = await supabase
+        .from("teachers")
+        .update({ gender })
+        .eq("id", teacherId);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      toast({ title: "تم التحديث" });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ["teachers"],
     queryFn: async () => {
@@ -274,9 +291,24 @@ const Teachers = () => {
                     <div>
                       <CardTitle className="text-base flex items-center gap-2">
                         {teacher.profiles?.full_name}
-                        <Badge variant="outline" className="text-[10px] px-1.5 py-0">
-                          {(teacher as any).gender === "female" ? t("female") : t("male")}
-                        </Badge>
+                        {isAdmin ? (
+                          <Badge
+                            variant="outline"
+                            className="text-[10px] px-1.5 py-0 cursor-pointer hover:bg-primary/10 transition-colors"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              const newGender = (teacher as any).gender === "female" ? "male" : "female";
+                              updateGender.mutate({ teacherId: teacher.id, gender: newGender });
+                            }}
+                            title="اضغط لتغيير الجنس"
+                          >
+                            {(teacher as any).gender === "female" ? t("female") : t("male")}
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {(teacher as any).gender === "female" ? t("female") : t("male")}
+                          </Badge>
+                        )}
                       </CardTitle>
                       <div className="flex items-center gap-1.5">
                         <p className="text-xs text-muted-foreground">{teacher.qualification}</p>
