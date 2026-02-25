@@ -11,7 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import {
-  User, Upload, FileText, Trash2, Loader2, CheckCircle, Camera, CreditCard, Award, BookOpen,
+  User, Upload, FileText, Trash2, Loader2, CheckCircle, Camera, CreditCard, Award, BookOpen, Video,
 } from "lucide-react";
 
 const DOC_TYPES = [
@@ -61,7 +61,7 @@ const TeacherProfile = () => {
 
   // Update profile info
   const updateProfile = useMutation({
-    mutationFn: async (updates: { bio?: string; academic_degree?: string; ijazat?: string; qualification?: string }) => {
+    mutationFn: async (updates: { bio?: string; academic_degree?: string; ijazat?: string; qualification?: string; zoom_link?: string }) => {
       const { error } = await supabase
         .from("teachers")
         .update({ ...updates, profile_completed: true })
@@ -128,7 +128,7 @@ const TeacherProfile = () => {
 
   // Form state
   const [form, setForm] = useState<{
-    bio: string; academic_degree: string; ijazat: string; qualification: string;
+    bio: string; academic_degree: string; ijazat: string; qualification: string; zoom_link: string;
   } | null>(null);
 
   const currentForm = form ?? {
@@ -136,6 +136,7 @@ const TeacherProfile = () => {
     academic_degree: teacher?.academic_degree ?? "",
     ijazat: teacher?.ijazat ?? "",
     qualification: teacher?.qualification ?? "",
+    zoom_link: teacher?.zoom_link ?? "",
   };
 
   if (isLoading) {
@@ -212,6 +213,19 @@ const TeacherProfile = () => {
                 rows={4}
                 onChange={(e) => setForm({ ...currentForm, bio: e.target.value })}
               />
+            </div>
+            <div>
+              <Label className="flex items-center gap-2">
+                <Video className="h-4 w-4 text-primary" />
+                {t("zoomLink")}
+              </Label>
+              <Input
+                placeholder={t("zoomLinkPlaceholder")}
+                value={currentForm.zoom_link}
+                dir="ltr"
+                onChange={(e) => setForm({ ...currentForm, zoom_link: e.target.value })}
+              />
+              <p className="text-xs text-muted-foreground mt-1">{t("zoomLinkHint")}</p>
             </div>
           </div>
 

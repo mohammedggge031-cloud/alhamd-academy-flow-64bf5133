@@ -459,6 +459,18 @@ const translations = {
   viewProfile: { en: "View Profile", ar: "عرض الملف" },
   profileStatus: { en: "Profile Status", ar: "حالة الملف" },
   profileIncomplete: { en: "Incomplete", ar: "غير مكتمل" },
+  zoomLink: { en: "Zoom Link", ar: "رابط الزوم" },
+  zoomLinkPlaceholder: { en: "https://zoom.us/j/...", ar: "https://zoom.us/j/..." },
+  zoomLinkHint: { en: "Your permanent Zoom meeting link for sessions", ar: "رابط اجتماع الزوم الثابت الخاص بك للحصص" },
+  todaySchedule: { en: "Today's Schedule", ar: "جدول اليوم" },
+  weeklyScheduleView: { en: "This Week", ar: "هذا الأسبوع" },
+  monthlyScheduleView: { en: "This Month", ar: "هذا الشهر" },
+  noSessionsToday: { en: "No sessions today", ar: "لا توجد حصص اليوم" },
+  noSessionsThisWeek: { en: "No sessions this week", ar: "لا توجد حصص هذا الأسبوع" },
+  noSessionsThisMonth: { en: "No sessions this month", ar: "لا توجد حصص هذا الشهر" },
+  joinZoom: { en: "Join Zoom", ar: "دخول الزوم" },
+  setZoomFirst: { en: "Set your Zoom link in your profile first", ar: "أضف رابط الزوم في ملفك الشخصي أولاً" },
+  mySchedule: { en: "My Schedule", ar: "جدولي" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
