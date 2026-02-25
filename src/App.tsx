@@ -16,6 +16,7 @@ import Expenses from "./pages/Expenses";
 import MonthlyReports from "./pages/MonthlyReports";
 import SettingsPage from "./pages/SettingsPage";
 import Bookings from "./pages/Bookings";
+import TeacherProfile from "./pages/TeacherProfile";
 import Login from "./pages/Login";
 import NotFound from "./pages/NotFound";
 
@@ -51,6 +52,7 @@ const App = () => (
                       <Route path="/expenses" element={<Expenses />} />
                       <Route path="/reports" element={<Reports />} />
                       <Route path="/monthly-reports" element={<MonthlyReports />} />
+                      <Route path="/my-profile" element={<TeacherProfile />} />
                       <Route path="/settings" element={<SettingsPage />} />
                       <Route path="*" element={<NotFound />} />
                     </Routes>

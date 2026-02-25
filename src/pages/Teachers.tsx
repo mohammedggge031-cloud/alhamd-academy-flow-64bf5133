@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GraduationCap, Plus, Search, Phone, Star, Loader2 } from "lucide-react";
+import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { TeacherProfileViewer } from "@/components/teachers/TeacherProfileViewer";
 
 interface TeacherRow {
   id: string; user_id: string; age: number | null; qualification: string | null;
@@ -36,6 +37,7 @@ const SUBJECT_VALUES = [
 const Teachers = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [viewingTeacherId, setViewingTeacherId] = useState<string | null>(null);
   const [form, setForm] = useState({
     name: "", email: "", password: "", age: "", rate: "",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "",
@@ -262,11 +264,29 @@ const Teachers = () => {
                     </div>
                   </>
                 )}
+
+                {isAdmin && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="w-full gap-2"
+                    onClick={() => setViewingTeacherId(teacher.id)}
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    {t("viewProfile")}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           ))}
         </div>
       )}
+
+      <TeacherProfileViewer
+        teacherId={viewingTeacherId}
+        open={!!viewingTeacherId}
+        onOpenChange={(open) => !open && setViewingTeacherId(null)}
+      />
     </div>
   );
 };
