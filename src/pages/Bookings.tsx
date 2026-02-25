@@ -99,7 +99,7 @@ const Bookings = () => {
         const newSub = payload.new as SubscriptionRequest;
         setSubscriptions((prev) => [newSub, ...prev]);
         setUnreadSubs((prev) => prev + 1);
-        toast({ title: `🔔 طلب اشتراك جديد!`, description: `${newSub.full_name} - ${newSub.plan_name}` });
+        toast({ title: `🔔 ${t("bookingsNewSub")}`, description: `${newSub.full_name} - ${newSub.plan_name}` });
       })
       .subscribe();
 
@@ -229,12 +229,12 @@ const Bookings = () => {
         <TabsList>
           <TabsTrigger value="bookings" className="gap-2">
             <CalendarPlus className="h-4 w-4" />
-            حجوزات تجريبية
+            {t("bookingsTrialTab")}
             {unreadBookings > 0 && <Badge variant="destructive" className="h-5 min-w-5 text-[10px] px-1">{unreadBookings}</Badge>}
           </TabsTrigger>
           <TabsTrigger value="subscriptions" className="gap-2">
             <CreditCard className="h-4 w-4" />
-            طلبات اشتراك
+            {t("bookingsSubsTab")}
             {unreadSubs > 0 && <Badge variant="destructive" className="h-5 min-w-5 text-[10px] px-1">{unreadSubs}</Badge>}
           </TabsTrigger>
         </TabsList>
@@ -302,15 +302,15 @@ const Bookings = () => {
               {loading ? (
                 <p className="p-6 text-center text-muted-foreground">{t("loading")}</p>
               ) : filteredSubs.length === 0 ? (
-                <p className="p-6 text-center text-muted-foreground">لا توجد طلبات اشتراك</p>
+                <p className="p-6 text-center text-muted-foreground">{t("bookingsNoSubs")}</p>
               ) : (
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead></TableHead>
                       <TableHead>{t("fullName")}</TableHead>
-                      <TableHead>الخطة</TableHead>
-                      <TableHead>السعر</TableHead>
+                      <TableHead>{t("bookingsPlan")}</TableHead>
+                      <TableHead>{t("bookingsPrice")}</TableHead>
                       <TableHead>{t("bookingPhone")}</TableHead>
                       <TableHead>{t("date")}</TableHead>
                       <TableHead>{t("status")}</TableHead>

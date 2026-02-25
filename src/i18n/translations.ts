@@ -485,6 +485,22 @@ const translations = {
   sessionStarted: { en: "Session started!", ar: "بدأت الحصة!" },
   completeProfile: { en: "Complete your profile", ar: "أكمل ملفك الشخصي" },
   completeProfileHint: { en: "Add your qualifications, photo, and Zoom link", ar: "أضف مؤهلاتك وصورتك الشخصية ورابط الزوم" },
+
+  // Dashboard extras
+  dashRecentBookings: { en: "Recent Trial Bookings", ar: "آخر الحجوزات التجريبية" },
+  dashRecentSubs: { en: "Recent Subscription Requests", ar: "آخر طلبات الاشتراك" },
+  dashViewAll: { en: "View All", ar: "عرض الكل" },
+  dashNoBookings: { en: "No bookings", ar: "لا توجد حجوزات" },
+  dashNoSubs: { en: "No subscription requests", ar: "لا توجد طلبات اشتراك" },
+  trialSession: { en: "Trial Session", ar: "حصة تجريبية" },
+
+  // Bookings extras
+  bookingsTrialTab: { en: "Trial Bookings", ar: "حجوزات تجريبية" },
+  bookingsSubsTab: { en: "Subscription Requests", ar: "طلبات اشتراك" },
+  bookingsPlan: { en: "Plan", ar: "الخطة" },
+  bookingsPrice: { en: "Price", ar: "السعر" },
+  bookingsNoSubs: { en: "No subscription requests", ar: "لا توجد طلبات اشتراك" },
+  bookingsNewSub: { en: "New subscription request!", ar: "طلب اشتراك جديد!" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
