@@ -49,7 +49,7 @@ const Teachers = () => {
   const { role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || role === "manager";
   const { t } = useLanguage();
 
   const { data: teachers = [], isLoading } = useQuery({
