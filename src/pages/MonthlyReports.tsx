@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { FileText, Plus, Loader2, BookOpen, Download, Send, Pencil } from "lucide-react";
+import { FileText, Plus, Loader2, BookOpen, Download, Send, Pencil, Eye } from "lucide-react";
+import { openReportPreview, generateWhatsAppText } from "@/utils/reportGenerator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -150,35 +151,25 @@ const MonthlyReports = () => {
     setDialogOpen(true);
   };
 
-  const generatePdfContent = (r: any) => {
-    const monthLabel = new Date(r.report_month).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US", { year: "numeric", month: "long" });
-    const grade = r.overall_grade && gradeLabels[r.overall_grade] ? gradeLabels[r.overall_grade].label : "";
-    const att = r.attendance_rating ? (attendanceLabels[r.attendance_rating] ?? r.attendance_rating) : "";
-
-    const sections: string[] = [];
-    sections.push(`📋 ${t("monthlyReportsTitle")}`);
-    sections.push(`👤 ${t("student")}: ${r.students?.name ?? ""}`);
-    sections.push(`📅 ${t("month")}: ${monthLabel}`);
-    if (grade) sections.push(`🎯 ${t("overallGrade")}: ${grade}`);
-    if (att) sections.push(`📊 ${t("attendanceLevel")}: ${att}`);
-    if (r.quran_progress) sections.push(`\n📖 ${t("quranProgress")}:\n${r.quran_progress}`);
-    if (r.tajweed_level) sections.push(`\n📚 ${t("arabicIslamicStudies")}:\n${r.tajweed_level}`);
-    if (r.strengths) sections.push(`\n✅ ${t("strengths")}:\n${r.strengths}`);
-    if (r.weaknesses) sections.push(`\n⚠️ ${t("weaknesses")}:\n${r.weaknesses}`);
-    if (r.behavior_notes) sections.push(`\n💬 ${t("behaviorNotes")}:\n${r.behavior_notes}`);
-    if (r.recommendations) sections.push(`\n💡 ${t("recommendations")}:\n${r.recommendations}`);
-    return sections.join("\n");
-  };
+  const buildReportData = (r: any) => ({
+    studentName: r.students?.name ?? "",
+    teacherName: r.teachers?.profiles?.full_name ?? "",
+    reportMonth: r.report_month,
+    overallGrade: r.overall_grade ?? "",
+    gradeLabelAr: r.overall_grade && gradeLabels[r.overall_grade] ? gradeLabels[r.overall_grade].label : "",
+    attendanceRating: r.attendance_rating ?? "",
+    attendanceLabelAr: r.attendance_rating ? (attendanceLabels[r.attendance_rating] ?? r.attendance_rating) : "",
+    quranProgress: r.quran_progress ?? "",
+    arabicIslamicStudies: r.tajweed_level ?? "",
+    strengths: r.strengths ?? "",
+    weaknesses: r.weaknesses ?? "",
+    behaviorNotes: r.behavior_notes ?? "",
+    recommendations: r.recommendations ?? "",
+    lang,
+  });
 
   const downloadPdf = (r: any) => {
-    const content = generatePdfContent(r);
-    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `report-${r.students?.name ?? "student"}-${r.report_month?.slice(0, 7)}.txt`;
-    a.click();
-    URL.revokeObjectURL(url);
+    openReportPreview(buildReportData(r));
   };
 
   const sendWhatsapp = (r: any) => {
@@ -187,7 +178,7 @@ const MonthlyReports = () => {
       toast({ title: t("error"), description: "لا يوجد رقم واتساب للطالب", variant: "destructive" });
       return;
     }
-    const content = generatePdfContent(r);
+    const content = generateWhatsAppText(buildReportData(r));
     const cleanPhone = phone.replace(/[^0-9]/g, "");
     const url = `https://wa.me/${encodeURIComponent(cleanPhone)}?text=${encodeURIComponent(content)}`;
     window.open(url, "_blank", "noopener,noreferrer");
