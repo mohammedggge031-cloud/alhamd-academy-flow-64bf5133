@@ -28,6 +28,7 @@ interface SidebarProps {
 
 const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: string[]; badgeKey?: string }[] = [
   { to: "/", icon: LayoutDashboard, labelKey: "navDashboard", roles: ["admin", "manager"] },
+  { to: "/teacher-home", icon: LayoutDashboard, labelKey: "navDashboard", roles: ["teacher"] },
   { to: "/bookings", icon: CalendarPlus, labelKey: "navBookings", roles: ["admin", "manager"], badgeKey: "bookings" },
   { to: "/students", icon: Users, labelKey: "navStudents", roles: ["admin", "manager"] },
   { to: "/teachers", icon: GraduationCap, labelKey: "navTeachers", roles: ["admin", "manager"] },
