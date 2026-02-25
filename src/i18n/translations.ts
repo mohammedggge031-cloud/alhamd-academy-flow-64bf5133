@@ -457,6 +457,8 @@ const translations = {
   noDocuments: { en: "No documents uploaded yet", ar: "لم يتم رفع مستندات بعد" },
   teacherProfileTitle: { en: "Teacher Profile", ar: "ملف المعلم" },
   viewProfile: { en: "View Profile", ar: "عرض الملف" },
+  profileStatus: { en: "Profile Status", ar: "حالة الملف" },
+  profileIncomplete: { en: "Incomplete", ar: "غير مكتمل" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
