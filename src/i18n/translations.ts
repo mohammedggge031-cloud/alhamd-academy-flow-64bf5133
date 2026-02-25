@@ -433,6 +433,30 @@ const translations = {
   bookingAdminNotes: { en: "Admin Notes", ar: "ملاحظات الإدارة" },
   bookingNotesPlaceholder: { en: "Add notes about this booking...", ar: "أضف ملاحظات عن هذا الحجز..." },
   bookingReceivedAt: { en: "Received at", ar: "تم الاستلام في" },
+
+  // Teacher Profile
+  myProfile: { en: "My Profile", ar: "ملفي الشخصي" },
+  navMyProfile: { en: "My Profile", ar: "ملفي الشخصي" },
+  profileComplete: { en: "Complete", ar: "مكتمل" },
+  profileUpdated: { en: "Profile updated", ar: "تم تحديث الملف الشخصي" },
+  fileUploaded: { en: "File uploaded", ar: "تم رفع الملف" },
+  academicDegree: { en: "Academic Degree", ar: "الدرجة العلمية" },
+  academicDegreePlaceholder: { en: "e.g. Bachelor in Islamic Studies", ar: "مثال: بكالوريوس دراسات إسلامية" },
+  ijazatLabel: { en: "Ijazat (Licenses)", ar: "الإجازات" },
+  ijazatPlaceholder: { en: "e.g. Ijazah in Hafs from Asim", ar: "مثال: إجازة في حفص عن عاصم" },
+  bioLabel: { en: "About Me", ar: "نبذة عني" },
+  bioPlaceholder: { en: "Write a brief about yourself, your experience, and teaching style...", ar: "اكتب نبذة مختصرة عنك وعن خبرتك وأسلوبك في التدريس..." },
+  saveProfile: { en: "Save Profile", ar: "حفظ الملف الشخصي" },
+  documentsTitle: { en: "Documents & Certificates", ar: "المستندات والشهادات" },
+  profilePhoto: { en: "Profile Photo", ar: "الصورة الشخصية" },
+  idCard: { en: "ID Card", ar: "صورة البطاقة" },
+  certificate: { en: "Certificate", ar: "شهادة" },
+  ijazaDoc: { en: "Ijaza Document", ar: "وثيقة الإجازة" },
+  otherDoc: { en: "Other Document", ar: "مستند آخر" },
+  uploadFile: { en: "Upload file", ar: "رفع ملف" },
+  noDocuments: { en: "No documents uploaded yet", ar: "لم يتم رفع مستندات بعد" },
+  teacherProfileTitle: { en: "Teacher Profile", ar: "ملف المعلم" },
+  viewProfile: { en: "View Profile", ar: "عرض الملف" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

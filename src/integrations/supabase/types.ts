@@ -573,17 +573,66 @@ export type Database = {
         }
         Relationships: []
       }
+      teacher_documents: {
+        Row: {
+          created_at: string
+          description: string | null
+          document_type: string
+          file_name: string
+          file_url: string
+          id: string
+          teacher_id: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          document_type: string
+          file_name: string
+          file_url: string
+          id?: string
+          teacher_id: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          document_type?: string
+          file_name?: string
+          file_url?: string
+          id?: string
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_documents_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_documents_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_self_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teachers: {
         Row: {
+          academic_degree: string | null
           age: number | null
+          bio: string | null
           created_at: string
           hourly_rate: number
           id: string
+          ijazat: string | null
           is_active: boolean | null
           monthly_absence_hours: number | null
           monthly_hours: number | null
           monthly_salary: number | null
           monthly_waiting_minutes: number | null
+          profile_completed: boolean | null
           qualification: string | null
           rating: number | null
           students_count: number | null
@@ -593,15 +642,19 @@ export type Database = {
           zoom_link: string | null
         }
         Insert: {
+          academic_degree?: string | null
           age?: number | null
+          bio?: string | null
           created_at?: string
           hourly_rate?: number
           id?: string
+          ijazat?: string | null
           is_active?: boolean | null
           monthly_absence_hours?: number | null
           monthly_hours?: number | null
           monthly_salary?: number | null
           monthly_waiting_minutes?: number | null
+          profile_completed?: boolean | null
           qualification?: string | null
           rating?: number | null
           students_count?: number | null
@@ -611,15 +664,19 @@ export type Database = {
           zoom_link?: string | null
         }
         Update: {
+          academic_degree?: string | null
           age?: number | null
+          bio?: string | null
           created_at?: string
           hourly_rate?: number
           id?: string
+          ijazat?: string | null
           is_active?: boolean | null
           monthly_absence_hours?: number | null
           monthly_hours?: number | null
           monthly_salary?: number | null
           monthly_waiting_minutes?: number | null
+          profile_completed?: boolean | null
           qualification?: string | null
           rating?: number | null
           students_count?: number | null

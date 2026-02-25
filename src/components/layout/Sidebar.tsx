@@ -31,11 +31,12 @@ const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: str
   { to: "/bookings", icon: CalendarPlus, labelKey: "navBookings", roles: ["admin", "manager"], badgeKey: "bookings" },
   { to: "/students", icon: Users, labelKey: "navStudents", roles: ["admin", "manager"] },
   { to: "/teachers", icon: GraduationCap, labelKey: "navTeachers", roles: ["admin", "manager"] },
-  { to: "/sessions", icon: CalendarDays, labelKey: "navSessions", roles: ["admin", "manager"] },
+  { to: "/sessions", icon: CalendarDays, labelKey: "navSessions", roles: ["admin", "manager", "teacher"] },
+  { to: "/my-profile", icon: Users, labelKey: "navMyProfile", roles: ["teacher"] },
   { to: "/invoices", icon: Receipt, labelKey: "navInvoices", roles: ["admin", "manager"] },
   { to: "/expenses", icon: DollarSign, labelKey: "navExpenses", roles: ["admin"] },
   { to: "/reports", icon: BarChart3, labelKey: "navReports", roles: ["admin"] },
-  { to: "/monthly-reports", icon: BookOpen, labelKey: "navStudentReports", roles: ["admin", "manager"] },
+  { to: "/monthly-reports", icon: BookOpen, labelKey: "navStudentReports", roles: ["admin", "manager", "teacher"] },
   { to: "/settings", icon: Settings, labelKey: "navSettings", roles: ["admin"] },
 ];
 
@@ -120,10 +121,10 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
       <div className="border-t border-sidebar-border p-4 space-y-3">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-full bg-sidebar-accent flex items-center justify-center">
-            <span className="text-sm font-bold text-sidebar-primary">{role === "manager" ? "M" : "A"}</span>
+            <span className="text-sm font-bold text-sidebar-primary">{role === "manager" ? "M" : role === "teacher" ? "T" : "A"}</span>
           </div>
           <div>
-            <p className="text-sm font-medium text-sidebar-foreground">{role === "manager" ? t("manager") : t("admin")}</p>
+            <p className="text-sm font-medium text-sidebar-foreground">{role === "manager" ? t("manager") : role === "teacher" ? t("teacher") : t("admin")}</p>
             <p className="text-xs text-sidebar-muted">{role}</p>
           </div>
         </div>
