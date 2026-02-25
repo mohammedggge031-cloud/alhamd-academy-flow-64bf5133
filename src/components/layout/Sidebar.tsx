@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 import {
   LayoutDashboard,
@@ -19,7 +20,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useLanguage } from "@/i18n/LanguageContext";
 import type { TranslationKey } from "@/i18n/translations";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import logo from "@/assets/logo.jpeg";
 
 interface SidebarProps {
@@ -45,6 +46,7 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
   const location = useLocation();
   const { signOut, role } = useAuth();
   const { t } = useLanguage();
+  const qc = useQueryClient();
 
   const { data: unreadCounts = { bookings: 0 } } = useQuery({
     queryKey: ["sidebar-unread"],
@@ -57,8 +59,23 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
         bookings: (bookingsRes.count ?? 0) + (subsRes.count ?? 0),
       };
     },
-    refetchInterval: 30000, // refresh every 30s
+    refetchInterval: 30000,
   });
+
+  // Real-time subscriptions for instant badge updates
+  useEffect(() => {
+    const channel = supabase
+      .channel("sidebar-realtime")
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "trial_bookings" }, () => {
+        qc.invalidateQueries({ queryKey: ["sidebar-unread"] });
+      })
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "subscription_requests" }, () => {
+        qc.invalidateQueries({ queryKey: ["sidebar-unread"] });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
+  }, [qc]);
 
   const navItems = allNavItems.filter(item => item.roles.includes(role ?? ""));
 
