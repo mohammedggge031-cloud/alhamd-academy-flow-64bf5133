@@ -525,6 +525,54 @@ export type Database = {
           },
         ]
       }
+      subscription_requests: {
+        Row: {
+          admin_notes: string | null
+          created_at: string
+          email: string | null
+          full_name: string
+          id: string
+          is_read: boolean
+          message: string | null
+          phone: string
+          plan_name: string
+          plan_price: string | null
+          sessions_per_week: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          full_name: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          phone: string
+          plan_name: string
+          plan_price?: string | null
+          sessions_per_week?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          admin_notes?: string | null
+          created_at?: string
+          email?: string | null
+          full_name?: string
+          id?: string
+          is_read?: boolean
+          message?: string | null
+          phone?: string
+          plan_name?: string
+          plan_price?: string | null
+          sessions_per_week?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       teachers: {
         Row: {
           age: number | null
