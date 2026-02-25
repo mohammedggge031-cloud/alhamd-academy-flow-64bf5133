@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Users, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +10,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
+import { useQuery } from "@tanstack/react-query";
 import AddStudentForm from "@/components/students/AddStudentForm";
 import StudentCard from "@/components/students/StudentCard";
 import TransferStudentDialog from "@/components/students/TransferStudentDialog";
@@ -18,65 +19,51 @@ import { useLanguage } from "@/i18n/LanguageContext";
 const Students = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [students, setStudents] = useState<any[]>([]);
-  const [teacherNames, setTeacherNames] = useState<Record<string, string>>({});
-  const [invoiceStatuses, setInvoiceStatuses] = useState<Record<string, string>>({});
-  const [loading, setLoading] = useState(true);
   const [transferStudent, setTransferStudent] = useState<any>(null);
   const { t } = useLanguage();
 
-  const fetchStudents = async () => {
-    setLoading(true);
-    const { data } = await supabase
-      .from("students")
-      .select("*")
-      .eq("is_active", true)
-      .order("created_at", { ascending: false });
+  const { data: students = [], isLoading, refetch } = useQuery({
+    queryKey: ["students-full"],
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("students")
+        .select("*, assigned_teacher:assigned_teacher_id(id, user_id, profiles:user_id(full_name))")
+        .eq("is_active", true)
+        .order("created_at", { ascending: false });
+      return data ?? [];
+    },
+  });
 
-    if (data) {
-      setStudents(data);
+  const studentIds = students.map((s: any) => s.id);
 
-      const teacherIds = [...new Set(data.map((s) => s.assigned_teacher_id).filter(Boolean))];
-      const names: Record<string, string> = {};
-      for (const tid of teacherIds) {
-        const { data: teacher } = await supabase
-          .from("teachers")
-          .select("user_id")
-          .eq("id", tid)
-          .maybeSingle();
-        if (teacher) {
-          const { data: profile } = await supabase
-            .from("profiles")
-            .select("full_name")
-            .eq("user_id", teacher.user_id)
-            .maybeSingle();
-          names[tid] = profile?.full_name || t("teacher");
+  const { data: invoiceStatuses = {} } = useQuery({
+    queryKey: ["student-invoice-statuses", studentIds],
+    enabled: studentIds.length > 0,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("invoices")
+        .select("student_id, status, created_at")
+        .in("student_id", studentIds)
+        .order("created_at", { ascending: false });
+      
+      const statuses: Record<string, string> = {};
+      if (data) {
+        for (const inv of data) {
+          if (inv.student_id && !statuses[inv.student_id]) {
+            statuses[inv.student_id] = inv.status;
+          }
         }
       }
-      setTeacherNames(names);
+      return statuses;
+    },
+  });
 
-      const statuses: Record<string, string> = {};
-      for (const s of data) {
-        const { data: invoice } = await supabase
-          .from("invoices")
-          .select("status")
-          .eq("student_id", s.id)
-          .order("created_at", { ascending: false })
-          .limit(1)
-          .maybeSingle();
-        if (invoice) statuses[s.id] = invoice.status;
-      }
-      setInvoiceStatuses(statuses);
-    }
-    setLoading(false);
+  const getTeacherName = (student: any) => {
+    return student.assigned_teacher?.profiles?.full_name || t("noTeacher");
   };
 
-  useEffect(() => {
-    fetchStudents();
-  }, []);
-
   const filtered = students.filter(
-    (s) =>
+    (s: any) =>
       s.name?.includes(search) ||
       s.whatsapp?.includes(search) ||
       s.country?.includes(search)
@@ -106,7 +93,7 @@ const Students = () => {
             <AddStudentForm
               onSuccess={() => {
                 setDialogOpen(false);
-                fetchStudents();
+                refetch();
               }}
               onCancel={() => setDialogOpen(false)}
             />
@@ -124,18 +111,18 @@ const Students = () => {
         />
       </div>
 
-      {loading ? (
+      {isLoading ? (
         <p className="text-center text-muted-foreground py-8">{t("loadingStudents")}</p>
       ) : filtered.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">{t("noStudents")}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((student) => (
+          {filtered.map((student: any) => (
             <StudentCard
               key={student.id}
               student={student}
-              teacherName={teacherNames[student.assigned_teacher_id] || t("noTeacher")}
-              invoiceStatus={invoiceStatuses[student.id] || null}
+              teacherName={getTeacherName(student)}
+              invoiceStatus={(invoiceStatuses as Record<string, string>)[student.id] || null}
               onTransfer={() => setTransferStudent(student)}
             />
           ))}
@@ -150,7 +137,7 @@ const Students = () => {
           studentName={transferStudent.name}
           currentTeacherId={transferStudent.assigned_teacher_id}
           studentSchedule={Array.isArray(transferStudent.schedule) ? transferStudent.schedule : []}
-          onSuccess={fetchStudents}
+          onSuccess={() => refetch()}
         />
       )}
     </div>
