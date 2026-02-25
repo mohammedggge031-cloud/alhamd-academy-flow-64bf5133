@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Plus, Loader2, BookOpen } from "lucide-react";
+import { FileText, Plus, Loader2, BookOpen, Download, Send, Pencil } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -17,19 +17,22 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 
+const emptyForm = {
+  student_id: "", report_month: new Date().toISOString().slice(0, 7),
+  quran_progress: "", tajweed_level: "", attendance_rating: "",
+  behavior_notes: "", strengths: "", weaknesses: "",
+  recommendations: "", overall_grade: "",
+};
+
 const MonthlyReports = () => {
   const { t, lang } = useLanguage();
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [form, setForm] = useState({
-    student_id: "", report_month: new Date().toISOString().slice(0, 7),
-    quran_progress: "", tajweed_level: "", attendance_rating: "",
-    behavior_notes: "", strengths: "", weaknesses: "",
-    recommendations: "", overall_grade: "",
-  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ ...emptyForm });
   const { role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const isAdmin = role === "admin";
+  const isAdmin = role === "admin" || role === "manager";
 
   const gradeLabels: Record<string, { label: string; className: string }> = {
     A: { label: t("gradeA"), className: "bg-success text-success-foreground" },
@@ -48,7 +51,7 @@ const MonthlyReports = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("monthly_reports")
-        .select(`*, students:student_id(name), teachers:teacher_id(user_id, profiles:user_id(full_name))`)
+        .select(`*, students:student_id(name, whatsapp, guardian_whatsapp), teachers:teacher_id(user_id, profiles:user_id(full_name))`)
         .order("report_month", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -79,40 +82,116 @@ const MonthlyReports = () => {
 
   const students = isAdmin ? allStudents : myStudents;
 
-  const createReport = useMutation({
+  const saveReport = useMutation({
     mutationFn: async () => {
-      let teacherId: string;
-      if (isAdmin) {
-        const { data: student } = await supabase.from("students").select("assigned_teacher_id").eq("id", form.student_id).single();
-        teacherId = student?.assigned_teacher_id ?? "";
+      if (editingId) {
+        const { error } = await supabase.from("monthly_reports").update({
+          quran_progress: form.quran_progress || null,
+          tajweed_level: form.tajweed_level || null,
+          attendance_rating: form.attendance_rating || null,
+          behavior_notes: form.behavior_notes || null,
+          strengths: form.strengths || null,
+          weaknesses: form.weaknesses || null,
+          recommendations: form.recommendations || null,
+          overall_grade: form.overall_grade || null,
+        }).eq("id", editingId);
+        if (error) throw error;
       } else {
-        const { data: teacher } = await supabase.from("teachers").select("id")
-          .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "").single();
-        teacherId = teacher?.id ?? "";
+        let teacherId: string;
+        if (isAdmin) {
+          const { data: student } = await supabase.from("students").select("assigned_teacher_id").eq("id", form.student_id).single();
+          teacherId = student?.assigned_teacher_id ?? "";
+        } else {
+          const { data: teacher } = await supabase.from("teachers").select("id")
+            .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "").single();
+          teacherId = teacher?.id ?? "";
+        }
+        const { error } = await supabase.from("monthly_reports").insert({
+          teacher_id: teacherId, student_id: form.student_id,
+          report_month: form.report_month + "-01",
+          quran_progress: form.quran_progress || null, tajweed_level: form.tajweed_level || null,
+          attendance_rating: form.attendance_rating || null, behavior_notes: form.behavior_notes || null,
+          strengths: form.strengths || null, weaknesses: form.weaknesses || null,
+          recommendations: form.recommendations || null, overall_grade: form.overall_grade || null,
+        });
+        if (error) throw error;
       }
-      const { error } = await supabase.from("monthly_reports").insert({
-        teacher_id: teacherId, student_id: form.student_id,
-        report_month: form.report_month + "-01",
-        quran_progress: form.quran_progress || null, tajweed_level: form.tajweed_level || null,
-        attendance_rating: form.attendance_rating || null, behavior_notes: form.behavior_notes || null,
-        strengths: form.strengths || null, weaknesses: form.weaknesses || null,
-        recommendations: form.recommendations || null, overall_grade: form.overall_grade || null,
-      });
-      if (error) throw error;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["monthly-reports"] });
       setDialogOpen(false);
-      setForm({
-        student_id: "", report_month: new Date().toISOString().slice(0, 7),
-        quran_progress: "", tajweed_level: "", attendance_rating: "",
-        behavior_notes: "", strengths: "", weaknesses: "",
-        recommendations: "", overall_grade: "",
-      });
-      toast({ title: t("reportSaved") });
+      setEditingId(null);
+      setForm({ ...emptyForm });
+      toast({ title: editingId ? t("reportUpdated") : t("reportSaved") });
     },
     onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
   });
+
+  const openEdit = (r: any) => {
+    setEditingId(r.id);
+    setForm({
+      student_id: r.student_id,
+      report_month: r.report_month?.slice(0, 7) ?? "",
+      quran_progress: r.quran_progress ?? "",
+      tajweed_level: r.tajweed_level ?? "",
+      attendance_rating: r.attendance_rating ?? "",
+      behavior_notes: r.behavior_notes ?? "",
+      strengths: r.strengths ?? "",
+      weaknesses: r.weaknesses ?? "",
+      recommendations: r.recommendations ?? "",
+      overall_grade: r.overall_grade ?? "",
+    });
+    setDialogOpen(true);
+  };
+
+  const openNew = () => {
+    setEditingId(null);
+    setForm({ ...emptyForm });
+    setDialogOpen(true);
+  };
+
+  const generatePdfContent = (r: any) => {
+    const monthLabel = new Date(r.report_month).toLocaleDateString(lang === "ar" ? "ar-EG" : "en-US", { year: "numeric", month: "long" });
+    const grade = r.overall_grade && gradeLabels[r.overall_grade] ? gradeLabels[r.overall_grade].label : "";
+    const att = r.attendance_rating ? (attendanceLabels[r.attendance_rating] ?? r.attendance_rating) : "";
+
+    const sections: string[] = [];
+    sections.push(`📋 ${t("monthlyReportsTitle")}`);
+    sections.push(`👤 ${t("student")}: ${r.students?.name ?? ""}`);
+    sections.push(`📅 ${t("month")}: ${monthLabel}`);
+    if (grade) sections.push(`🎯 ${t("overallGrade")}: ${grade}`);
+    if (att) sections.push(`📊 ${t("attendanceLevel")}: ${att}`);
+    if (r.quran_progress) sections.push(`\n📖 ${t("quranProgress")}:\n${r.quran_progress}`);
+    if (r.tajweed_level) sections.push(`\n📚 ${t("arabicIslamicStudies")}:\n${r.tajweed_level}`);
+    if (r.strengths) sections.push(`\n✅ ${t("strengths")}:\n${r.strengths}`);
+    if (r.weaknesses) sections.push(`\n⚠️ ${t("weaknesses")}:\n${r.weaknesses}`);
+    if (r.behavior_notes) sections.push(`\n💬 ${t("behaviorNotes")}:\n${r.behavior_notes}`);
+    if (r.recommendations) sections.push(`\n💡 ${t("recommendations")}:\n${r.recommendations}`);
+    return sections.join("\n");
+  };
+
+  const downloadPdf = (r: any) => {
+    const content = generatePdfContent(r);
+    const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `report-${r.students?.name ?? "student"}-${r.report_month?.slice(0, 7)}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const sendWhatsapp = (r: any) => {
+    const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
+    if (!phone) {
+      toast({ title: t("error"), description: "لا يوجد رقم واتساب للطالب", variant: "destructive" });
+      return;
+    }
+    const content = generatePdfContent(r);
+    const cleanPhone = phone.replace(/[^0-9]/g, "");
+    const url = `https://wa.me/${encodeURIComponent(cleanPhone)}?text=${encodeURIComponent(content)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  };
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -125,15 +204,19 @@ const MonthlyReports = () => {
           <p className="text-muted-foreground">{t("monthlyReportsSubtitle")}</p>
         </div>
 
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2"><Plus className="h-4 w-4" />{t("writeReport")}</Button>
-          </DialogTrigger>
-          <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>{t("newMonthlyReport")}</DialogTitle>
-            </DialogHeader>
-            <div className="grid gap-4 py-4">
+        <Button className="gap-2" onClick={openNew}>
+          <Plus className="h-4 w-4" />{t("writeReport")}
+        </Button>
+      </div>
+
+      {/* Create / Edit Dialog */}
+      <Dialog open={dialogOpen} onOpenChange={(open) => { setDialogOpen(open); if (!open) { setEditingId(null); setForm({ ...emptyForm }); } }}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{editingId ? t("editReport") : t("newMonthlyReport")}</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            {!editingId && (
               <div className="grid grid-cols-2 gap-4">
                 <div className="grid gap-2">
                   <Label>{t("student")} *</Label>
@@ -155,69 +238,69 @@ const MonthlyReports = () => {
                   />
                 </div>
               </div>
+            )}
 
-              <div className="grid gap-2">
-                <Label>{t("quranProgress")}</Label>
-                <Textarea value={form.quran_progress} onChange={(e) => setForm({ ...form, quran_progress: e.target.value })} />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("tajweedLevel")}</Label>
-                <Textarea value={form.tajweed_level} onChange={(e) => setForm({ ...form, tajweed_level: e.target.value })} />
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div className="grid gap-2">
-                  <Label>{t("attendanceLevel")}</Label>
-                  <Select value={form.attendance_rating} onValueChange={(v) => setForm({ ...form, attendance_rating: v })}>
-                    <SelectTrigger><SelectValue placeholder={t("selectPlaceholder")} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="excellent">{t("excellent")}</SelectItem>
-                      <SelectItem value="good">{t("good")}</SelectItem>
-                      <SelectItem value="average">{t("average")}</SelectItem>
-                      <SelectItem value="poor">{t("poor")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="grid gap-2">
-                  <Label>{t("overallGrade")}</Label>
-                  <Select value={form.overall_grade} onValueChange={(v) => setForm({ ...form, overall_grade: v })}>
-                    <SelectTrigger><SelectValue placeholder={t("selectPlaceholder")} /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="A">{t("gradeA")}</SelectItem>
-                      <SelectItem value="B">{t("gradeB")}</SelectItem>
-                      <SelectItem value="C">{t("gradeC")}</SelectItem>
-                      <SelectItem value="D">{t("gradeD")}</SelectItem>
-                      <SelectItem value="F">{t("gradeF")}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-
-              <div className="grid gap-2">
-                <Label>{t("strengths")}</Label>
-                <Textarea value={form.strengths} onChange={(e) => setForm({ ...form, strengths: e.target.value })} />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("weaknesses")}</Label>
-                <Textarea value={form.weaknesses} onChange={(e) => setForm({ ...form, weaknesses: e.target.value })} />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("behaviorNotes")}</Label>
-                <Textarea value={form.behavior_notes} onChange={(e) => setForm({ ...form, behavior_notes: e.target.value })} />
-              </div>
-              <div className="grid gap-2">
-                <Label>{t("recommendations")}</Label>
-                <Textarea value={form.recommendations} onChange={(e) => setForm({ ...form, recommendations: e.target.value })} />
-              </div>
-
-              <Button onClick={() => createReport.mutate()} disabled={createReport.isPending || !form.student_id}>
-                {createReport.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
-                {t("saveReport")}
-              </Button>
+            <div className="grid gap-2">
+              <Label>{t("quranProgress")}</Label>
+              <Textarea value={form.quran_progress} onChange={(e) => setForm({ ...form, quran_progress: e.target.value })} />
             </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+            <div className="grid gap-2">
+              <Label>{t("arabicIslamicStudies")}</Label>
+              <Textarea value={form.tajweed_level} onChange={(e) => setForm({ ...form, tajweed_level: e.target.value })} />
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>{t("attendanceLevel")}</Label>
+                <Select value={form.attendance_rating} onValueChange={(v) => setForm({ ...form, attendance_rating: v })}>
+                  <SelectTrigger><SelectValue placeholder={t("selectPlaceholder")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="excellent">{t("excellent")}</SelectItem>
+                    <SelectItem value="good">{t("good")}</SelectItem>
+                    <SelectItem value="average">{t("average")}</SelectItem>
+                    <SelectItem value="poor">{t("poor")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="grid gap-2">
+                <Label>{t("overallGrade")}</Label>
+                <Select value={form.overall_grade} onValueChange={(v) => setForm({ ...form, overall_grade: v })}>
+                  <SelectTrigger><SelectValue placeholder={t("selectPlaceholder")} /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="A">{t("gradeA")}</SelectItem>
+                    <SelectItem value="B">{t("gradeB")}</SelectItem>
+                    <SelectItem value="C">{t("gradeC")}</SelectItem>
+                    <SelectItem value="D">{t("gradeD")}</SelectItem>
+                    <SelectItem value="F">{t("gradeF")}</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+
+            <div className="grid gap-2">
+              <Label>{t("strengths")}</Label>
+              <Textarea value={form.strengths} onChange={(e) => setForm({ ...form, strengths: e.target.value })} />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("weaknesses")}</Label>
+              <Textarea value={form.weaknesses} onChange={(e) => setForm({ ...form, weaknesses: e.target.value })} />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("behaviorNotes")}</Label>
+              <Textarea value={form.behavior_notes} onChange={(e) => setForm({ ...form, behavior_notes: e.target.value })} />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("recommendations")}</Label>
+              <Textarea value={form.recommendations} onChange={(e) => setForm({ ...form, recommendations: e.target.value })} />
+            </div>
+
+            <Button onClick={() => saveReport.mutate()} disabled={saveReport.isPending || (!editingId && !form.student_id)}>
+              {saveReport.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
+              {t("saveReport")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
 
       {isLoading ? (
         <div className="flex justify-center py-12">
@@ -259,17 +342,17 @@ const MonthlyReports = () => {
                 )}
                 {r.tajweed_level && (
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground mb-1">{t("tajweedLevel")}</p>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{t("arabicIslamicStudies")}</p>
                     <p>{r.tajweed_level}</p>
                   </div>
                 )}
-                <div className="flex gap-2 flex-wrap">
-                  {r.attendance_rating && (
+                {r.attendance_rating && (
+                  <div className="flex gap-2 flex-wrap">
                     <Badge variant="outline" className="text-xs">
                       {t("attendance")}: {attendanceLabels[r.attendance_rating] ?? r.attendance_rating}
                     </Badge>
-                  )}
-                </div>
+                  </div>
+                )}
                 {r.strengths && (
                   <div>
                     <p className="text-xs font-medium text-success mb-1">{t("strengths")}</p>
@@ -282,12 +365,31 @@ const MonthlyReports = () => {
                     <p className="text-xs">{r.weaknesses}</p>
                   </div>
                 )}
+                {r.behavior_notes && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-1">{t("behaviorNotes")}</p>
+                    <p className="text-xs">{r.behavior_notes}</p>
+                  </div>
+                )}
                 {r.recommendations && (
                   <div>
                     <p className="text-xs font-medium text-primary mb-1">{t("recommendations")}</p>
                     <p className="text-xs">{r.recommendations}</p>
                   </div>
                 )}
+
+                {/* Actions */}
+                <div className="flex gap-2 pt-2 border-t">
+                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => openEdit(r)}>
+                    <Pencil className="h-3 w-3" /> {t("editReport")}
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => downloadPdf(r)}>
+                    <Download className="h-3 w-3" /> {t("downloadPdf")}
+                  </Button>
+                  <Button variant="outline" size="sm" className="gap-1 text-xs text-[#25D366]" onClick={() => sendWhatsapp(r)}>
+                    <Send className="h-3 w-3" /> {t("sendWhatsapp")}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           ))}
