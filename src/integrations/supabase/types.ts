@@ -636,10 +636,12 @@ export type Database = {
           profile_completed: boolean | null
           qualification: string | null
           rating: number | null
+          show_on_website: boolean | null
           students_count: number | null
           subjects: string[] | null
           updated_at: string
           user_id: string
+          website_visible_fields: string[] | null
           zoom_link: string | null
         }
         Insert: {
@@ -659,10 +661,12 @@ export type Database = {
           profile_completed?: boolean | null
           qualification?: string | null
           rating?: number | null
+          show_on_website?: boolean | null
           students_count?: number | null
           subjects?: string[] | null
           updated_at?: string
           user_id: string
+          website_visible_fields?: string[] | null
           zoom_link?: string | null
         }
         Update: {
@@ -682,10 +686,12 @@ export type Database = {
           profile_completed?: boolean | null
           qualification?: string | null
           rating?: number | null
+          show_on_website?: boolean | null
           students_count?: number | null
           subjects?: string[] | null
           updated_at?: string
           user_id?: string
+          website_visible_fields?: string[] | null
           zoom_link?: string | null
         }
         Relationships: []
