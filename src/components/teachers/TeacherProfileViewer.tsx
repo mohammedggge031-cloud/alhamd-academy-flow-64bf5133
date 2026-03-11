@@ -37,7 +37,7 @@ export const TeacherProfileViewer = ({ teacherId, open, onOpenChange }: Props) =
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teachers")
-        .select("*, profiles!teachers_user_id_fkey(full_name, whatsapp)")
+        .select("*, profiles!teachers_profile_user_id_fkey(full_name, whatsapp)")
         .eq("id", teacherId!)
         .maybeSingle();
       if (error) throw error;

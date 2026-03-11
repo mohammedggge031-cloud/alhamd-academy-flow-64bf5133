@@ -78,7 +78,7 @@ const Teachers = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teachers")
-        .select("*, profiles!teachers_user_id_fkey(full_name, whatsapp)")
+        .select("*, profiles!teachers_profile_user_id_fkey(full_name, whatsapp)")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return (data as unknown as TeacherRow[]) ?? [];
