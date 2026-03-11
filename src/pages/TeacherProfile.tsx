@@ -35,7 +35,7 @@ const TeacherProfile = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("teachers")
-        .select("*, profiles!teachers_user_id_fkey(full_name, whatsapp)")
+        .select("*, profiles!teachers_profile_user_id_fkey(full_name, whatsapp)")
         .eq("user_id", user!.id)
         .maybeSingle();
       if (error) throw error;
