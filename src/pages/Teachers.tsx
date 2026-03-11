@@ -24,6 +24,7 @@ interface TeacherRow {
   monthly_waiting_minutes: number | null; monthly_absence_hours: number | null;
   monthly_salary: number | null; is_active: boolean | null;
   profile_completed: boolean | null; gender: string | null;
+  show_on_website: boolean | null; website_visible_fields: string[] | null;
   profiles: { full_name: string; whatsapp: string | null } | null;
 }
 
