@@ -501,6 +501,13 @@ const translations = {
   bookingsPrice: { en: "Price", ar: "السعر" },
   bookingsNoSubs: { en: "No subscription requests", ar: "لا توجد طلبات اشتراك" },
   bookingsNewSub: { en: "New subscription request!", ar: "طلب اشتراك جديد!" },
+
+  // Website visibility
+  websiteVisibility: { en: "Website Visibility", ar: "الظهور على الموقع" },
+  showOnWebsite: { en: "Show on website", ar: "إظهار على الموقع" },
+  selectVisibleFields: { en: "Select fields to display", ar: "اختر البيانات المراد عرضها" },
+  websiteSettingsSaved: { en: "Website settings saved", ar: "تم حفظ إعدادات الموقع" },
+  websiteVisible: { en: "On website", ar: "على الموقع" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

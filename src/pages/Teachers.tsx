@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle } from "lucide-react";
+import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { TeacherProfileViewer } from "@/components/teachers/TeacherProfileViewer";
+import { WebsiteVisibilityDialog } from "@/components/teachers/WebsiteVisibilityDialog";
 
 interface TeacherRow {
   id: string; user_id: string; age: number | null; qualification: string | null;
@@ -23,6 +24,7 @@ interface TeacherRow {
   monthly_waiting_minutes: number | null; monthly_absence_hours: number | null;
   monthly_salary: number | null; is_active: boolean | null;
   profile_completed: boolean | null; gender: string | null;
+  show_on_website: boolean | null; website_visible_fields: string[] | null;
   profiles: { full_name: string; whatsapp: string | null } | null;
 }
 
@@ -40,6 +42,7 @@ const Teachers = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewingTeacherId, setViewingTeacherId] = useState<string | null>(null);
+  const [websiteTeacher, setWebsiteTeacher] = useState<TeacherRow | null>(null);
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
   const [profileFilter, setProfileFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
@@ -385,15 +388,26 @@ const Teachers = () => {
                 )}
 
                 {isAdmin && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                    onClick={() => setViewingTeacherId(teacher.id)}
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    {t("viewProfile")}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => setViewingTeacherId(teacher.id)}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      {t("viewProfile")}
+                    </Button>
+                    <Button
+                      variant={teacher.show_on_website ? "default" : "outline"}
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setWebsiteTeacher(teacher)}
+                    >
+                      <Globe className="h-3.5 w-3.5" />
+                      {teacher.show_on_website && <span className="text-xs">{t("websiteVisible")}</span>}
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -406,6 +420,17 @@ const Teachers = () => {
         open={!!viewingTeacherId}
         onOpenChange={(open) => !open && setViewingTeacherId(null)}
       />
+
+      {websiteTeacher && (
+        <WebsiteVisibilityDialog
+          teacherId={websiteTeacher.id}
+          teacherName={websiteTeacher.profiles?.full_name ?? ""}
+          showOnWebsite={websiteTeacher.show_on_website ?? false}
+          visibleFields={websiteTeacher.website_visible_fields ?? []}
+          open={!!websiteTeacher}
+          onOpenChange={(open) => !open && setWebsiteTeacher(null)}
+        />
+      )}
     </div>
   );
 };
