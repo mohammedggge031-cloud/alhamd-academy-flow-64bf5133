@@ -15,6 +15,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { TeacherProfileViewer } from "@/components/teachers/TeacherProfileViewer";
+import { WebsiteVisibilityDialog } from "@/components/teachers/WebsiteVisibilityDialog";
 
 interface TeacherRow {
   id: string; user_id: string; age: number | null; qualification: string | null;
