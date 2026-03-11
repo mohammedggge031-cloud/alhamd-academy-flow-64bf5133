@@ -19,7 +19,7 @@ serve(async (req) => {
     // Get teachers marked for website display
     const { data: teachers, error } = await adminClient
       .from("teachers")
-      .select("id, bio, academic_degree, ijazat, qualification, subjects, rating, students_count, gender, website_visible_fields, profiles!teachers_user_id_fkey(full_name)")
+      .select("id, bio, academic_degree, ijazat, qualification, subjects, rating, students_count, gender, website_visible_fields, profiles!teachers_profile_user_id_fkey(full_name)")
       .eq("show_on_website", true)
       .eq("is_active", true);
 
