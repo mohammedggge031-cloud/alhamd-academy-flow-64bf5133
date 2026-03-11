@@ -42,6 +42,7 @@ const Teachers = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewingTeacherId, setViewingTeacherId] = useState<string | null>(null);
+  const [websiteTeacher, setWebsiteTeacher] = useState<TeacherRow | null>(null);
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
   const [profileFilter, setProfileFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
