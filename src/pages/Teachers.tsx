@@ -388,15 +388,26 @@ const Teachers = () => {
                 )}
 
                 {isAdmin && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full gap-2"
-                    onClick={() => setViewingTeacherId(teacher.id)}
-                  >
-                    <Eye className="h-3.5 w-3.5" />
-                    {t("viewProfile")}
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="flex-1 gap-2"
+                      onClick={() => setViewingTeacherId(teacher.id)}
+                    >
+                      <Eye className="h-3.5 w-3.5" />
+                      {t("viewProfile")}
+                    </Button>
+                    <Button
+                      variant={teacher.show_on_website ? "default" : "outline"}
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => setWebsiteTeacher(teacher)}
+                    >
+                      <Globe className="h-3.5 w-3.5" />
+                      {teacher.show_on_website && <span className="text-xs">{t("websiteVisible")}</span>}
+                    </Button>
+                  </div>
                 )}
               </CardContent>
             </Card>
@@ -409,6 +420,17 @@ const Teachers = () => {
         open={!!viewingTeacherId}
         onOpenChange={(open) => !open && setViewingTeacherId(null)}
       />
+
+      {websiteTeacher && (
+        <WebsiteVisibilityDialog
+          teacherId={websiteTeacher.id}
+          teacherName={websiteTeacher.profiles?.full_name ?? ""}
+          showOnWebsite={websiteTeacher.show_on_website ?? false}
+          visibleFields={websiteTeacher.website_visible_fields ?? []}
+          open={!!websiteTeacher}
+          onOpenChange={(open) => !open && setWebsiteTeacher(null)}
+        />
+      )}
     </div>
   );
 };
