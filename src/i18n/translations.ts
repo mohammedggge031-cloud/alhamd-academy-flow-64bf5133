@@ -508,6 +508,18 @@ const translations = {
   selectVisibleFields: { en: "Select fields to display", ar: "اختر البيانات المراد عرضها" },
   websiteSettingsSaved: { en: "Website settings saved", ar: "تم حفظ إعدادات الموقع" },
   websiteVisible: { en: "On website", ar: "على الموقع" },
+
+  // Manager management
+  managerManagement: { en: "Manager Management", ar: "إدارة المشرفين" },
+  managerManagementDesc: { en: "Add or remove managers", ar: "إضافة أو إزالة المشرفين" },
+  addManager: { en: "Add Manager", ar: "إضافة مشرف" },
+  managerName: { en: "Manager Name", ar: "اسم المشرف" },
+  managerEmail: { en: "Email", ar: "البريد الإلكتروني" },
+  managerPassword: { en: "Password", ar: "كلمة المرور" },
+  managerAdded: { en: "Manager added successfully", ar: "تم إضافة المشرف بنجاح" },
+  managerDeleted: { en: "Manager removed successfully", ar: "تم إزالة المشرف بنجاح" },
+  confirmDeleteManager: { en: "Are you sure you want to remove this manager?", ar: "هل أنت متأكد من إزالة هذا المشرف؟" },
+  noManagers: { en: "No managers added yet", ar: "لم يتم إضافة مشرفين بعد" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
