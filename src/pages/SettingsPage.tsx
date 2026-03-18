@@ -27,7 +27,18 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [managerDialog, setManagerDialog] = useState(false);
-  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "" });
+  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "", dot_color: "#3B82F6" });
+
+  const dotColorOptions = [
+    { color: "#3B82F6", label: "أزرق" },
+    { color: "#EF4444", label: "أحمر" },
+    { color: "#10B981", label: "أخضر" },
+    { color: "#F59E0B", label: "برتقالي" },
+    { color: "#8B5CF6", label: "بنفسجي" },
+    { color: "#EC4899", label: "وردي" },
+    { color: "#06B6D4", label: "سماوي" },
+    { color: "#F97316", label: "نارنجي" },
+  ];
 
   const { data: managers = [], isLoading: loadingManagers } = useQuery({
     queryKey: ["managers"],
