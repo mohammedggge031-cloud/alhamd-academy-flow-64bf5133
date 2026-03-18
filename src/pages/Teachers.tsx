@@ -104,7 +104,7 @@ const Teachers = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
       setDialogOpen(false);
-      setForm({ name: "", password: "", age: "", rate: "", whatsapp: "", qualification: "", subjects: [], rating: "", gender: "male" });
+      setForm({ name: "", password: "", age: "", rate: "", rateCurrency: "USD", whatsapp: "", qualification: "", subjects: [], rating: "", gender: "male" });
       toast({ title: t("teacherCreated") });
     },
     onError: (err: Error) => {
