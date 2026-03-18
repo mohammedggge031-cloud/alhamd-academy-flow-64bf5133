@@ -449,6 +449,14 @@ const Teachers = () => {
           onOpenChange={(open) => !open && setWebsiteTeacher(null)}
         />
       )}
+
+      {role === "admin" && (
+        <TeacherSalaryDialog
+          teacher={salaryTeacher}
+          open={!!salaryTeacher}
+          onOpenChange={(open) => !open && setSalaryTeacher(null)}
+        />
+      )}
     </div>
   );
 };
