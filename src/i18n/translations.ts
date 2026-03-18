@@ -526,6 +526,18 @@ const translations = {
   managerDeleted: { en: "Manager removed successfully", ar: "تم إزالة المشرف بنجاح" },
   confirmDeleteManager: { en: "Are you sure you want to remove this manager?", ar: "هل أنت متأكد من إزالة هذا المشرف؟" },
   noManagers: { en: "No managers added yet", ar: "لم يتم إضافة مشرفين بعد" },
+
+  // Notifications
+  justNow: { en: "Just now", ar: "الآن" },
+  minutesAgo: { en: "min ago", ar: "د" },
+  hoursAgo: { en: "hrs ago", ar: "س" },
+  daysAgo: { en: "days ago", ar: "ي" },
+  markAllRead: { en: "Mark all read", ar: "قراءة الكل" },
+  noNotifications: { en: "No notifications", ar: "لا توجد إشعارات" },
+  sendViaWhatsapp: { en: "Send via WhatsApp", ar: "إرسال عبر الواتساب" },
+  sendHomeworkToSupervisor: { en: "Send homework to supervisor", ar: "إرسال الواجب للإشراف" },
+  sendInvoiceWhatsapp: { en: "Send invoice via WhatsApp", ar: "إرسال الفاتورة عبر الواتساب" },
+  homeworkSentToSupervisor: { en: "Homework will be sent to supervisor via WhatsApp", ar: "الواجب سيتم إرساله للإشراف عبر الواتساب" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

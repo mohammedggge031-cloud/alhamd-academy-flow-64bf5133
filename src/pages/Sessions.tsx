@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send, BookOpen, Eye, DollarSign } from "lucide-react";
+import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send, BookOpen, Eye, DollarSign, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import SurahPicker from "@/components/SurahPicker";
 import { useLanguage } from "@/i18n/LanguageContext";
 import TeacherSchedule from "@/components/teachers/TeacherSchedule";
+import { openWhatsApp, buildHomeworkMessage } from "@/utils/whatsappLinks";
 
 const Sessions = () => {
   const { t } = useLanguage();
@@ -114,6 +115,28 @@ const Sessions = () => {
 
   const [showMyReports, setShowMyReports] = useState(false);
 
+  // Get admin/manager WhatsApp for homework forwarding
+  const { data: supervisorPhone } = useQuery({
+    queryKey: ["supervisor-phone"],
+    enabled: !isAdmin,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "manager"])
+        .limit(1);
+      if (!data?.[0]) return null;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("whatsapp")
+        .eq("user_id", data[0].user_id)
+        .single();
+      return profile?.whatsapp || null;
+    },
+  });
+
+  const [homeworkSentForSession, setHomeworkSentForSession] = useState<string | null>(null);
+
   const submitReport = useMutation({
     mutationFn: async (session: any) => {
       const { data: teacher } = await supabase.from("teachers").select("id")
@@ -126,16 +149,18 @@ const Sessions = () => {
         admin_alert_reason: report.admin_alert ? report.admin_alert_reason : null,
       });
       if (error) throw error;
+      // Store session id so we can show WhatsApp button after success
       if (report.homework) {
-        await supabase.functions.invoke("send-homework-whatsapp", {
-          body: { student_id: session.student_id, homework: report.homework, student_name: session.students?.name },
-        });
+        setHomeworkSentForSession(session.id);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["session-reports"] });
-      setReportDialog(null);
-      setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
+      // Don't close dialog immediately if homework exists - show WhatsApp button
+      if (!report.homework) {
+        setReportDialog(null);
+        setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
+      }
       toast({ title: t("reportSent") });
     },
     onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
@@ -550,9 +575,7 @@ const Sessions = () => {
                     <Button size="sm" className="gap-1"
                       onClick={async () => {
                         await updateStatus.mutateAsync({ id: selectedSession.id, status: "confirmed" });
-                        supabase.functions.invoke("send-session-reminder", {
-                          body: { type: "teacher_joined", session_id: selectedSession.id },
-                        });
+                        // No longer calling send-session-reminder API - using notification system instead
                         // Auto-redirect to Zoom
                         const { data: teacherData } = await supabase
                           .from("teachers")
@@ -710,6 +733,7 @@ const Sessions = () => {
                   </p>
                   <SurahPicker onSelect={(text) => setReport({ ...report, homework: report.homework ? `${report.homework}\n${text}` : text })} />
                 </div>
+                <p className="text-[10px] text-muted-foreground">{t("homeworkSentToSupervisor")}</p>
               </div>
 
               <div className="rounded-lg border border-border p-3 space-y-2">
@@ -728,11 +752,37 @@ const Sessions = () => {
                 )}
               </div>
 
-              <Button className="w-full gap-2" disabled={!report.student_level || !report.session_notes?.trim() || !report.homework?.trim() || submitReport.isPending}
-                onClick={() => submitReport.mutate(reportDialog)}>
-                {submitReport.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {t("sendReport")}
-              </Button>
+              {/* Show WhatsApp button after successful submission with homework */}
+              {homeworkSentForSession === reportDialog.id ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-success font-medium text-center">✅ {t("reportSent")}</p>
+                  {supervisorPhone && report.homework && (
+                    <Button className="w-full gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white"
+                      onClick={() => {
+                        openWhatsApp(supervisorPhone, buildHomeworkMessage(getStudentName(reportDialog), report.homework));
+                        setReportDialog(null);
+                        setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
+                        setHomeworkSentForSession(null);
+                      }}>
+                      <MessageCircle className="h-4 w-4" />
+                      {t("sendHomeworkToSupervisor")}
+                    </Button>
+                  )}
+                  <Button variant="outline" className="w-full" onClick={() => {
+                    setReportDialog(null);
+                    setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
+                    setHomeworkSentForSession(null);
+                  }}>
+                    {t("done")}
+                  </Button>
+                </div>
+              ) : (
+                <Button className="w-full gap-2" disabled={!report.student_level || !report.session_notes?.trim() || !report.homework?.trim() || submitReport.isPending}
+                  onClick={() => submitReport.mutate(reportDialog)}>
+                  {submitReport.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {t("sendReport")}
+                </Button>
+              )}
             </div>
           )}
         </DialogContent>

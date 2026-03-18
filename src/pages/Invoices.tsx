@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2 } from "lucide-react";
+import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { openWhatsApp, buildInvoiceMessage } from "@/utils/whatsappLinks";
 
 const Invoices = () => {
   const { t } = useLanguage();
@@ -50,7 +51,7 @@ const Invoices = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("*, students:student_id(name), invoice_students(student_id, hours, amount, students:student_id(name))")
+        .select("*, students:student_id(name, whatsapp, guardian_whatsapp), invoice_students(student_id, hours, amount, students:student_id(name, whatsapp, guardian_whatsapp))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
@@ -354,10 +355,25 @@ const Invoices = () => {
                         {status.label}
                       </Badge>
                       {invoice.status !== "paid" && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs"
-                          onClick={() => markPaid.mutate(invoice.id)} disabled={markPaid.isPending}>
-                          {t("markPaid")}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="outline" className="h-7 text-xs"
+                            onClick={() => markPaid.mutate(invoice.id)} disabled={markPaid.isPending}>
+                            {t("markPaid")}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-[#25D366] hover:text-[#25D366] hover:bg-[#25D366]/10"
+                            title={t("sendInvoiceWhatsapp")}
+                            onClick={() => {
+                              const studentName = getStudentNames(invoice);
+                              const phone = invoice.students?.whatsapp || invoice.students?.guardian_whatsapp || "";
+                              if (!phone) {
+                                toast({ title: t("error"), description: "لا يوجد رقم واتساب", variant: "destructive" });
+                                return;
+                              }
+                              openWhatsApp(phone, buildInvoiceMessage(studentName, invoice.total, invoice.hours, invoice.due_date));
+                            }}>
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
