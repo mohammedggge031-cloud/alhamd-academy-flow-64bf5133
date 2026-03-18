@@ -13,6 +13,7 @@ import {
   CalendarPlus,
   X,
   LogOut,
+  Globe,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -45,7 +46,7 @@ const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: str
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const location = useLocation();
   const { signOut, role } = useAuth();
-  const { t } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
   const qc = useQueryClient();
 
   const { data: unreadCounts = { bookings: 0 } } = useQuery({
@@ -146,15 +147,26 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
             <p className="text-xs text-sidebar-muted">{role}</p>
           </div>
         </div>
-        <Button
-          variant="ghost"
-          size="sm"
-          className="w-full justify-start gap-2 text-sidebar-muted hover:text-destructive hover:bg-sidebar-accent"
-          onClick={signOut}
-        >
-          <LogOut className="h-4 w-4" />
-          {t("signOut")}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="ghost"
+            size="sm"
+            className="flex-1 justify-start gap-2 text-sidebar-muted hover:text-destructive hover:bg-sidebar-accent"
+            onClick={signOut}
+          >
+            <LogOut className="h-4 w-4" />
+            {t("signOut")}
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            className="gap-1 text-xs border-sidebar-border text-sidebar-muted hover:bg-sidebar-accent hover:text-sidebar-foreground"
+            onClick={() => setLang(lang === "en" ? "ar" : "en")}
+          >
+            <Globe className="h-3.5 w-3.5" />
+            {lang === "en" ? "عربي" : "EN"}
+          </Button>
+        </div>
       </div>
     </aside>
   );
