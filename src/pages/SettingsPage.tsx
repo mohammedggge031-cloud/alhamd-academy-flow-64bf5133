@@ -61,6 +61,7 @@ const SettingsPage = () => {
           email: managerForm.email,
           password: managerForm.password,
           full_name: managerForm.name,
+          dot_color: managerForm.dot_color,
         },
       });
       if (res.error) throw new Error(res.error.message);
