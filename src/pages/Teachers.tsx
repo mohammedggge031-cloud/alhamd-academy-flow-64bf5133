@@ -89,7 +89,7 @@ const Teachers = () => {
     mutationFn: async () => {
       const res = await supabase.functions.invoke("create-teacher", {
         body: {
-          email: form.email, password: form.password, full_name: form.name,
+          password: form.password, full_name: form.name,
           whatsapp: form.whatsapp, age: form.age ? Number(form.age) : null,
           hourly_rate: form.rate ? Number(form.rate) : 0,
           qualification: form.qualification, subjects: form.subjects,
