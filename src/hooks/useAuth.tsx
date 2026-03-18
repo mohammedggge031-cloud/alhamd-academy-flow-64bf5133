@@ -41,31 +41,57 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       if (mounted) setLoading(false);
     }, 6000);
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+    // Session-only auth: if this is a new browser session, sign out first
+    const isReturningSession = sessionStorage.getItem("auth_active");
+
+    const initAuth = async () => {
+      if (!isReturningSession) {
+        // New browser session — clear any persisted auth
+        await supabase.auth.signOut();
+        sessionStorage.setItem("auth_active", "1");
+        if (mounted) setLoading(false);
+        return;
+      }
+
+      const { data: { subscription } } = supabase.auth.onAuthStateChange(
+        async (_event, session) => {
+          if (!mounted) return;
+          setSession(session);
+          setUser(session?.user ?? null);
+          if (session?.user) {
+            await fetchRole(session.user.id);
+          } else {
+            setRole(null);
+          }
+          if (mounted) setLoading(false);
+        }
+      );
+
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (!mounted) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
           await fetchRole(session.user.id);
-        } else {
-          setRole(null);
         }
         if (mounted) setLoading(false);
-      }
-    );
+      }).catch(() => {
+        if (mounted) setLoading(false);
+      });
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchRole(session.user.id);
-      }
-      if (mounted) setLoading(false);
-    }).catch(() => {
-      if (mounted) setLoading(false);
-    });
+      return () => {
+        subscription.unsubscribe();
+      };
+    };
+
+    const cleanup = initAuth();
+
+    return () => {
+      mounted = false;
+      clearTimeout(safetyTimer);
+      cleanup.then(fn => fn?.());
+    };
+  }, []);
 
     return () => {
       mounted = false;
