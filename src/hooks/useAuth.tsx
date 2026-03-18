@@ -36,37 +36,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout — never stay loading forever
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
     }, 6000);
 
-    // Session-only auth: if this is a new browser session, sign out first
+    // Session-only auth: clear persisted session on new browser session
     const isReturningSession = sessionStorage.getItem("auth_active");
-
-    const initAuth = async () => {
-      if (!isReturningSession) {
-        // New browser session — clear any persisted auth
-        await supabase.auth.signOut();
+    if (!isReturningSession) {
+      supabase.auth.signOut().finally(() => {
         sessionStorage.setItem("auth_active", "1");
         if (mounted) setLoading(false);
-        return;
-      }
+      });
+    }
 
-      const { data: { subscription } } = supabase.auth.onAuthStateChange(
-        async (_event, session) => {
-          if (!mounted) return;
-          setSession(session);
-          setUser(session?.user ?? null);
-          if (session?.user) {
-            await fetchRole(session.user.id);
-          } else {
-            setRole(null);
-          }
-          if (mounted) setLoading(false);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (!mounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchRole(session.user.id);
+        } else {
+          setRole(null);
         }
-      );
+        if (mounted) setLoading(false);
+      }
+    );
 
+    if (isReturningSession) {
       supabase.auth.getSession().then(async ({ data: { session } }) => {
         if (!mounted) return;
         setSession(session);
@@ -78,22 +75,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }).catch(() => {
         if (mounted) setLoading(false);
       });
-
-      return () => {
-        subscription.unsubscribe();
-      };
-    };
-
-    const cleanup = initAuth();
+    }
 
     return () => {
       mounted = false;
       clearTimeout(safetyTimer);
-      cleanup.then(fn => fn?.());
+      subscription.unsubscribe();
     };
   }, []);
-
-
 
 
   const signIn = async (email: string, password: string) => {
