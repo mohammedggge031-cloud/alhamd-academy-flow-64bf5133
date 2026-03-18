@@ -29,7 +29,7 @@ const translations = {
 
   // Academy
   academyName: { en: "Alhamd Academy", ar: "أكاديمية الحمد" },
-  academySubtitle: { en: "Quran Memorization Academy", ar: "لتحفيظ القرآن الكريم" },
+  academySubtitle: { en: "Quran, Arabic & Islamic Studies", ar: "قرآن وعربي ودراسات إسلامية" },
 
   // Sidebar nav
   navDashboard: { en: "Dashboard", ar: "لوحة التحكم" },
