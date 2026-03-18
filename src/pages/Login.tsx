@@ -68,27 +68,36 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
-      <Card className="w-full max-w-md border-none shadow-lg">
-        <CardHeader className="text-center space-y-4">
+    <div className="min-h-screen flex items-center justify-center bg-primary p-4 relative overflow-hidden">
+      {/* Decorative background elements */}
+      <div className="absolute inset-0 opacity-10">
+        <div className="absolute top-0 left-0 w-72 h-72 bg-primary-foreground rounded-full -translate-x-1/2 -translate-y-1/2" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-primary-foreground rounded-full translate-x-1/3 translate-y-1/3" />
+        <div className="absolute top-1/2 left-1/2 w-48 h-48 bg-primary-foreground rounded-full -translate-x-1/2 -translate-y-1/2" />
+      </div>
+
+      <Card className="w-full max-w-md border border-primary-foreground/10 shadow-2xl bg-card/95 backdrop-blur-sm relative z-10">
+        <CardHeader className="text-center space-y-4 pb-2">
           <div className="flex justify-end px-2">
-            <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={() => setLang(lang === "en" ? "ar" : "en")}>
+            <Button variant="outline" size="sm" className="gap-1 text-xs border-border hover:bg-accent" onClick={() => setLang(lang === "en" ? "ar" : "en")}>
               <Globe className="h-3.5 w-3.5" />
               {lang === "en" ? "العربية" : "English"}
             </Button>
           </div>
-          <div className="mx-auto">
-            <img src={logo} alt="Alhamd Academy" className="h-20 w-20 rounded-xl object-contain mx-auto" />
+          <div className="mx-auto bg-primary rounded-2xl p-3 shadow-lg">
+            <img src={logo} alt="Alhamd Academy" className="h-16 w-16 rounded-xl object-contain" />
           </div>
           <div>
-            <CardTitle className="text-2xl">{t("academyName")}</CardTitle>
+            <CardTitle className="text-2xl text-foreground">{t("academyName")}</CardTitle>
             <p className="text-muted-foreground text-sm mt-1">{t("academySubtitle")}</p>
           </div>
         </CardHeader>
-        <CardContent>
+
+        <CardContent className="pt-2">
+          <div className="w-12 h-1 bg-primary rounded-full mx-auto mb-6" />
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("loginIdentifier")}</Label>
+              <Label className="text-foreground font-medium">{t("loginIdentifier")}</Label>
               <Input
                 type="text"
                 placeholder="+201001234567"
@@ -97,7 +106,7 @@ const Login = () => {
                 dir="ltr"
                 required
                 autoComplete="username"
-                className="border-input focus-visible:ring-ring"
+                className="border-input bg-background focus-visible:ring-primary h-11"
               />
               <p className="text-xs text-muted-foreground">
                 {identifier.length > 0
@@ -107,7 +116,7 @@ const Login = () => {
               </p>
             </div>
             <div className="space-y-2">
-              <Label>{t("loginPassword")}</Label>
+              <Label className="text-foreground font-medium">{t("loginPassword")}</Label>
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"}
@@ -116,7 +125,7 @@ const Login = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   dir="ltr"
                   required
-                  className="pe-10"
+                  className="pe-10 border-input bg-background focus-visible:ring-primary h-11"
                   autoComplete="current-password"
                 />
                 <button type="button" tabIndex={-1} onClick={() => setShowPassword(!showPassword)} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
@@ -124,7 +133,7 @@ const Login = () => {
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full gap-2" disabled={isLoading}>
+            <Button type="submit" className="w-full gap-2 h-11 text-base bg-primary hover:bg-primary/90 shadow-md" disabled={isLoading}>
               <LogIn className="h-4 w-4" />
               {isLoading ? t("loginLoading") : t("loginButton")}
             </Button>
