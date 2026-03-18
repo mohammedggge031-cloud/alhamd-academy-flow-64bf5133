@@ -100,6 +100,7 @@ serve(async (req) => {
       user_id: userId,
       age: age || null,
       hourly_rate: hourly_rate || 0,
+      rate_currency: rate_currency === "EGP" ? "EGP" : "USD",
       qualification: qualification ? String(qualification).slice(0, 200) : null,
       subjects: subjects || [],
       gender: gender === "female" ? "female" : "male",
