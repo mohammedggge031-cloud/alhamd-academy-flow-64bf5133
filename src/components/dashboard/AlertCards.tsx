@@ -1,45 +1,49 @@
 import { memo } from "react";
-import { AlertTriangle, CheckCircle2 } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { withTimeout } from "@/lib/queryHelpers";
 
 const AlertCards = memo(() => {
   const { t } = useLanguage();
   const today = new Date().toISOString().slice(0, 10);
 
-  const { data: overdueInvoices = [] } = useQuery({
+  const { data: overdueInvoices = [], isLoading: loadingOverdue, isError: errorOverdue } = useQuery({
     queryKey: ["dash-overdue"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: () => withTimeout(
+      supabase
         .from("invoices")
         .select("id, due_date, total, students:student_id(name)")
         .eq("status", "pending")
         .lt("due_date", today)
         .order("due_date")
-        .limit(5);
-      if (error) throw error;
-      return data ?? [];
-    },
-    retry: 1,
+        .limit(5)
+        .then(({ data, error }) => { if (error) throw error; return data ?? []; })
+    ),
   });
 
-  const { data: lowBalance = [] } = useQuery({
+  const { data: lowBalance = [], isLoading: loadingLow, isError: errorLow } = useQuery({
     queryKey: ["dash-low-balance"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: () => withTimeout(
+      supabase
         .from("students")
         .select("name, remaining_hours")
         .eq("is_active", true)
         .lte("remaining_hours", 1)
-        .order("remaining_hours");
-      if (error) throw error;
-      return data ?? [];
-    },
-    retry: 1,
+        .order("remaining_hours")
+        .then(({ data, error }) => { if (error) throw error; return data ?? []; })
+    ),
   });
+
+  const renderContent = (loading: boolean, hasError: boolean, isEmpty: boolean, emptyMsg: string, children: React.ReactNode) => {
+    if (loading) return <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+    if (hasError) return <p className="text-center text-sm text-destructive py-3">حدث خطأ في تحميل البيانات</p>;
+    if (isEmpty) return <p className="text-center text-sm text-muted-foreground py-3">{emptyMsg}</p>;
+    return children;
+  };
 
   return (
     <div className="space-y-6">
@@ -51,20 +55,20 @@ const AlertCards = memo(() => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {overdueInvoices.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-3">{t("dashNoOverdue")}</p>
-          ) : overdueInvoices.map((inv: any) => {
-            const days = Math.ceil((Date.now() - new Date(inv.due_date).getTime()) / 86400000);
-            return (
-              <div key={inv.id} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
-                <div>
-                  <p className="text-sm font-medium">{inv.students?.name}</p>
-                  <p className="text-xs text-muted-foreground">{days} {t("dashOverdueDays")}</p>
+          {renderContent(loadingOverdue, errorOverdue, overdueInvoices.length === 0, t("dashNoOverdue"),
+            overdueInvoices.map((inv: any) => {
+              const days = Math.ceil((Date.now() - new Date(inv.due_date).getTime()) / 86400000);
+              return (
+                <div key={inv.id} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                  <div>
+                    <p className="text-sm font-medium">{inv.students?.name}</p>
+                    <p className="text-xs text-muted-foreground">{days} {t("dashOverdueDays")}</p>
+                  </div>
+                  <span className="text-sm font-bold text-destructive">${inv.total}</span>
                 </div>
-                <span className="text-sm font-bold text-destructive">${inv.total}</span>
-              </div>
-            );
-          })}
+              );
+            })
+          )}
         </CardContent>
       </Card>
 
@@ -76,16 +80,16 @@ const AlertCards = memo(() => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {lowBalance.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-3">{t("dashNoLowBalance")}</p>
-          ) : lowBalance.map((s: any, i: number) => (
-            <div key={i} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
-              <p className="text-sm font-medium">{s.name}</p>
-              <Badge variant="secondary" className="bg-warning/10 text-warning">
-                {s.remaining_hours} {t("hour")}
-              </Badge>
-            </div>
-          ))}
+          {renderContent(loadingLow, errorLow, lowBalance.length === 0, t("dashNoLowBalance"),
+            lowBalance.map((s: any, i: number) => (
+              <div key={i} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                <p className="text-sm font-medium">{s.name}</p>
+                <Badge variant="secondary" className="bg-warning/10 text-warning">
+                  {s.remaining_hours} {t("hour")}
+                </Badge>
+              </div>
+            ))
+          )}
         </CardContent>
       </Card>
     </div>

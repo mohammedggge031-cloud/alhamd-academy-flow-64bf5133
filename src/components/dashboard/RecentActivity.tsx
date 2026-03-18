@@ -1,5 +1,5 @@
 import { memo } from "react";
-import { CalendarPlus, CreditCard, Phone } from "lucide-react";
+import { CalendarPlus, CreditCard, Phone, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -7,41 +7,45 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
+import { withTimeout } from "@/lib/queryHelpers";
 
 const RecentActivity = memo(() => {
   const { t } = useLanguage();
   const navigate = useNavigate();
 
-  const { data: recentBookings = [] } = useQuery({
+  const { data: recentBookings = [], isLoading: loadingBookings, isError: errorBookings } = useQuery({
     queryKey: ["dash-recent-bookings"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: () => withTimeout(
+      supabase
         .from("trial_bookings")
         .select("id, full_name, phone, course_interest, status, is_read")
         .order("created_at", { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data ?? [];
-    },
-    retry: 1,
+        .limit(5)
+        .then(({ data, error }) => { if (error) throw error; return data ?? []; })
+    ),
   });
 
-  const { data: recentSubs = [] } = useQuery({
+  const { data: recentSubs = [], isLoading: loadingSubs, isError: errorSubs } = useQuery({
     queryKey: ["dash-recent-subs"],
-    queryFn: async () => {
-      const { data, error } = await supabase
+    queryFn: () => withTimeout(
+      supabase
         .from("subscription_requests")
         .select("id, full_name, phone, plan_name, status, is_read")
         .order("created_at", { ascending: false })
-        .limit(5);
-      if (error) throw error;
-      return data ?? [];
-    },
-    retry: 1,
+        .limit(5)
+        .then(({ data, error }) => { if (error) throw error; return data ?? []; })
+    ),
   });
 
   const newBookingsCount = recentBookings.filter((b: any) => b.status === "new").length;
   const newSubsCount = recentSubs.filter((s: any) => s.status === "new").length;
+
+  const renderContent = (loading: boolean, hasError: boolean, isEmpty: boolean, emptyMsg: string, children: React.ReactNode) => {
+    if (loading) return <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+    if (hasError) return <p className="text-center text-sm text-destructive py-3">حدث خطأ في تحميل البيانات</p>;
+    if (isEmpty) return <p className="text-center text-sm text-muted-foreground py-3">{emptyMsg}</p>;
+    return children;
+  };
 
   return (
     <div className="grid gap-6 lg:grid-cols-2">
@@ -59,24 +63,24 @@ const RecentActivity = memo(() => {
           </Button>
         </CardHeader>
         <CardContent className="space-y-2">
-          {recentBookings.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-3">{t("dashNoBookings")}</p>
-          ) : recentBookings.map((b: any) => (
-            <div key={b.id} className={`flex items-center justify-between rounded-lg p-3 ${!b.is_read ? "bg-primary/5" : "bg-muted/50"}`}>
-              <div className="flex items-center gap-3">
-                {!b.is_read && <span className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />}
-                <div>
-                  <p className="text-sm font-medium">{b.full_name}</p>
-                  <p className="text-xs text-muted-foreground">{b.course_interest || t("trialSession")}</p>
+          {renderContent(loadingBookings, errorBookings, recentBookings.length === 0, t("dashNoBookings"),
+            recentBookings.map((b: any) => (
+              <div key={b.id} className={`flex items-center justify-between rounded-lg p-3 ${!b.is_read ? "bg-primary/5" : "bg-muted/50"}`}>
+                <div className="flex items-center gap-3">
+                  {!b.is_read && <span className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium">{b.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{b.course_interest || t("trialSession")}</p>
+                  </div>
                 </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" asChild>
+                  <a href={`https://wa.me/${b.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">
+                    <Phone className="h-3.5 w-3.5" />
+                  </a>
+                </Button>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" asChild>
-                <a href={`https://wa.me/${b.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">
-                  <Phone className="h-3.5 w-3.5" />
-                </a>
-              </Button>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
 
@@ -94,24 +98,24 @@ const RecentActivity = memo(() => {
           </Button>
         </CardHeader>
         <CardContent className="space-y-2">
-          {recentSubs.length === 0 ? (
-            <p className="text-center text-sm text-muted-foreground py-3">{t("dashNoSubs")}</p>
-          ) : recentSubs.map((s: any) => (
-            <div key={s.id} className={`flex items-center justify-between rounded-lg p-3 ${!s.is_read ? "bg-primary/5" : "bg-muted/50"}`}>
-              <div className="flex items-center gap-3">
-                {!s.is_read && <span className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />}
-                <div>
-                  <p className="text-sm font-medium">{s.full_name}</p>
-                  <p className="text-xs text-muted-foreground">{s.plan_name}</p>
+          {renderContent(loadingSubs, errorSubs, recentSubs.length === 0, t("dashNoSubs"),
+            recentSubs.map((s: any) => (
+              <div key={s.id} className={`flex items-center justify-between rounded-lg p-3 ${!s.is_read ? "bg-primary/5" : "bg-muted/50"}`}>
+                <div className="flex items-center gap-3">
+                  {!s.is_read && <span className="h-2 w-2 rounded-full bg-primary animate-pulse shrink-0" />}
+                  <div>
+                    <p className="text-sm font-medium">{s.full_name}</p>
+                    <p className="text-xs text-muted-foreground">{s.plan_name}</p>
+                  </div>
                 </div>
+                <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" asChild>
+                  <a href={`https://wa.me/${s.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">
+                    <Phone className="h-3.5 w-3.5" />
+                  </a>
+                </Button>
               </div>
-              <Button variant="ghost" size="icon" className="h-7 w-7 text-green-600" asChild>
-                <a href={`https://wa.me/${s.phone.replace(/[^0-9]/g, "")}`} target="_blank" rel="noopener noreferrer">
-                  <Phone className="h-3.5 w-3.5" />
-                </a>
-              </Button>
-            </div>
-          ))}
+            ))
+          )}
         </CardContent>
       </Card>
     </div>
