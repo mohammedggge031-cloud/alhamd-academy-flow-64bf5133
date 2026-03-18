@@ -19,6 +19,7 @@ import { useToast } from "@/hooks/use-toast";
 import SurahPicker from "@/components/SurahPicker";
 import { useLanguage } from "@/i18n/LanguageContext";
 import TeacherSchedule from "@/components/teachers/TeacherSchedule";
+import { openWhatsApp, buildHomeworkMessage } from "@/utils/whatsappLinks";
 
 const Sessions = () => {
   const { t } = useLanguage();
