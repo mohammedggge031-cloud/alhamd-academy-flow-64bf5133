@@ -57,6 +57,10 @@ const translations = {
   loginError: { en: "Login Error", ar: "خطأ في تسجيل الدخول" },
   loginInvalidEmail: { en: "Invalid email or password", ar: "البريد الإلكتروني أو كلمة المرور غير صحيحة" },
   loginConnectionError: { en: "Connection error", ar: "خطأ في الاتصال" },
+  loginIdentifier: { en: "Email or Phone Number", ar: "البريد الإلكتروني أو رقم الموبايل" },
+  loginIdentifierHint: { en: "Enter your email or phone number", ar: "أدخل بريدك الإلكتروني أو رقم موبايلك" },
+  loginDetectedEmail: { en: "Signing in with email", ar: "تسجيل الدخول بالبريد الإلكتروني" },
+  loginDetectedPhone: { en: "Signing in with phone", ar: "تسجيل الدخول برقم الموبايل" },
 
   // Dashboard
   dashWelcome: { en: "Welcome to Alhamd Academy for Quran Memorization", ar: "مرحباً بك في أكاديمية الحمد لتحفيظ القرآن الكريم" },
