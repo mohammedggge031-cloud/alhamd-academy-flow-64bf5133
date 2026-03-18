@@ -551,6 +551,22 @@ const translations = {
   sameAsEgypt: { en: "Same as Egypt", ar: "نفس توقيت مصر" },
   studentsLabelTz: { en: "students", ar: "طلاب" },
   studentTime: { en: "student time", ar: "توقيت الطالب" },
+
+  // Teacher salary & bonus
+  currency: { en: "Currency", ar: "العملة" },
+  editRate: { en: "Edit Rate", ar: "تعديل الريت" },
+  rateUpdated: { en: "Rate updated", ar: "تم تحديث الريت" },
+  teacherSalarySlip: { en: "Teacher Salary Slip", ar: "كشف حساب المعلم" },
+  bonusAmount: { en: "Bonus Amount", ar: "مبلغ المكافأة" },
+  bonusReason: { en: "Bonus Reason", ar: "سبب المكافأة" },
+  sendSalaryWhatsapp: { en: "Send salary via WhatsApp", ar: "إرسال كشف الحساب عبر الواتساب" },
+  totalWithBonus: { en: "Total with bonus", ar: "الإجمالي مع المكافأة" },
+  bonusSaved: { en: "Bonus saved", ar: "تم حفظ المكافأة" },
+  salaryDetails: { en: "Salary Details", ar: "تفاصيل الراتب" },
+  workingHours: { en: "Working Hours", ar: "ساعات العمل" },
+  waitingMinutes: { en: "Waiting Minutes", ar: "دقائق الانتظار" },
+  bonus: { en: "Bonus", ar: "مكافأة" },
+  totalSalary: { en: "Total Salary", ar: "إجمالي الراتب" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
