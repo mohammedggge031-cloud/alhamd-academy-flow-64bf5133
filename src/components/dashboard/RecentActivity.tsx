@@ -15,25 +15,29 @@ const RecentActivity = memo(() => {
   const { data: recentBookings = [] } = useQuery({
     queryKey: ["dash-recent-bookings"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("trial_bookings")
         .select("id, full_name, phone, course_interest, status, is_read")
         .order("created_at", { ascending: false })
         .limit(5);
+      if (error) throw error;
       return data ?? [];
     },
+    retry: 1,
   });
 
   const { data: recentSubs = [] } = useQuery({
     queryKey: ["dash-recent-subs"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("subscription_requests")
         .select("id, full_name, phone, plan_name, status, is_read")
         .order("created_at", { ascending: false })
         .limit(5);
+      if (error) throw error;
       return data ?? [];
     },
+    retry: 1,
   });
 
   const newBookingsCount = recentBookings.filter((b: any) => b.status === "new").length;

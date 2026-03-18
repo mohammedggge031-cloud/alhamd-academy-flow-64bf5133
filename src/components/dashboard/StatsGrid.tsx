@@ -13,33 +13,41 @@ const StatsGrid = memo(() => {
   const { data: activeStudents = 0 } = useQuery({
     queryKey: ["dash-students"],
     queryFn: async () => {
-      const { count } = await supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true);
+      const { count, error } = await supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true);
+      if (error) throw error;
       return count ?? 0;
     },
+    retry: 1,
   });
 
   const { data: teacherCount = 0 } = useQuery({
     queryKey: ["dash-teachers"],
     queryFn: async () => {
-      const { count } = await supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true);
+      const { count, error } = await supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true);
+      if (error) throw error;
       return count ?? 0;
     },
+    retry: 1,
   });
 
   const { data: dueInvoices = 0 } = useQuery({
     queryKey: ["dash-due-invoices"],
     queryFn: async () => {
-      const { count } = await supabase.from("invoices").select("*", { count: "exact", head: true }).eq("status", "pending").lte("due_date", today);
+      const { count, error } = await supabase.from("invoices").select("*", { count: "exact", head: true }).eq("status", "pending").lte("due_date", today);
+      if (error) throw error;
       return count ?? 0;
     },
+    retry: 1,
   });
 
   const { data: monthlyHours = 0 } = useQuery({
     queryKey: ["dash-monthly-hours"],
     queryFn: async () => {
-      const { data } = await supabase.from("sessions").select("duration_minutes").eq("status", "completed").gte("session_date", monthStart);
+      const { data, error } = await supabase.from("sessions").select("duration_minutes").eq("status", "completed").gte("session_date", monthStart);
+      if (error) throw error;
       return data ? Math.round(data.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / 60) : 0;
     },
+    retry: 1,
   });
 
   const stats = [
