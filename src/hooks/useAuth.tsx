@@ -36,10 +36,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
-    // Safety timeout — never stay loading forever
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
     }, 6000);
+
+    // Session-only auth: clear persisted session on new browser session
+    const isReturningSession = sessionStorage.getItem("auth_active");
+    if (!isReturningSession) {
+      supabase.auth.signOut().finally(() => {
+        sessionStorage.setItem("auth_active", "1");
+        if (mounted) setLoading(false);
+      });
+    }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
@@ -55,17 +63,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (!mounted) return;
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchRole(session.user.id);
-      }
-      if (mounted) setLoading(false);
-    }).catch(() => {
-      if (mounted) setLoading(false);
-    });
+    if (isReturningSession) {
+      supabase.auth.getSession().then(async ({ data: { session } }) => {
+        if (!mounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          await fetchRole(session.user.id);
+        }
+        if (mounted) setLoading(false);
+      }).catch(() => {
+        if (mounted) setLoading(false);
+      });
+    }
 
     return () => {
       mounted = false;
@@ -73,6 +83,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []);
+
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
