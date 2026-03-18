@@ -550,6 +550,7 @@ const translations = {
   allStudentsEgyptTime: { en: "All students on Egypt time", ar: "جميع الطلاب بتوقيت مصر" },
   sameAsEgypt: { en: "Same as Egypt", ar: "نفس توقيت مصر" },
   studentsLabelTz: { en: "students", ar: "طلاب" },
+  studentTime: { en: "student time", ar: "توقيت الطالب" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
