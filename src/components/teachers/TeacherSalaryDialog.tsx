@@ -81,20 +81,35 @@ export const TeacherSalaryDialog = ({ teacher, open, onOpenChange }: Props) => {
     const now = new Date();
     const monthName = now.toLocaleDateString("ar-EG", { month: "long", year: "numeric" });
 
-    let msg = `💰 *كشف حساب المعلم - أكاديمية الحمد*\n\n`;
+    let msg = `╔══════════════════════╗\n`;
+    msg += `   🕌 *أكاديمية الحمد*\n`;
+    msg += `   _لتحفيظ القرآن الكريم_\n`;
+    msg += `╚══════════════════════╝\n\n`;
+    msg += `💰 *كشف حساب المعلم*\n`;
+    msg += `━━━━━━━━━━━━━━━━━━\n\n`;
     msg += `السلام عليكم ورحمة الله وبركاته\n\n`;
-    msg += `👨‍🏫 المعلم: ${name}\n`;
-    msg += `📅 الشهر: ${monthName}\n\n`;
-    msg += `⏱ ساعات العمل: ${teacher.monthly_hours ?? 0} ساعة\n`;
-    msg += `⏳ دقائق الانتظار: ${teacher.monthly_waiting_minutes ?? 0} دقيقة\n`;
-    msg += `💵 ريت الساعة: ${currencySymbol}${teacher.hourly_rate}\n`;
-    msg += `💰 الراتب الأساسي: ${currencySymbol}${baseSalary}\n`;
+    msg += `👨‍🏫 *المعلم:* ${name}\n`;
+    msg += `📅 *الشهر:* ${monthName}\n\n`;
+    msg += `━━━━━━━━━━━━━━━━━━\n`;
+    msg += `📊 *تفاصيل الراتب:*\n`;
+    msg += `━━━━━━━━━━━━━━━━━━\n\n`;
+    msg += `⏱ ساعات العمل: *${teacher.monthly_hours ?? 0}* ساعة\n`;
+    msg += `⏳ دقائق الانتظار: *${teacher.monthly_waiting_minutes ?? 0}* دقيقة\n`;
+    msg += `💵 ريت الساعة: *${currencySymbol}${teacher.hourly_rate}*\n\n`;
+    msg += `💰 الراتب الأساسي: *${currencySymbol}${baseSalary}*\n`;
     if (bonus > 0) {
       msg += `\n🎁 *مكافأة: ${currencySymbol}${bonus}*\n`;
-      if (bonusReason) msg += `📝 السبب: ${bonusReason}\n`;
+      if (bonusReason) msg += `   📝 السبب: ${bonusReason}\n`;
     }
-    msg += `\n✅ *الإجمالي: ${currencySymbol}${totalSalary}*\n\n`;
-    msg += `جزاك الله خيراً 🤲\n_أكاديمية الحمد لتحفيظ القرآن الكريم_`;
+    msg += `\n━━━━━━━━━━━━━━━━━━\n`;
+    msg += `✅ *الإجمالي المستحق: ${currencySymbol}${totalSalary}*\n`;
+    msg += `━━━━━━━━━━━━━━━━━━\n\n`;
+    msg += `جزاكم الله خيراً على جهودكم المباركة في تعليم كتاب الله 🤲\n`;
+    msg += `نسأل الله أن يجعله في ميزان حسناتكم ✨\n\n`;
+    msg += `╔══════════════════════╗\n`;
+    msg += `   🕌 *أكاديمية الحمد*\n`;
+    msg += `   Alhamd Academy\n`;
+    msg += `╚══════════════════════╝`;
 
     openWhatsApp(phone, msg);
   };
