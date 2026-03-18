@@ -51,7 +51,7 @@ const Invoices = () => {
     queryFn: async () => {
       const { data, error } = await supabase
         .from("invoices")
-        .select("*, students:student_id(name), invoice_students(student_id, hours, amount, students:student_id(name))")
+        .select("*, students:student_id(name, whatsapp, guardian_whatsapp), invoice_students(student_id, hours, amount, students:student_id(name, whatsapp, guardian_whatsapp))")
         .order("created_at", { ascending: false });
       if (error) throw error;
       return data ?? [];
