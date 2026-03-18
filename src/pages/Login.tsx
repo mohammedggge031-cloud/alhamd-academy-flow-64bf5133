@@ -37,7 +37,7 @@ const Login = () => {
         if (!trimmedEmail || trimmedEmail.length > 255) {
           throw new Error(t("loginInvalidEmail"));
         }
-        const { error } = await signIn(trimmedEmail, password);
+        const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
         if (error) throw new Error(t("loginInvalidEmail"));
       } else {
         const sanitizedPhone = identifier.replace(/[^0-9+]/g, "");
