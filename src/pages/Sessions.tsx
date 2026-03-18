@@ -733,7 +733,7 @@ const Sessions = () => {
                   </p>
                   <SurahPicker onSelect={(text) => setReport({ ...report, homework: report.homework ? `${report.homework}\n${text}` : text })} />
                 </div>
-                <p className="text-[10px] text-muted-foreground">{t("homeworkSentToSupervisor")}</p>
+                <p className="text-[10px] text-muted-foreground">{t("homeworkWhatsappHint")}</p>
               </div>
 
               <div className="rounded-lg border border-border p-3 space-y-2">
