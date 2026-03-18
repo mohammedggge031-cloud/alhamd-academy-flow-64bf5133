@@ -1,8 +1,8 @@
 /**
- * Wraps a Supabase query promise with a timeout to prevent infinite loading.
- * If the query doesn't resolve within `ms` milliseconds, it rejects.
+ * Wraps a promise-like with a timeout to prevent infinite loading.
  */
-export function withTimeout<T>(promise: Promise<T>, ms = 10000): Promise<T> {
+export function withTimeout<T>(promiseLike: PromiseLike<T>, ms = 10000): Promise<T> {
+  const promise = Promise.resolve(promiseLike);
   return Promise.race([
     promise,
     new Promise<never>((_, reject) =>
