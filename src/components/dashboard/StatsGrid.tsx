@@ -1,11 +1,10 @@
 import { memo } from "react";
-import { Users, GraduationCap, Receipt, Clock, TrendingUp, AlertCircle } from "lucide-react";
+import { Users, GraduationCap, Receipt, Clock, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { withTimeout } from "@/lib/queryHelpers";
 
 const StatsGrid = memo(() => {
   const { t } = useLanguage();
@@ -14,37 +13,42 @@ const StatsGrid = memo(() => {
 
   const students = useQuery({
     queryKey: ["dash-students"],
-    queryFn: () => withTimeout(
-      supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true)
-        .then(({ count, error }) => { if (error) throw error; return count ?? 0; })
-    ),
+    retry: 1,
+    queryFn: async () => {
+      const { count, error } = await supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true);
+      if (error) { console.error("dash-students error:", error); throw error; }
+      return count ?? 0;
+    },
   });
 
   const teachers = useQuery({
     queryKey: ["dash-teachers"],
-    queryFn: () => withTimeout(
-      supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true)
-        .then(({ count, error }) => { if (error) throw error; return count ?? 0; })
-    ),
+    retry: 1,
+    queryFn: async () => {
+      const { count, error } = await supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true);
+      if (error) { console.error("dash-teachers error:", error); throw error; }
+      return count ?? 0;
+    },
   });
 
   const invoices = useQuery({
     queryKey: ["dash-due-invoices"],
-    queryFn: () => withTimeout(
-      supabase.from("invoices").select("*", { count: "exact", head: true }).eq("status", "pending").lte("due_date", today)
-        .then(({ count, error }) => { if (error) throw error; return count ?? 0; })
-    ),
+    retry: 1,
+    queryFn: async () => {
+      const { count, error } = await supabase.from("invoices").select("*", { count: "exact", head: true }).eq("status", "pending").lte("due_date", today);
+      if (error) { console.error("dash-invoices error:", error); throw error; }
+      return count ?? 0;
+    },
   });
 
   const hours = useQuery({
     queryKey: ["dash-monthly-hours"],
-    queryFn: () => withTimeout(
-      supabase.from("sessions").select("duration_minutes").eq("status", "completed").gte("session_date", monthStart)
-        .then(({ data, error }) => {
-          if (error) throw error;
-          return data ? Math.round(data.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / 60) : 0;
-        })
-    ),
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase.from("sessions").select("duration_minutes").eq("status", "completed").gte("session_date", monthStart);
+      if (error) { console.error("dash-hours error:", error); throw error; }
+      return data ? Math.round(data.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / 60) : 0;
+    },
   });
 
   const queries = [students, teachers, invoices, hours];

@@ -5,7 +5,6 @@ import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { withTimeout } from "@/lib/queryHelpers";
 
 const AlertCards = memo(() => {
   const { t } = useLanguage();
@@ -13,29 +12,33 @@ const AlertCards = memo(() => {
 
   const { data: overdueInvoices = [], isLoading: loadingOverdue, isError: errorOverdue } = useQuery({
     queryKey: ["dash-overdue"],
-    queryFn: () => withTimeout(
-      supabase
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from("invoices")
         .select("id, due_date, total, students:student_id(name)")
         .eq("status", "pending")
         .lt("due_date", today)
         .order("due_date")
-        .limit(5)
-        .then(({ data, error }) => { if (error) throw error; return data ?? []; })
-    ),
+        .limit(5);
+      if (error) { console.error("dash-overdue error:", error); throw error; }
+      return data ?? [];
+    },
   });
 
   const { data: lowBalance = [], isLoading: loadingLow, isError: errorLow } = useQuery({
     queryKey: ["dash-low-balance"],
-    queryFn: () => withTimeout(
-      supabase
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from("students")
         .select("name, remaining_hours")
         .eq("is_active", true)
         .lte("remaining_hours", 1)
-        .order("remaining_hours")
-        .then(({ data, error }) => { if (error) throw error; return data ?? []; })
-    ),
+        .order("remaining_hours");
+      if (error) { console.error("dash-low-balance error:", error); throw error; }
+      return data ?? [];
+    },
   });
 
   const renderContent = (loading: boolean, hasError: boolean, isEmpty: boolean, emptyMsg: string, children: React.ReactNode) => {
