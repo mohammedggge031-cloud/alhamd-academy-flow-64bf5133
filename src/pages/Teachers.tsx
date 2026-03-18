@@ -406,6 +406,16 @@ const Teachers = () => {
                       <Eye className="h-3.5 w-3.5" />
                       {t("viewProfile")}
                     </Button>
+                    {role === "admin" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setSalaryTeacher(teacher)}
+                      >
+                        <DollarSign className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button
                       variant={teacher.show_on_website ? "default" : "outline"}
                       size="sm"
