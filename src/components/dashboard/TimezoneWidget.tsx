@@ -160,7 +160,7 @@ const TimezoneWidget = memo(() => {
                           </span>
                         )}
                         <span className="text-[10px] text-muted-foreground">
-                          ({count} {count === 1 ? t("student") : t("studentsLabel")})
+                          ({count} {count === 1 ? t("student") : t("studentsLabelTz")})
                         </span>
                       </div>
                     </div>
