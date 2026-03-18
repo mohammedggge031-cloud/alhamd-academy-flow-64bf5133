@@ -662,6 +662,8 @@ export type Database = {
           academic_degree: string | null
           age: number | null
           bio: string | null
+          bonus_amount: number | null
+          bonus_reason: string | null
           created_at: string
           gender: string | null
           hourly_rate: number
@@ -674,6 +676,7 @@ export type Database = {
           monthly_waiting_minutes: number | null
           profile_completed: boolean | null
           qualification: string | null
+          rate_currency: string
           rating: number | null
           show_on_website: boolean | null
           students_count: number | null
@@ -687,6 +690,8 @@ export type Database = {
           academic_degree?: string | null
           age?: number | null
           bio?: string | null
+          bonus_amount?: number | null
+          bonus_reason?: string | null
           created_at?: string
           gender?: string | null
           hourly_rate?: number
@@ -699,6 +704,7 @@ export type Database = {
           monthly_waiting_minutes?: number | null
           profile_completed?: boolean | null
           qualification?: string | null
+          rate_currency?: string
           rating?: number | null
           show_on_website?: boolean | null
           students_count?: number | null
@@ -712,6 +718,8 @@ export type Database = {
           academic_degree?: string | null
           age?: number | null
           bio?: string | null
+          bonus_amount?: number | null
+          bonus_reason?: string | null
           created_at?: string
           gender?: string | null
           hourly_rate?: number
@@ -724,6 +732,7 @@ export type Database = {
           monthly_waiting_minutes?: number | null
           profile_completed?: boolean | null
           qualification?: string | null
+          rate_currency?: string
           rating?: number | null
           show_on_website?: boolean | null
           students_count?: number | null
