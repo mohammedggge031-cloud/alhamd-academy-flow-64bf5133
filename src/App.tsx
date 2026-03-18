@@ -1,3 +1,4 @@
+import { lazy, Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,26 +7,44 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import AppLayout from "./components/layout/AppLayout";
-import Dashboard from "./pages/Dashboard";
-import Students from "./pages/Students";
-import Teachers from "./pages/Teachers";
-import Sessions from "./pages/Sessions";
-import Invoices from "./pages/Invoices";
-import Reports from "./pages/Reports";
-import Expenses from "./pages/Expenses";
-import MonthlyReports from "./pages/MonthlyReports";
-import SettingsPage from "./pages/SettingsPage";
-import Bookings from "./pages/Bookings";
-import TeacherProfile from "./pages/TeacherProfile";
-import TeacherDashboardPage from "./pages/TeacherDashboardPage";
-import Login from "./pages/Login";
-import NotFound from "./pages/NotFound";
+import { Loader2 } from "lucide-react";
 
-const queryClient = new QueryClient();
+// Lazy-loaded pages
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Students = lazy(() => import("./pages/Students"));
+const Teachers = lazy(() => import("./pages/Teachers"));
+const Sessions = lazy(() => import("./pages/Sessions"));
+const Invoices = lazy(() => import("./pages/Invoices"));
+const Reports = lazy(() => import("./pages/Reports"));
+const Expenses = lazy(() => import("./pages/Expenses"));
+const MonthlyReports = lazy(() => import("./pages/MonthlyReports"));
+const SettingsPage = lazy(() => import("./pages/SettingsPage"));
+const Bookings = lazy(() => import("./pages/Bookings"));
+const TeacherProfile = lazy(() => import("./pages/TeacherProfile"));
+const TeacherDashboardPage = lazy(() => import("./pages/TeacherDashboardPage"));
+const Login = lazy(() => import("./pages/Login"));
+const NotFound = lazy(() => import("./pages/NotFound"));
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      staleTime: 5 * 60 * 1000,
+      gcTime: 10 * 60 * 1000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+const PageLoader = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
+    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+  </div>
+);
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, loading } = useAuth();
-  if (loading) return <div className="min-h-screen flex items-center justify-center"><p>جاري التحميل...</p></div>;
+  if (loading) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };
@@ -38,30 +57,34 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Routes>
-              <Route path="/login" element={<Login />} />
-              <Route path="/*" element={
-                <ProtectedRoute>
-                  <AppLayout>
-                    <Routes>
-                      <Route path="/" element={<Dashboard />} />
-                      <Route path="/teacher-home" element={<TeacherDashboardPage />} />
-                      <Route path="/bookings" element={<Bookings />} />
-                      <Route path="/students" element={<Students />} />
-                      <Route path="/teachers" element={<Teachers />} />
-                      <Route path="/sessions" element={<Sessions />} />
-                      <Route path="/invoices" element={<Invoices />} />
-                      <Route path="/expenses" element={<Expenses />} />
-                      <Route path="/reports" element={<Reports />} />
-                      <Route path="/monthly-reports" element={<MonthlyReports />} />
-                      <Route path="/my-profile" element={<TeacherProfile />} />
-                      <Route path="/settings" element={<SettingsPage />} />
-                      <Route path="*" element={<NotFound />} />
-                    </Routes>
-                  </AppLayout>
-                </ProtectedRoute>
-              } />
-            </Routes>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                <Route path="/login" element={<Login />} />
+                <Route path="/*" element={
+                  <ProtectedRoute>
+                    <AppLayout>
+                      <Suspense fallback={<PageLoader />}>
+                        <Routes>
+                          <Route path="/" element={<Dashboard />} />
+                          <Route path="/teacher-home" element={<TeacherDashboardPage />} />
+                          <Route path="/bookings" element={<Bookings />} />
+                          <Route path="/students" element={<Students />} />
+                          <Route path="/teachers" element={<Teachers />} />
+                          <Route path="/sessions" element={<Sessions />} />
+                          <Route path="/invoices" element={<Invoices />} />
+                          <Route path="/expenses" element={<Expenses />} />
+                          <Route path="/reports" element={<Reports />} />
+                          <Route path="/monthly-reports" element={<MonthlyReports />} />
+                          <Route path="/my-profile" element={<TeacherProfile />} />
+                          <Route path="/settings" element={<SettingsPage />} />
+                          <Route path="*" element={<NotFound />} />
+                        </Routes>
+                      </Suspense>
+                    </AppLayout>
+                  </ProtectedRoute>
+                } />
+              </Routes>
+            </Suspense>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
