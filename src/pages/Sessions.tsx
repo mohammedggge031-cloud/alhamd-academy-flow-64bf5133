@@ -761,8 +761,6 @@ const Sessions = () => {
                   {supervisorPhone && report.homework && (
                     <Button className="w-full gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white"
                       onClick={() => {
-                        const { buildHomeworkMessage } = require("@/utils/whatsappLinks");
-                        const { openWhatsApp } = require("@/utils/whatsappLinks");
                         openWhatsApp(supervisorPhone, buildHomeworkMessage(getStudentName(reportDialog), report.homework));
                         setReportDialog(null);
                         setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
