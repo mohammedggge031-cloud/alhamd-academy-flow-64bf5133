@@ -189,6 +189,23 @@ const SettingsPage = () => {
                         placeholder="••••••••"
                       />
                     </div>
+                    <div className="grid gap-2">
+                      <Label>لون التعريف</Label>
+                      <div className="flex gap-2 flex-wrap">
+                        {dotColorOptions.map((opt) => (
+                          <button
+                            key={opt.color}
+                            type="button"
+                            className={`h-7 w-7 rounded-full border-2 transition-transform ${
+                              managerForm.dot_color === opt.color ? "border-foreground scale-110 ring-2 ring-offset-2 ring-foreground/20" : "border-transparent"
+                            }`}
+                            style={{ backgroundColor: opt.color }}
+                            onClick={() => setManagerForm({ ...managerForm, dot_color: opt.color })}
+                            title={opt.label}
+                          />
+                        ))}
+                      </div>
+                    </div>
                     <Button
                       className="w-full"
                       onClick={() => addManager.mutate()}
