@@ -47,7 +47,7 @@ const Teachers = () => {
   const [profileFilter, setProfileFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [form, setForm] = useState({
-    name: "", email: "", password: "", age: "", rate: "",
+    name: "", password: "", age: "", rate: "",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
   });
   const { role } = useAuth();
@@ -89,7 +89,7 @@ const Teachers = () => {
     mutationFn: async () => {
       const res = await supabase.functions.invoke("create-teacher", {
         body: {
-          email: form.email, password: form.password, full_name: form.name,
+          password: form.password, full_name: form.name,
           whatsapp: form.whatsapp, age: form.age ? Number(form.age) : null,
           hourly_rate: form.rate ? Number(form.rate) : 0,
           qualification: form.qualification, subjects: form.subjects,
@@ -103,7 +103,7 @@ const Teachers = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
       setDialogOpen(false);
-      setForm({ name: "", email: "", password: "", age: "", rate: "", whatsapp: "", qualification: "", subjects: [], rating: "", gender: "male" });
+      setForm({ name: "", password: "", age: "", rate: "", whatsapp: "", qualification: "", subjects: [], rating: "", gender: "male" });
       toast({ title: t("teacherCreated") });
     },
     onError: (err: Error) => {
@@ -157,15 +157,14 @@ const Teachers = () => {
                   <Label>{t("fullName")} *</Label>
                   <Input placeholder={t("enterTeacherName")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>{t("email")} *</Label>
-                    <Input type="email" placeholder="teacher@example.com" dir="ltr" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>{t("password")} *</Label>
-                    <Input type="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-                  </div>
+                <div className="grid gap-2">
+                  <Label>{t("whatsapp")} * ({t("loginIdentifier")})</Label>
+                  <Input placeholder="+201..." dir="ltr" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
+                  <p className="text-xs text-muted-foreground">{t("phoneIsLoginId")}</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t("password")} *</Label>
+                  <Input type="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
@@ -181,10 +180,6 @@ const Teachers = () => {
                         <SelectItem value="female">{t("female")}</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>{t("whatsapp")} *</Label>
-                    <Input placeholder="+201..." dir="ltr" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid gap-2">

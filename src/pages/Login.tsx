@@ -91,17 +91,18 @@ const Login = () => {
               <Label>{t("loginIdentifier")}</Label>
               <Input
                 type="text"
-                placeholder="email@example.com / +201001234567"
+                placeholder="+201001234567"
                 value={identifier}
                 onChange={(e) => setIdentifier(e.target.value)}
                 dir="ltr"
                 required
                 autoComplete="username"
+                className="border-input focus-visible:ring-ring"
               />
               <p className="text-xs text-muted-foreground">
                 {identifier.length > 0
                   ? isEmail ? `📧 ${t("loginDetectedEmail")}` : `📱 ${t("loginDetectedPhone")}`
-                  : t("loginIdentifierHint")
+                  : t("loginPhoneDefault")
                 }
               </p>
             </div>

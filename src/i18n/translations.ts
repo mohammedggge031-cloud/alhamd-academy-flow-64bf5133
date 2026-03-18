@@ -57,8 +57,10 @@ const translations = {
   loginError: { en: "Login Error", ar: "خطأ في تسجيل الدخول" },
   loginInvalidEmail: { en: "Invalid email or password", ar: "البريد الإلكتروني أو كلمة المرور غير صحيحة" },
   loginConnectionError: { en: "Connection error", ar: "خطأ في الاتصال" },
-  loginIdentifier: { en: "Email or Phone Number", ar: "البريد الإلكتروني أو رقم الموبايل" },
-  loginIdentifierHint: { en: "Enter your email or phone number", ar: "أدخل بريدك الإلكتروني أو رقم موبايلك" },
+  loginIdentifier: { en: "Phone Number", ar: "رقم الموبايل" },
+  loginIdentifierHint: { en: "Enter your phone number", ar: "أدخل رقم موبايلك" },
+  loginPhoneDefault: { en: "Enter your phone number (or email for admins)", ar: "أدخل رقم الموبايل (أو الإيميل للمديرين)" },
+  phoneIsLoginId: { en: "This phone number will be used as login ID", ar: "رقم الموبايل ده هيكون معرّف الدخول" },
   loginDetectedEmail: { en: "Signing in with email", ar: "تسجيل الدخول بالبريد الإلكتروني" },
   loginDetectedPhone: { en: "Signing in with phone", ar: "تسجيل الدخول برقم الموبايل" },
 
