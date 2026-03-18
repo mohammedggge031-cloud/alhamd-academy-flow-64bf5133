@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe } from "lucide-react";
+import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe, DollarSign } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { TeacherProfileViewer } from "@/components/teachers/TeacherProfileViewer";
 import { WebsiteVisibilityDialog } from "@/components/teachers/WebsiteVisibilityDialog";
+import { TeacherSalaryDialog } from "@/components/teachers/TeacherSalaryDialog";
 
 interface TeacherRow {
   id: string; user_id: string; age: number | null; qualification: string | null;
@@ -43,11 +44,12 @@ const Teachers = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [viewingTeacherId, setViewingTeacherId] = useState<string | null>(null);
   const [websiteTeacher, setWebsiteTeacher] = useState<TeacherRow | null>(null);
+  const [salaryTeacher, setSalaryTeacher] = useState<TeacherRow | null>(null);
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
   const [profileFilter, setProfileFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [form, setForm] = useState({
-    name: "", password: "", age: "", rate: "",
+    name: "", password: "", age: "", rate: "", rateCurrency: "USD",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
   });
   const { role } = useAuth();
@@ -92,6 +94,7 @@ const Teachers = () => {
           password: form.password, full_name: form.name,
           whatsapp: form.whatsapp, age: form.age ? Number(form.age) : null,
           hourly_rate: form.rate ? Number(form.rate) : 0,
+          rate_currency: form.rateCurrency,
           qualification: form.qualification, subjects: form.subjects,
           gender: form.gender,
         },
@@ -103,7 +106,7 @@ const Teachers = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
       setDialogOpen(false);
-      setForm({ name: "", password: "", age: "", rate: "", whatsapp: "", qualification: "", subjects: [], rating: "", gender: "male" });
+      setForm({ name: "", password: "", age: "", rate: "", rateCurrency: "USD", whatsapp: "", qualification: "", subjects: [], rating: "", gender: "male" });
       toast({ title: t("teacherCreated") });
     },
     onError: (err: Error) => {
@@ -203,10 +206,20 @@ const Teachers = () => {
                     ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
                     <Label>{t("hourlyRate")}</Label>
                     <Input type="number" placeholder="0" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>{t("currency")}</Label>
+                    <Select value={form.rateCurrency} onValueChange={(v) => setForm({ ...form, rateCurrency: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">$ USD</SelectItem>
+                        <SelectItem value="EGP">ج.م EGP</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label>{t("internalRating")}</Label>
@@ -374,9 +387,9 @@ const Teachers = () => {
                         <span className="text-muted-foreground">{t("waitingTime")}:</span>
                         <span className="font-medium">{teacher.monthly_waiting_minutes ?? 0} {t("minutes")}</span>
                         <span className="text-muted-foreground">{t("hourlyRate")}:</span>
-                        <span className="font-bold text-primary">${teacher.hourly_rate}</span>
+                        <span className="font-bold text-primary">{(teacher as any).rate_currency === "EGP" ? "ج.م" : "$"}{teacher.hourly_rate}</span>
                         <span className="text-muted-foreground">{t("salary")}:</span>
-                        <span className="font-bold text-primary">${teacher.monthly_salary ?? 0}</span>
+                        <span className="font-bold text-primary">{(teacher as any).rate_currency === "EGP" ? "ج.م" : "$"}{teacher.monthly_salary ?? 0}</span>
                       </div>
                     </div>
                   </>
@@ -393,6 +406,16 @@ const Teachers = () => {
                       <Eye className="h-3.5 w-3.5" />
                       {t("viewProfile")}
                     </Button>
+                    {role === "admin" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setSalaryTeacher(teacher)}
+                      >
+                        <DollarSign className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button
                       variant={teacher.show_on_website ? "default" : "outline"}
                       size="sm"
@@ -424,6 +447,14 @@ const Teachers = () => {
           visibleFields={websiteTeacher.website_visible_fields ?? []}
           open={!!websiteTeacher}
           onOpenChange={(open) => !open && setWebsiteTeacher(null)}
+        />
+      )}
+
+      {role === "admin" && (
+        <TeacherSalaryDialog
+          teacher={salaryTeacher}
+          open={!!salaryTeacher}
+          onOpenChange={(open) => !open && setSalaryTeacher(null)}
         />
       )}
     </div>
