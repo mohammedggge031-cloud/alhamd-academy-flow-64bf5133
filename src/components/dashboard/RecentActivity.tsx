@@ -7,7 +7,6 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
-import { withTimeout } from "@/lib/queryHelpers";
 
 const RecentActivity = memo(() => {
   const { t } = useLanguage();
@@ -15,26 +14,30 @@ const RecentActivity = memo(() => {
 
   const { data: recentBookings = [], isLoading: loadingBookings, isError: errorBookings } = useQuery({
     queryKey: ["dash-recent-bookings"],
-    queryFn: () => withTimeout(
-      supabase
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from("trial_bookings")
         .select("id, full_name, phone, course_interest, status, is_read")
         .order("created_at", { ascending: false })
-        .limit(5)
-        .then(({ data, error }) => { if (error) throw error; return data ?? []; })
-    ),
+        .limit(5);
+      if (error) { console.error("dash-bookings error:", error); throw error; }
+      return data ?? [];
+    },
   });
 
   const { data: recentSubs = [], isLoading: loadingSubs, isError: errorSubs } = useQuery({
     queryKey: ["dash-recent-subs"],
-    queryFn: () => withTimeout(
-      supabase
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from("subscription_requests")
         .select("id, full_name, phone, plan_name, status, is_read")
         .order("created_at", { ascending: false })
-        .limit(5)
-        .then(({ data, error }) => { if (error) throw error; return data ?? []; })
-    ),
+        .limit(5);
+      if (error) { console.error("dash-subs error:", error); throw error; }
+      return data ?? [];
+    },
   });
 
   const newBookingsCount = recentBookings.filter((b: any) => b.status === "new").length;

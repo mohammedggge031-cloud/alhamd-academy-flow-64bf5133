@@ -6,7 +6,6 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { withTimeout } from "@/lib/queryHelpers";
 
 const EGYPT_TZ = "Africa/Cairo";
 
@@ -38,17 +37,16 @@ const TodaySessions = memo(() => {
 
   const { data: todaySessions = [], isLoading, isError } = useQuery({
     queryKey: ["dash-today-sessions"],
-    queryFn: () => withTimeout(
-      supabase
+    retry: 1,
+    queryFn: async () => {
+      const { data, error } = await supabase
         .from("sessions")
         .select("id, session_date, start_time, status, duration_minutes, students:student_id(name, timezone), teachers:teacher_id(user_id, profiles:user_id(full_name))")
         .eq("session_date", today)
-        .order("start_time")
-        .then(({ data, error }) => {
-          if (error) throw error;
-          return data ?? [];
-        })
-    ),
+        .order("start_time");
+      if (error) { console.error("dash-today-sessions error:", error); throw error; }
+      return data ?? [];
+    },
   });
 
   return (
@@ -63,7 +61,7 @@ const TodaySessions = memo(() => {
         {isLoading ? (
           <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : isError ? (
-          <p className="text-center text-sm text-destructive py-6">{"حدث خطأ في تحميل البيانات"}</p>
+          <p className="text-center text-sm text-destructive py-6">حدث خطأ في تحميل البيانات</p>
         ) : todaySessions.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-6">{t("dashNoSessions")}</p>
         ) : (
