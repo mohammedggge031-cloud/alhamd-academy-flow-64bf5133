@@ -9,7 +9,7 @@ const EGYPT_TZ = "Africa/Cairo";
 
 function getCurrentTime(tz: string): string {
   try {
-    return new Date().toLocaleTimeString("ar-EG", {
+    return new Date().toLocaleTimeString("en-US", {
       timeZone: tz,
       hour: "2-digit",
       minute: "2-digit",
