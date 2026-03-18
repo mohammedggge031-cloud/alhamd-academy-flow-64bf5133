@@ -173,15 +173,22 @@ const MonthlyReports = () => {
   };
 
   const sendWhatsapp = (r: any) => {
-    const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
-    if (!phone) {
-      toast({ title: t("error"), description: "لا يوجد رقم واتساب للطالب", variant: "destructive" });
-      return;
-    }
     const content = generateWhatsAppText(buildReportData(r));
-    const cleanPhone = phone.replace(/[^0-9]/g, "");
-    const url = `https://wa.me/${encodeURIComponent(cleanPhone)}?text=${encodeURIComponent(content)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    if (isAdmin) {
+      // Admin sends to student/guardian
+      const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
+      if (!phone) {
+        toast({ title: t("error"), description: "لا يوجد رقم واتساب للطالب", variant: "destructive" });
+        return;
+      }
+      const cleanPhone = phone.replace(/[^0-9]/g, "");
+      const url = `https://wa.me/${encodeURIComponent(cleanPhone)}?text=${encodeURIComponent(content)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      // Teacher opens WhatsApp without recipient - they choose who to send to
+      const url = `https://wa.me/?text=${encodeURIComponent(content)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   };
 
   return (
