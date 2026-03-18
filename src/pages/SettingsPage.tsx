@@ -71,7 +71,7 @@ const SettingsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["managers"] });
       toast({ title: t("success"), description: t("managerAdded") });
       setManagerDialog(false);
-      setManagerForm({ name: "", email: "", password: "" });
+      setManagerForm({ name: "", email: "", password: "", dot_color: "#3B82F6" });
     },
     onError: (err: Error) => {
       toast({ title: t("error"), description: err.message, variant: "destructive" });
