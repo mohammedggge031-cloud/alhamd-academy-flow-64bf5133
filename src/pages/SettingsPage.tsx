@@ -231,23 +231,46 @@ const SettingsPage = () => {
               <div className="space-y-3">
                 {managers.map((m: any) => (
                   <div key={m.user_id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div>
-                      <p className="font-medium text-sm">{m.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{m.email}</p>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="h-4 w-4 rounded-full shrink-0 border border-border"
+                        style={{ backgroundColor: m.dot_color || "#999" }}
+                      />
+                      <div>
+                        <p className="font-medium text-sm">{m.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{m.email}</p>
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => {
-                        if (confirm(t("confirmDeleteManager"))) {
-                          deleteManager.mutate(m.user_id);
-                        }
-                      }}
-                      disabled={deleteManager.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {/* Color picker for existing managers */}
+                      <div className="flex gap-1">
+                        {dotColorOptions.map((opt) => (
+                          <button
+                            key={opt.color}
+                            type="button"
+                            className={`h-4 w-4 rounded-full transition-transform ${
+                              m.dot_color === opt.color ? "ring-2 ring-offset-1 ring-foreground/30 scale-110" : "opacity-50 hover:opacity-100"
+                            }`}
+                            style={{ backgroundColor: opt.color }}
+                            onClick={() => updateColor.mutate({ userId: m.user_id, color: opt.color })}
+                            title={opt.label}
+                          />
+                        ))}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          if (confirm(t("confirmDeleteManager"))) {
+                            deleteManager.mutate(m.user_id);
+                          }
+                        }}
+                        disabled={deleteManager.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>
