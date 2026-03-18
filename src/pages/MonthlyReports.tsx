@@ -85,6 +85,7 @@ const MonthlyReports = () => {
 
   const saveReport = useMutation({
     mutationFn: async () => {
+      let reportId: string | null = null;
       if (editingId) {
         const { error } = await supabase.from("monthly_reports").update({
           quran_progress: form.quran_progress || null,
@@ -97,6 +98,7 @@ const MonthlyReports = () => {
           overall_grade: form.overall_grade || null,
         }).eq("id", editingId);
         if (error) throw error;
+        reportId = editingId;
       } else {
         let teacherId: string;
         if (isAdmin) {
@@ -107,15 +109,39 @@ const MonthlyReports = () => {
             .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "").single();
           teacherId = teacher?.id ?? "";
         }
-        const { error } = await supabase.from("monthly_reports").insert({
+        const { data: newReport, error } = await supabase.from("monthly_reports").insert({
           teacher_id: teacherId, student_id: form.student_id,
           report_month: form.report_month + "-01",
           quran_progress: form.quran_progress || null, tajweed_level: form.tajweed_level || null,
           attendance_rating: form.attendance_rating || null, behavior_notes: form.behavior_notes || null,
           strengths: form.strengths || null, weaknesses: form.weaknesses || null,
           recommendations: form.recommendations || null, overall_grade: form.overall_grade || null,
-        });
+        }).select("id").single();
         if (error) throw error;
+        reportId = newReport?.id ?? null;
+
+        // Notify admin/managers (only for new reports from teachers)
+        if (!isAdmin && reportId) {
+          const studentObj = students.find((s: any) => s.id === form.student_id);
+          const { data: profile } = await supabase.from("profiles").select("full_name")
+            .eq("user_id", (await supabase.auth.getUser()).data.user?.id ?? "").single();
+          
+          // Get student phone for admin WhatsApp
+          const { data: studentData } = await supabase.from("students")
+            .select("whatsapp, guardian_whatsapp")
+            .eq("id", form.student_id).single();
+
+          supabase.functions.invoke("notify-monthly-report", {
+            body: {
+              report_id: reportId,
+              student_name: studentObj?.name ?? "",
+              teacher_name: profile?.full_name ?? "",
+              report_month: form.report_month + "-01",
+              overall_grade: form.overall_grade || null,
+              student_phone: studentData?.guardian_whatsapp || studentData?.whatsapp || "",
+            },
+          }).catch(console.error); // fire and forget
+        }
       }
     },
     onSuccess: () => {

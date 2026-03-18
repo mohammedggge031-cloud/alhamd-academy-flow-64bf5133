@@ -541,6 +541,8 @@ const translations = {
   homeworkSentToSupervisor: { en: "Homework will be sent to supervisor via WhatsApp", ar: "الواجب سيتم إرساله للإشراف عبر الواتساب" },
   homeworkWhatsappHint: { en: "After submitting, you can share the homework via WhatsApp", ar: "بعد الإرسال، يمكنك مشاركة الواجب عبر الواتساب" },
   sendReportWhatsapp: { en: "Send report via WhatsApp", ar: "إرسال التقرير عبر الواتساب" },
+  sendPaidConfirmation: { en: "Send payment confirmation", ar: "إرسال تأكيد الدفع" },
+  newMonthlyReportNotif: { en: "New monthly report", ar: "تقرير شهري جديد" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

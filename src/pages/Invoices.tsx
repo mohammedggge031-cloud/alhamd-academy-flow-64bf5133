@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2, MessageCircle } from "lucide-react";
+import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2, MessageCircle, Check, X } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,7 +15,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { openWhatsApp, buildInvoiceMessage } from "@/utils/whatsappLinks";
+import { openWhatsApp, buildInvoiceMessage, buildPaidInvoiceMessage } from "@/utils/whatsappLinks";
 
 const Invoices = () => {
   const { t } = useLanguage();
@@ -354,17 +354,19 @@ const Invoices = () => {
                       <Badge variant="secondary" className={status.className}>
                         {status.label}
                       </Badge>
-                      {invoice.status !== "paid" && (
+                      {invoice.status !== "paid" ? (
                         <div className="flex items-center gap-1">
-                          <Button size="sm" variant="outline" className="h-7 text-xs"
+                          <Button size="sm" variant="outline" className="h-7 text-xs gap-1 border-success/30 text-success hover:bg-success hover:text-success-foreground"
                             onClick={() => markPaid.mutate(invoice.id)} disabled={markPaid.isPending}>
-                            {t("markPaid")}
+                            <Check className="h-3 w-3" />{t("markPaid")}
                           </Button>
                           <Button size="icon" variant="ghost" className="h-7 w-7 text-[#25D366] hover:text-[#25D366] hover:bg-[#25D366]/10"
                             title={t("sendInvoiceWhatsapp")}
                             onClick={() => {
                               const studentName = getStudentNames(invoice);
-                              const phone = invoice.students?.whatsapp || invoice.students?.guardian_whatsapp || "";
+                              const phone = invoice.students?.whatsapp || invoice.students?.guardian_whatsapp
+                                || invoice.invoice_students?.[0]?.students?.whatsapp
+                                || invoice.invoice_students?.[0]?.students?.guardian_whatsapp || "";
                               if (!phone) {
                                 toast({ title: t("error"), description: "لا يوجد رقم واتساب", variant: "destructive" });
                                 return;
@@ -374,6 +376,23 @@ const Invoices = () => {
                             <MessageCircle className="h-4 w-4" />
                           </Button>
                         </div>
+                      ) : (
+                        <Button size="icon" variant="ghost" className="h-7 w-7 text-[#25D366] hover:text-[#25D366] hover:bg-[#25D366]/10"
+                          title={t("sendPaidConfirmation")}
+                          onClick={() => {
+                            const studentName = getStudentNames(invoice);
+                            const phone = invoice.students?.whatsapp || invoice.students?.guardian_whatsapp
+                              || invoice.invoice_students?.[0]?.students?.whatsapp
+                              || invoice.invoice_students?.[0]?.students?.guardian_whatsapp || "";
+                            if (!phone) {
+                              toast({ title: t("error"), description: "لا يوجد رقم واتساب", variant: "destructive" });
+                              return;
+                            }
+                            const paidDate = invoice.paid_at ? new Date(invoice.paid_at).toLocaleDateString("ar-EG") : new Date().toLocaleDateString("ar-EG");
+                            openWhatsApp(phone, buildPaidInvoiceMessage(studentName, invoice.total, invoice.hours, paidDate));
+                          }}>
+                          <MessageCircle className="h-4 w-4" />
+                        </Button>
                       )}
                     </div>
                   </div>

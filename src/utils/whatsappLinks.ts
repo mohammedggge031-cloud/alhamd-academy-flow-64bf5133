@@ -41,3 +41,44 @@ export function buildInvoiceMessage(
   msg += `\nيرجى السداد في الموعد لضمان استمرار الحصص 🙏\n\n_أكاديمية الحمد لتحفيظ القرآن الكريم_`;
   return msg;
 }
+
+export function buildPaidInvoiceMessage(
+  studentName: string,
+  total: number,
+  hours: number | null,
+  paidDate: string
+): string {
+  let msg = `✅ *إيصال دفع - أكاديمية الحمد*\n\n`;
+  msg += `السلام عليكم يا ${studentName}\n\n`;
+  msg += `تم استلام الدفع بنجاح ✅\n\n`;
+  msg += `💰 المبلغ المدفوع: $${total}\n`;
+  if (hours) msg += `⏱ عدد الساعات: ${hours}\n`;
+  msg += `📅 تاريخ الدفع: ${paidDate}\n\n`;
+  msg += `جزاكم الله خيراً وبارك الله فيكم 🤲\n\n`;
+  msg += `_أكاديمية الحمد لتحفيظ القرآن الكريم_`;
+  return msg;
+}
+
+export function buildMonthlyReportMessage(
+  studentName: string,
+  teacherName: string,
+  reportMonth: string,
+  overallGrade: string,
+  quranProgress: string,
+  strengths: string,
+  weaknesses: string,
+  recommendations: string
+): string {
+  let msg = `📋 *التقرير الشهري - أكاديمية الحمد*\n\n`;
+  msg += `👤 الطالب: ${studentName}\n`;
+  msg += `👨‍🏫 المعلم: ${teacherName}\n`;
+  msg += `📅 الشهر: ${reportMonth}\n`;
+  if (overallGrade) msg += `📊 التقييم العام: ${overallGrade}\n`;
+  msg += `\n`;
+  if (quranProgress) msg += `📖 تقدم القرآن:\n${quranProgress}\n\n`;
+  if (strengths) msg += `✅ نقاط القوة:\n${strengths}\n\n`;
+  if (weaknesses) msg += `⚠️ نقاط الضعف:\n${weaknesses}\n\n`;
+  if (recommendations) msg += `💡 التوصيات:\n${recommendations}\n\n`;
+  msg += `_أكاديمية الحمد لتحفيظ القرآن الكريم_`;
+  return msg;
+}
