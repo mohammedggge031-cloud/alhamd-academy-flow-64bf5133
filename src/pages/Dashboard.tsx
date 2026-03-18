@@ -5,6 +5,7 @@ import StatsGrid from "@/components/dashboard/StatsGrid";
 import TodaySessions from "@/components/dashboard/TodaySessions";
 import AlertCards from "@/components/dashboard/AlertCards";
 import RecentActivity from "@/components/dashboard/RecentActivity";
+import TimezoneWidget from "@/components/dashboard/TimezoneWidget";
 
 const Dashboard = () => {
   const { t } = useLanguage();
@@ -25,8 +26,12 @@ const Dashboard = () => {
 
       <div className="grid gap-6 lg:grid-cols-3">
         <TodaySessions />
-        <AlertCards />
+        <div className="space-y-6">
+          <TimezoneWidget />
+        </div>
       </div>
+
+      <AlertCards />
 
       <RecentActivity />
     </div>

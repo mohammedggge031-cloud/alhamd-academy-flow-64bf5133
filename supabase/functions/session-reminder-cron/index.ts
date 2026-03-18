@@ -8,6 +8,14 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function getTimeInTimezone(date: Date, tz: string): string {
+  try {
+    return date.toLocaleTimeString("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit", hour12: false });
+  } catch {
+    return date.toLocaleTimeString("en-GB", { timeZone: "Africa/Cairo", hour: "2-digit", minute: "2-digit", hour12: false });
+  }
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -25,7 +33,7 @@ serve(async (req) => {
       .from("sessions")
       .select(`
         id, session_date, start_time, duration_minutes, status,
-        students:student_id(name, whatsapp, guardian_whatsapp),
+        students:student_id(name, whatsapp, guardian_whatsapp, timezone),
         teachers:teacher_id(user_id, profiles:user_id(full_name, whatsapp))
       `)
       .eq("session_date", today)
@@ -70,11 +78,32 @@ serve(async (req) => {
       const studentPhone = student.whatsapp || student.guardian_whatsapp || "";
       const teacherPhone = teacher.profiles?.whatsapp || "";
       const timeDisplay = startTime.slice(0, 5);
+      const studentTz = student.timezone || "Africa/Cairo";
+
+      // Calculate student local time
+      let studentTimeDisplay = timeDisplay;
+      let studentTimeLine = "";
+      if (studentTz !== "Africa/Cairo") {
+        try {
+          // Build a Date object for the session in Egypt time
+          const sessionDateObj = new Date(`${session.session_date}T${startTime}:00`);
+          // Get Egypt offset
+          const egyptOffset = new Date(sessionDateObj.toLocaleString("en-US", { timeZone: "Africa/Cairo" })).getTime();
+          const studentOffset = new Date(sessionDateObj.toLocaleString("en-US", { timeZone: studentTz })).getTime();
+          const diffMs = studentOffset - egyptOffset;
+          const diffHrs = diffMs / 3600000;
+          const studentSessionTime = new Date(sessionDateObj.getTime() + diffMs);
+          studentTimeDisplay = studentSessionTime.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false });
+          studentTimeLine = `\n🌍 بتوقيتك: ${studentTimeDisplay} · بتوقيت مصر: ${timeDisplay}`;
+        } catch {
+          studentTimeLine = "";
+        }
+      }
 
       // 6 hour reminder
       if (diffMinutes >= 330 && diffMinutes <= 390) {
-        const studentMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\n${GREETING} يا ${studentName} 🌟\n\n📅 موعد الحصة اليوم\n⏰ الساعة: ${timeDisplay}\n👨‍🏫 المعلم: ${teacherName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nنتمنى لك حصة موفقة! 📚`;
-        const teacherMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\n${GREETING} يا ${teacherName}\n\n📅 موعد الحصة اليوم\n⏰ الساعة: ${timeDisplay}\n👤 الطالب: ${studentName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nجزاك الله خيراً 📚`;
+        const studentMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\n${GREETING} يا ${studentName} 🌟\n\n📅 موعد الحصة اليوم${studentTimeLine || `\n⏰ الساعة: ${timeDisplay}`}\n👨‍🏫 المعلم: ${teacherName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nنتمنى لك حصة موفقة! 📚`;
+        const teacherMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\n${GREETING} يا ${teacherName}\n\n📅 موعد الحصة اليوم\n⏰ الساعة: ${timeDisplay} (توقيت مصر)\n👤 الطالب: ${studentName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nجزاك الله خيراً 📚`;
 
         const { data: existing } = await adminClient
           .from("notifications")
@@ -84,7 +113,6 @@ serve(async (req) => {
           .limit(1);
 
         if (!existing || existing.length === 0) {
-          // Shared group_id for all recipients
           const groupId = crypto.randomUUID();
           const notifications = recipientIds.map((uid: string) => ({
             user_id: uid,
@@ -109,8 +137,8 @@ serve(async (req) => {
 
       // 5 minute reminder
       if (diffMinutes >= 3 && diffMinutes <= 7) {
-        const studentMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\n${GREETING} يا ${studentName}\n\n⏰ الحصة الساعة ${timeDisplay}\n👨‍🏫 المعلم: ${teacherName}\n\nيرجى الاستعداد الآن! 🚀`;
-        const teacherMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\n${GREETING} يا ${teacherName}\n\n⏰ الحصة الساعة ${timeDisplay}\n👤 الطالب: ${studentName}\n\nيرجى الاستعداد الآن! 🚀`;
+        const studentMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\n${GREETING} يا ${studentName}\n\n⏰ الحصة الساعة ${studentTimeLine ? studentTimeDisplay : timeDisplay}${studentTimeLine ? ` (بتوقيتك)` : ""}\n👨‍🏫 المعلم: ${teacherName}\n\nيرجى الاستعداد الآن! 🚀`;
+        const teacherMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\n${GREETING} يا ${teacherName}\n\n⏰ الحصة الساعة ${timeDisplay} (توقيت مصر)\n👤 الطالب: ${studentName}\n\nيرجى الاستعداد الآن! 🚀`;
 
         const { data: existing } = await adminClient
           .from("notifications")
