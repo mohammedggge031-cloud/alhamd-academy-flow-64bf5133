@@ -1,6 +1,5 @@
 import { useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/hooks/useAuth";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,7 +17,6 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { signIn } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, lang, setLang } = useLanguage();
@@ -39,7 +37,7 @@ const Login = () => {
         if (!trimmedEmail || trimmedEmail.length > 255) {
           throw new Error(t("loginInvalidEmail"));
         }
-        const { error } = await signIn(trimmedEmail, password);
+        const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
         if (error) throw new Error(t("loginInvalidEmail"));
       } else {
         const sanitizedPhone = identifier.replace(/[^0-9+]/g, "");
