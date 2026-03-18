@@ -204,10 +204,20 @@ const Teachers = () => {
                     ))}
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
                     <Label>{t("hourlyRate")}</Label>
                     <Input type="number" placeholder="0" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label>{t("currency")}</Label>
+                    <Select value={form.rateCurrency} onValueChange={(v) => setForm({ ...form, rateCurrency: v })}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="USD">$ USD</SelectItem>
+                        <SelectItem value="EGP">ج.م EGP</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="grid gap-2">
                     <Label>{t("internalRating")}</Label>
