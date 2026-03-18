@@ -115,25 +115,7 @@ const Sessions = () => {
 
   const [showMyReports, setShowMyReports] = useState(false);
 
-  // Get admin/manager WhatsApp for homework forwarding
-  const { data: supervisorPhone } = useQuery({
-    queryKey: ["supervisor-phone"],
-    enabled: !isAdmin,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .in("role", ["admin", "manager"])
-        .limit(1);
-      if (!data?.[0]) return null;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("whatsapp")
-        .eq("user_id", data[0].user_id)
-        .single();
-      return profile?.whatsapp || null;
-    },
-  });
+  // Supervisor phone query removed - teacher now opens their own WhatsApp
 
   const [homeworkSentForSession, setHomeworkSentForSession] = useState<string | null>(null);
 
@@ -733,7 +715,7 @@ const Sessions = () => {
                   </p>
                   <SurahPicker onSelect={(text) => setReport({ ...report, homework: report.homework ? `${report.homework}\n${text}` : text })} />
                 </div>
-                <p className="text-[10px] text-muted-foreground">{t("homeworkSentToSupervisor")}</p>
+                <p className="text-[10px] text-muted-foreground">{t("homeworkWhatsappHint")}</p>
               </div>
 
               <div className="rounded-lg border border-border p-3 space-y-2">
@@ -756,16 +738,19 @@ const Sessions = () => {
               {homeworkSentForSession === reportDialog.id ? (
                 <div className="space-y-2">
                   <p className="text-sm text-success font-medium text-center">✅ {t("reportSent")}</p>
-                  {supervisorPhone && report.homework && (
+                  {report.homework && (
                     <Button className="w-full gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white"
                       onClick={() => {
-                        openWhatsApp(supervisorPhone, buildHomeworkMessage(getStudentName(reportDialog), report.homework));
+                        // Open teacher's own WhatsApp with the homework message - teacher chooses recipient
+                        const homeworkMsg = buildHomeworkMessage(getStudentName(reportDialog), report.homework);
+                        const url = `https://wa.me/?text=${encodeURIComponent(homeworkMsg)}`;
+                        window.open(url, "_blank", "noopener,noreferrer");
                         setReportDialog(null);
                         setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
                         setHomeworkSentForSession(null);
                       }}>
                       <MessageCircle className="h-4 w-4" />
-                      {t("sendHomeworkToSupervisor")}
+                      {t("sendHomeworkViaWhatsapp")}
                     </Button>
                   )}
                   <Button variant="outline" className="w-full" onClick={() => {

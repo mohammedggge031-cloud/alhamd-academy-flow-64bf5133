@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { FileText, Plus, Loader2, BookOpen, Download, Send, Pencil, Eye } from "lucide-react";
+import { FileText, Plus, Loader2, BookOpen, Download, Send, Pencil, Eye, MessageCircle } from "lucide-react";
 import { openReportPreview, generateWhatsAppText } from "@/utils/reportGenerator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -173,15 +173,22 @@ const MonthlyReports = () => {
   };
 
   const sendWhatsapp = (r: any) => {
-    const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
-    if (!phone) {
-      toast({ title: t("error"), description: "لا يوجد رقم واتساب للطالب", variant: "destructive" });
-      return;
-    }
     const content = generateWhatsAppText(buildReportData(r));
-    const cleanPhone = phone.replace(/[^0-9]/g, "");
-    const url = `https://wa.me/${encodeURIComponent(cleanPhone)}?text=${encodeURIComponent(content)}`;
-    window.open(url, "_blank", "noopener,noreferrer");
+    if (isAdmin) {
+      // Admin sends to student/guardian
+      const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
+      if (!phone) {
+        toast({ title: t("error"), description: "لا يوجد رقم واتساب للطالب", variant: "destructive" });
+        return;
+      }
+      const cleanPhone = phone.replace(/[^0-9]/g, "");
+      const url = `https://wa.me/${encodeURIComponent(cleanPhone)}?text=${encodeURIComponent(content)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    } else {
+      // Teacher opens WhatsApp without recipient - they choose who to send to
+      const url = `https://wa.me/?text=${encodeURIComponent(content)}`;
+      window.open(url, "_blank", "noopener,noreferrer");
+    }
   };
 
   return (
@@ -378,7 +385,7 @@ const MonthlyReports = () => {
                     <Download className="h-3 w-3" /> {t("downloadPdf")}
                   </Button>
                   <Button variant="outline" size="sm" className="gap-1 text-xs text-[#25D366]" onClick={() => sendWhatsapp(r)}>
-                    <Send className="h-3 w-3" /> {t("sendWhatsapp")}
+                    <MessageCircle className="h-3 w-3" /> {isAdmin ? t("sendReportWhatsapp") : t("sendViaWhatsapp")}
                   </Button>
                 </div>
               </CardContent>
