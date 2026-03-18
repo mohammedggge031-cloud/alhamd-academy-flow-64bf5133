@@ -92,6 +92,7 @@ const Teachers = () => {
           password: form.password, full_name: form.name,
           whatsapp: form.whatsapp, age: form.age ? Number(form.age) : null,
           hourly_rate: form.rate ? Number(form.rate) : 0,
+          rate_currency: form.rateCurrency,
           qualification: form.qualification, subjects: form.subjects,
           gender: form.gender,
         },
