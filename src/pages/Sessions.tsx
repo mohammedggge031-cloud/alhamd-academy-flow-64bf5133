@@ -734,6 +734,7 @@ const Sessions = () => {
                   </p>
                   <SurahPicker onSelect={(text) => setReport({ ...report, homework: report.homework ? `${report.homework}\n${text}` : text })} />
                 </div>
+                <p className="text-[10px] text-muted-foreground">{t("homeworkSentToSupervisor")}</p>
               </div>
 
               <div className="rounded-lg border border-border p-3 space-y-2">
@@ -752,11 +753,39 @@ const Sessions = () => {
                 )}
               </div>
 
-              <Button className="w-full gap-2" disabled={!report.student_level || !report.session_notes?.trim() || !report.homework?.trim() || submitReport.isPending}
-                onClick={() => submitReport.mutate(reportDialog)}>
-                {submitReport.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                {t("sendReport")}
-              </Button>
+              {/* Show WhatsApp button after successful submission with homework */}
+              {homeworkSentForSession === reportDialog.id ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-success font-medium text-center">✅ {t("reportSent")}</p>
+                  {supervisorPhone && report.homework && (
+                    <Button className="w-full gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white"
+                      onClick={() => {
+                        const { buildHomeworkMessage } = require("@/utils/whatsappLinks");
+                        const { openWhatsApp } = require("@/utils/whatsappLinks");
+                        openWhatsApp(supervisorPhone, buildHomeworkMessage(getStudentName(reportDialog), report.homework));
+                        setReportDialog(null);
+                        setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
+                        setHomeworkSentForSession(null);
+                      }}>
+                      <MessageCircle className="h-4 w-4" />
+                      {t("sendHomeworkToSupervisor")}
+                    </Button>
+                  )}
+                  <Button variant="outline" className="w-full" onClick={() => {
+                    setReportDialog(null);
+                    setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
+                    setHomeworkSentForSession(null);
+                  }}>
+                    {t("done")}
+                  </Button>
+                </div>
+              ) : (
+                <Button className="w-full gap-2" disabled={!report.student_level || !report.session_notes?.trim() || !report.homework?.trim() || submitReport.isPending}
+                  onClick={() => submitReport.mutate(reportDialog)}>
+                  {submitReport.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+                  {t("sendReport")}
+                </Button>
+              )}
             </div>
           )}
         </DialogContent>
