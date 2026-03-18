@@ -756,16 +756,19 @@ const Sessions = () => {
               {homeworkSentForSession === reportDialog.id ? (
                 <div className="space-y-2">
                   <p className="text-sm text-success font-medium text-center">✅ {t("reportSent")}</p>
-                  {supervisorPhone && report.homework && (
+                  {report.homework && (
                     <Button className="w-full gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white"
                       onClick={() => {
-                        openWhatsApp(supervisorPhone, buildHomeworkMessage(getStudentName(reportDialog), report.homework));
+                        // Open teacher's own WhatsApp with the homework message - teacher chooses recipient
+                        const homeworkMsg = buildHomeworkMessage(getStudentName(reportDialog), report.homework);
+                        const url = `https://wa.me/?text=${encodeURIComponent(homeworkMsg)}`;
+                        window.open(url, "_blank", "noopener,noreferrer");
                         setReportDialog(null);
                         setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
                         setHomeworkSentForSession(null);
                       }}>
                       <MessageCircle className="h-4 w-4" />
-                      {t("sendHomeworkToSupervisor")}
+                      {t("sendHomeworkViaWhatsapp")}
                     </Button>
                   )}
                   <Button variant="outline" className="w-full" onClick={() => {
