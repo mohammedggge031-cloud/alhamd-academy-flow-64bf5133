@@ -1,0 +1,154 @@
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+};
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { headers: corsHeaders });
+  }
+
+  try {
+    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+
+    const now = new Date();
+    const today = now.toISOString().split("T")[0];
+
+    // Get today's upcoming sessions
+    const { data: sessions } = await adminClient
+      .from("sessions")
+      .select(`
+        id, session_date, start_time, duration_minutes, status,
+        students:student_id(name, whatsapp, guardian_whatsapp),
+        teachers:teacher_id(user_id, profiles:user_id(full_name, whatsapp))
+      `)
+      .eq("session_date", today)
+      .in("status", ["upcoming", "confirmed"]);
+
+    if (!sessions || sessions.length === 0) {
+      return new Response(JSON.stringify({ success: true, created: 0 }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Get admin and manager user IDs for notifications
+    const { data: adminManagers } = await adminClient
+      .from("user_roles")
+      .select("user_id")
+      .in("role", ["admin", "manager"]);
+
+    const recipientIds = (adminManagers ?? []).map((r: any) => r.user_id);
+    if (recipientIds.length === 0) {
+      return new Response(JSON.stringify({ success: true, created: 0, reason: "no_admins" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    let created = 0;
+    const egyptNow = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
+    const egyptHours = egyptNow.getHours();
+    const egyptMinutes = egyptNow.getMinutes();
+
+    for (const session of sessions) {
+      const student = (session as any).students;
+      const teacher = (session as any).teachers;
+      if (!student || !teacher) continue;
+
+      const startTime = session.start_time || "00:00";
+      const [sh, sm] = startTime.split(":").map(Number);
+      
+      // Calculate time difference in minutes
+      const sessionMinutes = sh * 60 + sm;
+      const nowMinutes = egyptHours * 60 + egyptMinutes;
+      const diffMinutes = sessionMinutes - nowMinutes;
+
+      const studentName = student.name || "طالب";
+      const teacherName = teacher.profiles?.full_name || "معلم";
+      const studentPhone = student.whatsapp || student.guardian_whatsapp || "";
+      const teacherPhone = teacher.profiles?.whatsapp || "";
+      const timeDisplay = startTime.slice(0, 5);
+
+      // 6 hour reminder (330-390 min before = called every ~hour)
+      if (diffMinutes >= 330 && diffMinutes <= 390) {
+        const studentMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\nالسلام عليكم يا ${studentName} 🌟\n\n📅 موعد الحصة اليوم\n⏰ الساعة: ${timeDisplay}\n👨‍🏫 المعلم: ${teacherName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nنتمنى لك حصة موفقة! 📚`;
+        const teacherMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\nالسلام عليكم يا ${teacherName}\n\n📅 موعد الحصة اليوم\n⏰ الساعة: ${timeDisplay}\n👤 الطالب: ${studentName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nجزاك الله خيراً 📚`;
+
+        // Check if notification already exists
+        const { data: existing } = await adminClient
+          .from("notifications")
+          .select("id")
+          .eq("type", "session_reminder_6h")
+          .contains("metadata", { session_id: session.id })
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          const notifications = recipientIds.map((uid: string) => ({
+            user_id: uid,
+            type: "session_reminder_6h",
+            title: `⏰ تذكير: حصة ${studentName} الساعة ${timeDisplay}`,
+            body: `المعلم: ${teacherName} · المدة: ${session.duration_minutes} دقيقة`,
+            metadata: {
+              session_id: session.id,
+              whatsapp_phone: studentPhone,
+              whatsapp_message: studentMsg,
+              whatsapp_label: `تذكير ${studentName}`,
+              whatsapp_phone_2: teacherPhone,
+              whatsapp_message_2: teacherMsg,
+              whatsapp_label_2: `تذكير ${teacherName}`,
+            },
+          }));
+          await adminClient.from("notifications").insert(notifications);
+          created += notifications.length;
+        }
+      }
+
+      // 5 minute reminder (3-7 min before)
+      if (diffMinutes >= 3 && diffMinutes <= 7) {
+        const studentMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\nالسلام عليكم يا ${studentName}\n\n⏰ الحصة الساعة ${timeDisplay}\n👨‍🏫 المعلم: ${teacherName}\n\nيرجى الاستعداد الآن! 🚀`;
+        const teacherMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\nالسلام عليكم يا ${teacherName}\n\n⏰ الحصة الساعة ${timeDisplay}\n👤 الطالب: ${studentName}\n\nيرجى الاستعداد الآن! 🚀`;
+
+        const { data: existing } = await adminClient
+          .from("notifications")
+          .select("id")
+          .eq("type", "session_reminder_5m")
+          .contains("metadata", { session_id: session.id })
+          .limit(1);
+
+        if (!existing || existing.length === 0) {
+          const notifications = recipientIds.map((uid: string) => ({
+            user_id: uid,
+            type: "session_reminder_5m",
+            title: `🔔 الحصة بعد دقائق: ${studentName} الساعة ${timeDisplay}`,
+            body: `المعلم: ${teacherName} · يرجى التنبيه الآن`,
+            metadata: {
+              session_id: session.id,
+              whatsapp_phone: studentPhone,
+              whatsapp_message: studentMsg,
+              whatsapp_label: `تنبيه ${studentName}`,
+              whatsapp_phone_2: teacherPhone,
+              whatsapp_message_2: teacherMsg,
+              whatsapp_label_2: `تنبيه ${teacherName}`,
+            },
+          }));
+          await adminClient.from("notifications").insert(notifications);
+          created += notifications.length;
+        }
+      }
+    }
+
+    return new Response(JSON.stringify({ success: true, created }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  } catch (error) {
+    console.error("Error:", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+    });
+  }
+});
