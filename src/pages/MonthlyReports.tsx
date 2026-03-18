@@ -385,7 +385,7 @@ const MonthlyReports = () => {
                     <Download className="h-3 w-3" /> {t("downloadPdf")}
                   </Button>
                   <Button variant="outline" size="sm" className="gap-1 text-xs text-[#25D366]" onClick={() => sendWhatsapp(r)}>
-                    <Send className="h-3 w-3" /> {t("sendWhatsapp")}
+                    <MessageCircle className="h-3 w-3" /> {isAdmin ? t("sendReportWhatsapp") : t("sendViaWhatsapp")}
                   </Button>
                 </div>
               </CardContent>
