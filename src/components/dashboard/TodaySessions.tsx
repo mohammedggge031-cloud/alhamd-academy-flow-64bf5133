@@ -35,16 +35,18 @@ const TodaySessions = memo(() => {
     postponed: { label: t("postponed"), className: "bg-warning text-warning-foreground" },
   };
 
-  const { data: todaySessions = [], isLoading } = useQuery({
+  const { data: todaySessions = [], isLoading, isError } = useQuery({
     queryKey: ["dash-today-sessions"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("sessions")
         .select("id, session_date, start_time, status, duration_minutes, students:student_id(name, timezone), teachers:teacher_id(user_id, profiles:user_id(full_name))")
         .eq("session_date", today)
         .order("start_time");
+      if (error) throw error;
       return data ?? [];
     },
+    retry: 1,
   });
 
   return (
@@ -58,6 +60,8 @@ const TodaySessions = memo(() => {
       <CardContent>
         {isLoading ? (
           <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
+        ) : isError ? (
+          <p className="text-center text-sm text-destructive py-6">{"حدث خطأ في تحميل البيانات"}</p>
         ) : todaySessions.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-6">{t("dashNoSessions")}</p>
         ) : (

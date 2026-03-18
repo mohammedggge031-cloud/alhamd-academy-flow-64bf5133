@@ -76,13 +76,13 @@ const TimezoneWidget = memo(() => {
   const { data: studentTimezones = [] } = useQuery({
     queryKey: ["student-timezones"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("students")
         .select("timezone, name")
         .eq("is_active", true)
         .not("timezone", "is", null);
+      if (error) throw error;
       if (!data) return [];
-      // Group by timezone with student count
       const tzMap: Record<string, number> = {};
       for (const s of data) {
         const tz = s.timezone || EGYPT_TZ;
@@ -93,6 +93,7 @@ const TimezoneWidget = memo(() => {
         .map(([tz, count]) => ({ tz, count }))
         .sort((a, b) => b.count - a.count);
     },
+    retry: 1,
   });
 
   // Update times every second

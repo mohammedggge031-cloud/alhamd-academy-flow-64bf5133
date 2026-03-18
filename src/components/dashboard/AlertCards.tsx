@@ -13,28 +13,32 @@ const AlertCards = memo(() => {
   const { data: overdueInvoices = [] } = useQuery({
     queryKey: ["dash-overdue"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("invoices")
         .select("id, due_date, total, students:student_id(name)")
         .eq("status", "pending")
         .lt("due_date", today)
         .order("due_date")
         .limit(5);
+      if (error) throw error;
       return data ?? [];
     },
+    retry: 1,
   });
 
   const { data: lowBalance = [] } = useQuery({
     queryKey: ["dash-low-balance"],
     queryFn: async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("students")
         .select("name, remaining_hours")
         .eq("is_active", true)
         .lte("remaining_hours", 1)
         .order("remaining_hours");
+      if (error) throw error;
       return data ?? [];
     },
+    retry: 1,
   });
 
   return (
