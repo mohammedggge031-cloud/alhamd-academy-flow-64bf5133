@@ -355,10 +355,25 @@ const Invoices = () => {
                         {status.label}
                       </Badge>
                       {invoice.status !== "paid" && (
-                        <Button size="sm" variant="outline" className="h-7 text-xs"
-                          onClick={() => markPaid.mutate(invoice.id)} disabled={markPaid.isPending}>
-                          {t("markPaid")}
-                        </Button>
+                        <div className="flex items-center gap-1">
+                          <Button size="sm" variant="outline" className="h-7 text-xs"
+                            onClick={() => markPaid.mutate(invoice.id)} disabled={markPaid.isPending}>
+                            {t("markPaid")}
+                          </Button>
+                          <Button size="icon" variant="ghost" className="h-7 w-7 text-[#25D366] hover:text-[#25D366] hover:bg-[#25D366]/10"
+                            title={t("sendInvoiceWhatsapp")}
+                            onClick={() => {
+                              const studentName = getStudentNames(invoice);
+                              const phone = invoice.students?.whatsapp || invoice.students?.guardian_whatsapp || "";
+                              if (!phone) {
+                                toast({ title: t("error"), description: "لا يوجد رقم واتساب", variant: "destructive" });
+                                return;
+                              }
+                              openWhatsApp(phone, buildInvoiceMessage(studentName, invoice.total, invoice.hours, invoice.due_date));
+                            }}>
+                            <MessageCircle className="h-4 w-4" />
+                          </Button>
+                        </div>
                       )}
                     </div>
                   </div>
