@@ -95,6 +95,23 @@ const SettingsPage = () => {
     },
   });
 
+  const updateColor = useMutation({
+    mutationFn: async ({ userId, color }: { userId: string; color: string }) => {
+      const res = await supabase.functions.invoke("manage-managers", {
+        body: { action: "update_color", manager_user_id: userId, dot_color: color },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["managers"] });
+      toast({ title: t("success") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl">
       <div>
