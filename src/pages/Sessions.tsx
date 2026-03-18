@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send, BookOpen, Eye, DollarSign } from "lucide-react";
+import { CalendarDays, Filter, Plus, Loader2, Check, Clock, XCircle, ShieldAlert, FileText, AlertTriangle, Send, BookOpen, Eye, DollarSign, MessageCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
