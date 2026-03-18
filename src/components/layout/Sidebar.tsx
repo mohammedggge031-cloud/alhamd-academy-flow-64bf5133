@@ -46,7 +46,7 @@ const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: str
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const location = useLocation();
   const { signOut, role } = useAuth();
-  const { t } = useLanguage();
+  const { t, lang, setLang } = useLanguage();
   const qc = useQueryClient();
 
   const { data: unreadCounts = { bookings: 0 } } = useQuery({
