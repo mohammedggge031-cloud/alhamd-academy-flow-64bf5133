@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const GREETING = "السلام عليكم ورحمة الله وبركاته";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -25,7 +27,6 @@ serve(async (req) => {
       });
     }
 
-    // Get admin and manager user IDs
     const { data: adminManagers } = await adminClient
       .from("user_roles")
       .select("user_id")
@@ -40,19 +41,20 @@ serve(async (req) => {
 
     const monthDisplay = report_month ? new Date(report_month).toLocaleDateString("ar-EG", { year: "numeric", month: "long" }) : "";
 
-    // Build WhatsApp message for sending to student
-    let whatsappMsg = `📋 *التقرير الشهري - أكاديمية الحمد*\n\n`;
+    let whatsappMsg = `📋 *التقرير الشهري - أكاديمية الحمد*\n\n${GREETING}\n\n`;
     whatsappMsg += `👤 الطالب: ${student_name}\n`;
     whatsappMsg += `👨‍🏫 المعلم: ${teacher_name}\n`;
     whatsappMsg += `📅 الشهر: ${monthDisplay}\n`;
     if (overall_grade) whatsappMsg += `📊 التقييم العام: ${overall_grade}\n`;
     whatsappMsg += `\nيرجى مراجعة التقرير الشهري لمتابعة تقدم الطالب 📖\n\n_أكاديمية الحمد لتحفيظ القرآن الكريم_`;
 
+    const groupId = crypto.randomUUID();
     const notifications = recipientIds.map((uid: string) => ({
       user_id: uid,
       type: "monthly_report",
       title: `📋 تقرير شهري جديد: ${student_name}`,
       body: `المعلم: ${teacher_name} · ${monthDisplay}${overall_grade ? ` · التقييم: ${overall_grade}` : ""}`,
+      group_id: groupId,
       metadata: {
         report_id,
         whatsapp_phone: student_phone || "",

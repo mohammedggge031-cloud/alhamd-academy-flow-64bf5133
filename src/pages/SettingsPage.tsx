@@ -27,7 +27,18 @@ const SettingsPage = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [managerDialog, setManagerDialog] = useState(false);
-  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "" });
+  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "", dot_color: "#3B82F6" });
+
+  const dotColorOptions = [
+    { color: "#3B82F6", label: "أزرق" },
+    { color: "#EF4444", label: "أحمر" },
+    { color: "#10B981", label: "أخضر" },
+    { color: "#F59E0B", label: "برتقالي" },
+    { color: "#8B5CF6", label: "بنفسجي" },
+    { color: "#EC4899", label: "وردي" },
+    { color: "#06B6D4", label: "سماوي" },
+    { color: "#F97316", label: "نارنجي" },
+  ];
 
   const { data: managers = [], isLoading: loadingManagers } = useQuery({
     queryKey: ["managers"],
@@ -50,6 +61,7 @@ const SettingsPage = () => {
           email: managerForm.email,
           password: managerForm.password,
           full_name: managerForm.name,
+          dot_color: managerForm.dot_color,
         },
       });
       if (res.error) throw new Error(res.error.message);
@@ -59,7 +71,7 @@ const SettingsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["managers"] });
       toast({ title: t("success"), description: t("managerAdded") });
       setManagerDialog(false);
-      setManagerForm({ name: "", email: "", password: "" });
+      setManagerForm({ name: "", email: "", password: "", dot_color: "#3B82F6" });
     },
     onError: (err: Error) => {
       toast({ title: t("error"), description: err.message, variant: "destructive" });
@@ -77,6 +89,23 @@ const SettingsPage = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["managers"] });
       toast({ title: t("success"), description: t("managerDeleted") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
+  const updateColor = useMutation({
+    mutationFn: async ({ userId, color }: { userId: string; color: string }) => {
+      const res = await supabase.functions.invoke("manage-managers", {
+        body: { action: "update_color", manager_user_id: userId, dot_color: color },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["managers"] });
+      toast({ title: t("success") });
     },
     onError: (err: Error) => {
       toast({ title: t("error"), description: err.message, variant: "destructive" });
@@ -160,6 +189,23 @@ const SettingsPage = () => {
                         placeholder="••••••••"
                       />
                     </div>
+                    <div className="grid gap-2">
+                      <Label>لون التعريف</Label>
+                      <div className="flex gap-2 flex-wrap">
+                        {dotColorOptions.map((opt) => (
+                          <button
+                            key={opt.color}
+                            type="button"
+                            className={`h-7 w-7 rounded-full border-2 transition-transform ${
+                              managerForm.dot_color === opt.color ? "border-foreground scale-110 ring-2 ring-offset-2 ring-foreground/20" : "border-transparent"
+                            }`}
+                            style={{ backgroundColor: opt.color }}
+                            onClick={() => setManagerForm({ ...managerForm, dot_color: opt.color })}
+                            title={opt.label}
+                          />
+                        ))}
+                      </div>
+                    </div>
                     <Button
                       className="w-full"
                       onClick={() => addManager.mutate()}
@@ -185,23 +231,46 @@ const SettingsPage = () => {
               <div className="space-y-3">
                 {managers.map((m: any) => (
                   <div key={m.user_id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div>
-                      <p className="font-medium text-sm">{m.full_name}</p>
-                      <p className="text-xs text-muted-foreground">{m.email}</p>
+                    <div className="flex items-center gap-3">
+                      <span
+                        className="h-4 w-4 rounded-full shrink-0 border border-border"
+                        style={{ backgroundColor: m.dot_color || "#999" }}
+                      />
+                      <div>
+                        <p className="font-medium text-sm">{m.full_name}</p>
+                        <p className="text-xs text-muted-foreground">{m.email}</p>
+                      </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                      onClick={() => {
-                        if (confirm(t("confirmDeleteManager"))) {
-                          deleteManager.mutate(m.user_id);
-                        }
-                      }}
-                      disabled={deleteManager.isPending}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                    <div className="flex items-center gap-2">
+                      {/* Color picker for existing managers */}
+                      <div className="flex gap-1">
+                        {dotColorOptions.map((opt) => (
+                          <button
+                            key={opt.color}
+                            type="button"
+                            className={`h-4 w-4 rounded-full transition-transform ${
+                              m.dot_color === opt.color ? "ring-2 ring-offset-1 ring-foreground/30 scale-110" : "opacity-50 hover:opacity-100"
+                            }`}
+                            style={{ backgroundColor: opt.color }}
+                            onClick={() => updateColor.mutate({ userId: m.user_id, color: opt.color })}
+                            title={opt.label}
+                          />
+                        ))}
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                        onClick={() => {
+                          if (confirm(t("confirmDeleteManager"))) {
+                            deleteManager.mutate(m.user_id);
+                          }
+                        }}
+                        disabled={deleteManager.isPending}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
               </div>

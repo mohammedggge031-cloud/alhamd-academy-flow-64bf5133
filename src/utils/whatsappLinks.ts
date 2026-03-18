@@ -3,6 +3,8 @@
  * Used instead of automatic API sending to avoid costs
  */
 
+const GREETING = "السلام عليكم ورحمة الله وبركاته";
+
 export function openWhatsApp(phone: string, message: string) {
   const cleanPhone = phone.replace(/[^0-9]/g, "");
   if (!cleanPhone) return;
@@ -11,7 +13,7 @@ export function openWhatsApp(phone: string, message: string) {
 }
 
 export function buildHomeworkMessage(studentName: string, homework: string): string {
-  return `📚 *واجب أكاديمية الحمد*\n\nالسلام عليكم\n\n👤 الطالب: ${studentName}\n\n📝 الواجب:\n${homework}\n\nبالتوفيق! 🌟`;
+  return `📚 *واجب أكاديمية الحمد*\n\n${GREETING}\n\n👤 الطالب: ${studentName}\n\n📝 الواجب:\n${homework}\n\nبالتوفيق! 🌟`;
 }
 
 export function buildSessionReminderMessage(
@@ -23,9 +25,9 @@ export function buildSessionReminderMessage(
   durationMinutes: number
 ): string {
   if (recipientType === "student") {
-    return `🕌 *تذكير بحصة - أكاديمية الحمد*\n\nالسلام عليكم يا ${studentName} 🌟\n\n📅 موعد الحصة: ${sessionDate}\n⏰ الساعة: ${startTime}\n👨‍🏫 المعلم: ${teacherName}\n⏱ المدة: ${durationMinutes} دقيقة\n\nنتمنى لك حصة موفقة! 📚`;
+    return `🕌 *تذكير بحصة - أكاديمية الحمد*\n\n${GREETING} يا ${studentName} 🌟\n\n📅 موعد الحصة: ${sessionDate}\n⏰ الساعة: ${startTime}\n👨‍🏫 المعلم: ${teacherName}\n⏱ المدة: ${durationMinutes} دقيقة\n\nنتمنى لك حصة موفقة! 📚`;
   }
-  return `🕌 *تذكير بحصة - أكاديمية الحمد*\n\nالسلام عليكم يا ${teacherName}\n\n📅 موعد الحصة: ${sessionDate}\n⏰ الساعة: ${startTime}\n👤 الطالب: ${studentName}\n⏱ المدة: ${durationMinutes} دقيقة\n\nجزاك الله خيراً 📚`;
+  return `🕌 *تذكير بحصة - أكاديمية الحمد*\n\n${GREETING} يا ${teacherName}\n\n📅 موعد الحصة: ${sessionDate}\n⏰ الساعة: ${startTime}\n👤 الطالب: ${studentName}\n⏱ المدة: ${durationMinutes} دقيقة\n\nجزاك الله خيراً 📚`;
 }
 
 export function buildInvoiceMessage(
@@ -34,7 +36,7 @@ export function buildInvoiceMessage(
   hours: number | null,
   dueDate: string | null
 ): string {
-  let msg = `💳 *فاتورة أكاديمية الحمد*\n\nالسلام عليكم يا ${studentName}\n\n`;
+  let msg = `💳 *فاتورة أكاديمية الحمد*\n\n${GREETING} يا ${studentName}\n\n`;
   msg += `💰 المبلغ: $${total}\n`;
   if (hours) msg += `⏱ عدد الساعات: ${hours}\n`;
   if (dueDate) msg += `📅 تاريخ الاستحقاق: ${dueDate}\n`;
@@ -49,7 +51,7 @@ export function buildPaidInvoiceMessage(
   paidDate: string
 ): string {
   let msg = `✅ *إيصال دفع - أكاديمية الحمد*\n\n`;
-  msg += `السلام عليكم يا ${studentName}\n\n`;
+  msg += `${GREETING} يا ${studentName}\n\n`;
   msg += `تم استلام الدفع بنجاح ✅\n\n`;
   msg += `💰 المبلغ المدفوع: $${total}\n`;
   if (hours) msg += `⏱ عدد الساعات: ${hours}\n`;
@@ -69,7 +71,7 @@ export function buildMonthlyReportMessage(
   weaknesses: string,
   recommendations: string
 ): string {
-  let msg = `📋 *التقرير الشهري - أكاديمية الحمد*\n\n`;
+  let msg = `📋 *التقرير الشهري - أكاديمية الحمد*\n\n${GREETING}\n\n`;
   msg += `👤 الطالب: ${studentName}\n`;
   msg += `👨‍🏫 المعلم: ${teacherName}\n`;
   msg += `📅 الشهر: ${reportMonth}\n`;

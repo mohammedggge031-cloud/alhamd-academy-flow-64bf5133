@@ -280,6 +280,7 @@ export type Database = {
         Row: {
           body: string | null
           created_at: string
+          group_id: string | null
           id: string
           is_read: boolean
           metadata: Json | null
@@ -290,6 +291,7 @@ export type Database = {
         Insert: {
           body?: string | null
           created_at?: string
+          group_id?: string | null
           id?: string
           is_read?: boolean
           metadata?: Json | null
@@ -300,6 +302,7 @@ export type Database = {
         Update: {
           body?: string | null
           created_at?: string
+          group_id?: string | null
           id?: string
           is_read?: boolean
           metadata?: Json | null
@@ -312,6 +315,7 @@ export type Database = {
       profiles: {
         Row: {
           created_at: string
+          dot_color: string | null
           full_name: string
           id: string
           updated_at: string
@@ -320,6 +324,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          dot_color?: string | null
           full_name: string
           id?: string
           updated_at?: string
@@ -328,6 +333,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          dot_color?: string | null
           full_name?: string
           id?: string
           updated_at?: string
@@ -860,6 +866,14 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      mark_all_notifications_read: {
+        Args: { _user_id: string }
+        Returns: undefined
+      }
+      mark_notification_group_read: {
+        Args: { _notification_id: string }
+        Returns: undefined
       }
     }
     Enums: {
