@@ -1,6 +1,8 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+const GREETING = "السلام عليكم ورحمة الله وبركاته";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -19,7 +21,6 @@ serve(async (req) => {
     const now = new Date();
     const today = now.toISOString().split("T")[0];
 
-    // Get today's upcoming sessions
     const { data: sessions } = await adminClient
       .from("sessions")
       .select(`
@@ -36,7 +37,6 @@ serve(async (req) => {
       });
     }
 
-    // Get admin and manager user IDs for notifications
     const { data: adminManagers } = await adminClient
       .from("user_roles")
       .select("user_id")
@@ -61,8 +61,6 @@ serve(async (req) => {
 
       const startTime = session.start_time || "00:00";
       const [sh, sm] = startTime.split(":").map(Number);
-      
-      // Calculate time difference in minutes
       const sessionMinutes = sh * 60 + sm;
       const nowMinutes = egyptHours * 60 + egyptMinutes;
       const diffMinutes = sessionMinutes - nowMinutes;
@@ -73,12 +71,11 @@ serve(async (req) => {
       const teacherPhone = teacher.profiles?.whatsapp || "";
       const timeDisplay = startTime.slice(0, 5);
 
-      // 6 hour reminder (330-390 min before = called every ~hour)
+      // 6 hour reminder
       if (diffMinutes >= 330 && diffMinutes <= 390) {
-        const studentMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\nالسلام عليكم يا ${studentName} 🌟\n\n📅 موعد الحصة اليوم\n⏰ الساعة: ${timeDisplay}\n👨‍🏫 المعلم: ${teacherName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nنتمنى لك حصة موفقة! 📚`;
-        const teacherMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\nالسلام عليكم يا ${teacherName}\n\n📅 موعد الحصة اليوم\n⏰ الساعة: ${timeDisplay}\n👤 الطالب: ${studentName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nجزاك الله خيراً 📚`;
+        const studentMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\n${GREETING} يا ${studentName} 🌟\n\n📅 موعد الحصة اليوم\n⏰ الساعة: ${timeDisplay}\n👨‍🏫 المعلم: ${teacherName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nنتمنى لك حصة موفقة! 📚`;
+        const teacherMsg = `🕌 *تذكير بحصة اليوم - أكاديمية الحمد*\n\n${GREETING} يا ${teacherName}\n\n📅 موعد الحصة اليوم\n⏰ الساعة: ${timeDisplay}\n👤 الطالب: ${studentName}\n⏱ المدة: ${session.duration_minutes} دقيقة\n\nجزاك الله خيراً 📚`;
 
-        // Check if notification already exists
         const { data: existing } = await adminClient
           .from("notifications")
           .select("id")
@@ -87,11 +84,14 @@ serve(async (req) => {
           .limit(1);
 
         if (!existing || existing.length === 0) {
+          // Shared group_id for all recipients
+          const groupId = crypto.randomUUID();
           const notifications = recipientIds.map((uid: string) => ({
             user_id: uid,
             type: "session_reminder_6h",
             title: `⏰ تذكير: حصة ${studentName} الساعة ${timeDisplay}`,
             body: `المعلم: ${teacherName} · المدة: ${session.duration_minutes} دقيقة`,
+            group_id: groupId,
             metadata: {
               session_id: session.id,
               whatsapp_phone: studentPhone,
@@ -107,10 +107,10 @@ serve(async (req) => {
         }
       }
 
-      // 5 minute reminder (3-7 min before)
+      // 5 minute reminder
       if (diffMinutes >= 3 && diffMinutes <= 7) {
-        const studentMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\nالسلام عليكم يا ${studentName}\n\n⏰ الحصة الساعة ${timeDisplay}\n👨‍🏫 المعلم: ${teacherName}\n\nيرجى الاستعداد الآن! 🚀`;
-        const teacherMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\nالسلام عليكم يا ${teacherName}\n\n⏰ الحصة الساعة ${timeDisplay}\n👤 الطالب: ${studentName}\n\nيرجى الاستعداد الآن! 🚀`;
+        const studentMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\n${GREETING} يا ${studentName}\n\n⏰ الحصة الساعة ${timeDisplay}\n👨‍🏫 المعلم: ${teacherName}\n\nيرجى الاستعداد الآن! 🚀`;
+        const teacherMsg = `🔔 *الحصة بعد دقائق! - أكاديمية الحمد*\n\n${GREETING} يا ${teacherName}\n\n⏰ الحصة الساعة ${timeDisplay}\n👤 الطالب: ${studentName}\n\nيرجى الاستعداد الآن! 🚀`;
 
         const { data: existing } = await adminClient
           .from("notifications")
@@ -120,11 +120,13 @@ serve(async (req) => {
           .limit(1);
 
         if (!existing || existing.length === 0) {
+          const groupId = crypto.randomUUID();
           const notifications = recipientIds.map((uid: string) => ({
             user_id: uid,
             type: "session_reminder_5m",
             title: `🔔 الحصة بعد دقائق: ${studentName} الساعة ${timeDisplay}`,
             body: `المعلم: ${teacherName} · يرجى التنبيه الآن`,
+            group_id: groupId,
             metadata: {
               session_id: session.id,
               whatsapp_phone: studentPhone,
