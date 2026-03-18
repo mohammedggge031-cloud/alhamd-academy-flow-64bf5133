@@ -157,15 +157,14 @@ const Teachers = () => {
                   <Label>{t("fullName")} *</Label>
                   <Input placeholder={t("enterTeacherName")} value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} />
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="grid gap-2">
-                    <Label>{t("email")} *</Label>
-                    <Input type="email" placeholder="teacher@example.com" dir="ltr" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>{t("password")} *</Label>
-                    <Input type="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
-                  </div>
+                <div className="grid gap-2">
+                  <Label>{t("whatsapp")} * ({t("loginIdentifier")})</Label>
+                  <Input placeholder="+201..." dir="ltr" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
+                  <p className="text-xs text-muted-foreground">{t("phoneIsLoginId")}</p>
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t("password")} *</Label>
+                  <Input type="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">
@@ -181,10 +180,6 @@ const Teachers = () => {
                         <SelectItem value="female">{t("female")}</SelectItem>
                       </SelectContent>
                     </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>{t("whatsapp")} *</Label>
-                    <Input placeholder="+201..." dir="ltr" value={form.whatsapp} onChange={(e) => setForm({ ...form, whatsapp: e.target.value })} />
                   </div>
                 </div>
                 <div className="grid gap-2">

@@ -40,17 +40,14 @@ serve(async (req) => {
     const { email, password, full_name, whatsapp, age, hourly_rate, qualification, subjects, gender } = await req.json();
 
     // Input validation
-    if (!email || typeof email !== "string" || !email.includes("@") || email.length > 255) {
-      throw new Error("بريد إلكتروني غير صالح");
+    if (!whatsapp || typeof whatsapp !== "string" || whatsapp.replace(/[^0-9+]/g, "").length < 8 || whatsapp.length > 20) {
+      throw new Error("رقم الواتساب مطلوب وغير صالح");
     }
     if (!password || typeof password !== "string" || password.length < 8 || password.length > 128) {
       throw new Error("كلمة المرور يجب أن تكون بين 8 و 128 حرف");
     }
     if (!full_name || typeof full_name !== "string" || full_name.trim().length === 0 || full_name.length > 100) {
       throw new Error("الاسم مطلوب ويجب أن يكون أقل من 100 حرف");
-    }
-    if (whatsapp && (typeof whatsapp !== "string" || whatsapp.length > 20)) {
-      throw new Error("رقم الواتساب غير صالح");
     }
     if (age !== null && age !== undefined && (typeof age !== "number" || age < 15 || age > 100)) {
       throw new Error("العمر يجب أن يكون بين 15 و 100");
@@ -62,9 +59,27 @@ serve(async (req) => {
       throw new Error("المواد غير صالحة");
     }
 
+    const sanitizedPhone = whatsapp.replace(/[^0-9+]/g, "").trim();
+
+    // Check if phone already exists in profiles
+    const { data: existingProfile } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("whatsapp", sanitizedPhone)
+      .maybeSingle();
+
+    if (existingProfile) {
+      throw new Error("رقم الواتساب مسجل بالفعل");
+    }
+
+    // Use provided email or generate one from phone number
+    const finalEmail = (email && typeof email === "string" && email.includes("@"))
+      ? email.trim().toLowerCase()
+      : `teacher_${sanitizedPhone.replace(/[^0-9]/g, "")}@alhamdacademy.net`;
+
     // Create user
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
-      email: email.trim().toLowerCase(),
+      email: finalEmail,
       password,
       email_confirm: true,
       user_metadata: { full_name: full_name.trim() },
@@ -75,9 +90,7 @@ serve(async (req) => {
     const userId = newUser.user.id;
 
     // Update profile whatsapp
-    if (whatsapp) {
-      await adminClient.from("profiles").update({ whatsapp: whatsapp.trim() }).eq("user_id", userId);
-    }
+    await adminClient.from("profiles").update({ whatsapp: sanitizedPhone }).eq("user_id", userId);
 
     // Assign teacher role
     await adminClient.from("user_roles").insert({ user_id: userId, role: "teacher" });
