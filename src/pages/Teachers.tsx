@@ -47,7 +47,7 @@ const Teachers = () => {
   const [profileFilter, setProfileFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [form, setForm] = useState({
-    name: "", password: "", age: "", rate: "",
+    name: "", password: "", age: "", rate: "", rateCurrency: "USD",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
   });
   const { role } = useAuth();
