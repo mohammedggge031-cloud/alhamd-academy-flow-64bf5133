@@ -543,6 +543,13 @@ const translations = {
   sendReportWhatsapp: { en: "Send report via WhatsApp", ar: "إرسال التقرير عبر الواتساب" },
   sendPaidConfirmation: { en: "Send payment confirmation", ar: "إرسال تأكيد الدفع" },
   newMonthlyReportNotif: { en: "New monthly report", ar: "تقرير شهري جديد" },
+
+  // Timezone widget
+  timezoneWidgetTitle: { en: "Time Zones", ar: "المناطق الزمنية" },
+  referenceTime: { en: "Reference Time", ar: "التوقيت المرجعي" },
+  allStudentsEgyptTime: { en: "All students on Egypt time", ar: "جميع الطلاب بتوقيت مصر" },
+  sameAsEgypt: { en: "Same as Egypt", ar: "نفس توقيت مصر" },
+  studentsLabel: { en: "students", ar: "طلاب" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
