@@ -37,7 +37,7 @@ serve(async (req) => {
 
     if (!roleData) throw new Error("غير مصرح - المدير أو المشرف فقط يمكنه إنشاء حسابات");
 
-    const { email, password, full_name, whatsapp, age, hourly_rate, qualification, subjects, gender } = await req.json();
+    const { email, password, full_name, whatsapp, age, hourly_rate, rate_currency, qualification, subjects, gender } = await req.json();
 
     // Input validation
     if (!whatsapp || typeof whatsapp !== "string" || whatsapp.replace(/[^0-9+]/g, "").length < 8 || whatsapp.length > 20) {
