@@ -3,7 +3,6 @@ import { Bell, Check, MessageCircle, X, Clock, BookOpen, FileText, CreditCard, A
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -18,6 +17,7 @@ interface Notification {
   metadata: any;
   is_read: boolean;
   created_at: string;
+  group_id: string | null;
 }
 
 type NotificationCategory = "all" | "reminders_6h" | "reminders_5m" | "homework" | "reports" | "invoices" | "alerts";
@@ -58,7 +58,7 @@ const NotificationPanel = () => {
     const channel = supabase
       .channel("notifications-realtime")
       .on("postgres_changes", {
-        event: "INSERT",
+        event: "*",
         schema: "public",
         table: "notifications",
         filter: `user_id=eq.${user.id}`,
@@ -93,15 +93,15 @@ const NotificationPanel = () => {
     return counts;
   }, [notifications]);
 
+  // Shared read: uses database function to mark all copies in the group as read
   const markRead = async (id: string) => {
-    await supabase.from("notifications").update({ is_read: true }).eq("id", id);
+    await supabase.rpc("mark_notification_group_read", { _notification_id: id });
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
   const markAllRead = async () => {
-    const ids = filteredNotifications.filter((n) => !n.is_read).map((n) => n.id);
-    if (ids.length === 0) return;
-    await supabase.from("notifications").update({ is_read: true }).in("id", ids);
+    if (!user) return;
+    await supabase.rpc("mark_all_notifications_read", { _user_id: user.id });
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
@@ -125,14 +125,14 @@ const NotificationPanel = () => {
     admin_alert: "⚠️",
   };
 
-  const categoryLabels: Record<NotificationCategory, { ar: string; en: string }> = {
-    all: { ar: "الكل", en: "All" },
-    reminders_6h: { ar: "تذكير ٦س", en: "6h" },
-    reminders_5m: { ar: "تنبيه ٥د", en: "5m" },
-    homework: { ar: "واجبات", en: "HW" },
-    reports: { ar: "تقارير", en: "Reports" },
-    invoices: { ar: "فواتير", en: "Bills" },
-    alerts: { ar: "تنبيهات", en: "Alerts" },
+  const categoryLabels: Record<NotificationCategory, string> = {
+    all: "الكل",
+    reminders_6h: "تذكير ٦س",
+    reminders_5m: "تنبيه ٥د",
+    homework: "واجبات",
+    reports: "تقارير",
+    invoices: "فواتير",
+    alerts: "تنبيهات",
   };
 
   const visibleCategories: NotificationCategory[] = ["all", "reminders_6h", "reminders_5m", "homework", "reports", "invoices", "alerts"];
@@ -190,7 +190,7 @@ const NotificationPanel = () => {
                       }`}
                     >
                       {categoryConfig[cat].icon}
-                      <span>{categoryLabels[cat].ar}</span>
+                      <span>{categoryLabels[cat]}</span>
                       {count > 0 && (
                         <span className={`min-w-[16px] h-4 rounded-full text-[9px] flex items-center justify-center font-bold ${
                           isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-destructive/10 text-destructive"

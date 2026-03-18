@@ -42,7 +42,7 @@ serve(async (req) => {
 
     if (!roleData) throw new Error("المدير الرئيسي فقط يمكنه إدارة المشرفين");
 
-    const { action, email, password, full_name, manager_user_id } = await req.json();
+    const { action, email, password, full_name, manager_user_id, dot_color } = await req.json();
 
     if (action === "create") {
       // Validate inputs
@@ -70,6 +70,11 @@ serve(async (req) => {
       // Assign manager role
       await adminClient.from("user_roles").insert({ user_id: userId, role: "manager" });
 
+      // Set dot_color if provided
+      if (dot_color) {
+        await adminClient.from("profiles").update({ dot_color }).eq("user_id", userId);
+      }
+
       return new Response(JSON.stringify({ success: true, user_id: userId }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -90,7 +95,7 @@ serve(async (req) => {
       const managerIds = managers.map((m: any) => m.user_id);
       const { data: profiles } = await adminClient
         .from("profiles")
-        .select("user_id, full_name")
+        .select("user_id, full_name, dot_color")
         .in("user_id", managerIds);
 
       // Get emails from auth
@@ -101,10 +106,20 @@ serve(async (req) => {
           user_id: profile.user_id,
           full_name: profile.full_name,
           email: userData?.user?.email || "",
+          dot_color: profile.dot_color || null,
         });
       }
 
       return new Response(JSON.stringify({ managers: result }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    } else if (action === "update_color") {
+      if (!manager_user_id || !dot_color) throw new Error("معرف المشرف واللون مطلوبان");
+      
+      await adminClient.from("profiles").update({ dot_color }).eq("user_id", manager_user_id);
+      
+      return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
