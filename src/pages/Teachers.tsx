@@ -16,6 +16,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { TeacherProfileViewer } from "@/components/teachers/TeacherProfileViewer";
 import { WebsiteVisibilityDialog } from "@/components/teachers/WebsiteVisibilityDialog";
+import { TeacherSalaryDialog } from "@/components/teachers/TeacherSalaryDialog";
 
 interface TeacherRow {
   id: string; user_id: string; age: number | null; qualification: string | null;
