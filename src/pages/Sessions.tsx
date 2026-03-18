@@ -115,25 +115,7 @@ const Sessions = () => {
 
   const [showMyReports, setShowMyReports] = useState(false);
 
-  // Get admin/manager WhatsApp for homework forwarding
-  const { data: supervisorPhone } = useQuery({
-    queryKey: ["supervisor-phone"],
-    enabled: !isAdmin,
-    queryFn: async () => {
-      const { data } = await supabase
-        .from("user_roles")
-        .select("user_id")
-        .in("role", ["admin", "manager"])
-        .limit(1);
-      if (!data?.[0]) return null;
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("whatsapp")
-        .eq("user_id", data[0].user_id)
-        .single();
-      return profile?.whatsapp || null;
-    },
-  });
+  // Supervisor phone query removed - teacher now opens their own WhatsApp
 
   const [homeworkSentForSession, setHomeworkSentForSession] = useState<string | null>(null);
 

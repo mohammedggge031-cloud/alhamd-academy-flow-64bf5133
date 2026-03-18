@@ -1,8 +1,9 @@
-import { useState, useEffect } from "react";
-import { Bell, Check, MessageCircle, X } from "lucide-react";
+import { useState, useEffect, useMemo } from "react";
+import { Bell, Check, MessageCircle, X, Clock, BookOpen, FileText, CreditCard, AlertTriangle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
@@ -19,8 +20,21 @@ interface Notification {
   created_at: string;
 }
 
+type NotificationCategory = "all" | "reminders_6h" | "reminders_5m" | "homework" | "reports" | "invoices" | "alerts";
+
+const categoryConfig: Record<NotificationCategory, { icon: React.ReactNode; types: string[] }> = {
+  all: { icon: <Bell className="h-3.5 w-3.5" />, types: [] },
+  reminders_6h: { icon: <Clock className="h-3.5 w-3.5" />, types: ["session_reminder_6h"] },
+  reminders_5m: { icon: <Bell className="h-3.5 w-3.5" />, types: ["session_reminder_5m"] },
+  homework: { icon: <BookOpen className="h-3.5 w-3.5" />, types: ["homework"] },
+  reports: { icon: <FileText className="h-3.5 w-3.5" />, types: ["monthly_report"] },
+  invoices: { icon: <CreditCard className="h-3.5 w-3.5" />, types: ["invoice"] },
+  alerts: { icon: <AlertTriangle className="h-3.5 w-3.5" />, types: ["admin_alert"] },
+};
+
 const NotificationPanel = () => {
   const [open, setOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<NotificationCategory>("all");
   const { user } = useAuth();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -39,7 +53,6 @@ const NotificationPanel = () => {
     },
   });
 
-  // Realtime subscription
   useEffect(() => {
     if (!user) return;
     const channel = supabase
@@ -58,23 +71,38 @@ const NotificationPanel = () => {
 
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
+  const filteredNotifications = useMemo(() => {
+    if (activeTab === "all") return notifications;
+    const types = categoryConfig[activeTab].types;
+    return notifications.filter((n) => types.includes(n.type));
+  }, [notifications, activeTab]);
+
+  const categoryCounts = useMemo(() => {
+    const counts: Record<NotificationCategory, number> = {
+      all: notifications.filter(n => !n.is_read).length,
+      reminders_6h: 0, reminders_5m: 0, homework: 0, reports: 0, invoices: 0, alerts: 0,
+    };
+    for (const n of notifications) {
+      if (n.is_read) continue;
+      for (const [cat, cfg] of Object.entries(categoryConfig)) {
+        if (cat !== "all" && cfg.types.includes(n.type)) {
+          counts[cat as NotificationCategory]++;
+        }
+      }
+    }
+    return counts;
+  }, [notifications]);
+
   const markRead = async (id: string) => {
     await supabase.from("notifications").update({ is_read: true }).eq("id", id);
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
 
   const markAllRead = async () => {
-    const unreadIds = notifications.filter((n) => !n.is_read).map((n) => n.id);
-    if (unreadIds.length === 0) return;
-    await supabase.from("notifications").update({ is_read: true }).in("id", unreadIds);
+    const ids = filteredNotifications.filter((n) => !n.is_read).map((n) => n.id);
+    if (ids.length === 0) return;
+    await supabase.from("notifications").update({ is_read: true }).in("id", ids);
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
-  };
-
-  const handleWhatsAppClick = (n: Notification) => {
-    const meta = n.metadata || {};
-    if (meta.whatsapp_phone && meta.whatsapp_message) {
-      openWhatsApp(meta.whatsapp_phone, meta.whatsapp_message);
-    }
   };
 
   const timeAgo = (dateStr: string) => {
@@ -97,6 +125,18 @@ const NotificationPanel = () => {
     admin_alert: "⚠️",
   };
 
+  const categoryLabels: Record<NotificationCategory, { ar: string; en: string }> = {
+    all: { ar: "الكل", en: "All" },
+    reminders_6h: { ar: "تذكير ٦س", en: "6h" },
+    reminders_5m: { ar: "تنبيه ٥د", en: "5m" },
+    homework: { ar: "واجبات", en: "HW" },
+    reports: { ar: "تقارير", en: "Reports" },
+    invoices: { ar: "فواتير", en: "Bills" },
+    alerts: { ar: "تنبيهات", en: "Alerts" },
+  };
+
+  const visibleCategories: NotificationCategory[] = ["all", "reminders_6h", "reminders_5m", "homework", "reports", "invoices", "alerts"];
+
   return (
     <div className="relative">
       <Button
@@ -116,11 +156,12 @@ const NotificationPanel = () => {
       {open && (
         <>
           <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="absolute top-full mt-2 end-0 z-50 w-80 sm:w-96 bg-card border rounded-xl shadow-xl overflow-hidden">
+          <div className="absolute top-full mt-2 end-0 z-50 w-80 sm:w-[420px] bg-card border rounded-xl shadow-xl overflow-hidden">
+            {/* Header */}
             <div className="flex items-center justify-between px-4 py-3 border-b bg-muted/50">
               <h3 className="text-sm font-bold">{t("notifications")}</h3>
               <div className="flex items-center gap-1">
-                {unreadCount > 0 && (
+                {filteredNotifications.filter(n => !n.is_read).length > 0 && (
                   <Button variant="ghost" size="sm" className="text-xs h-7" onClick={markAllRead}>
                     <Check className="h-3 w-3 ml-1" />
                     {t("markAllRead")}
@@ -132,12 +173,44 @@ const NotificationPanel = () => {
               </div>
             </div>
 
+            {/* Category Tabs */}
+            <div className="border-b bg-muted/20 px-2 py-1.5">
+              <div className="flex gap-1 overflow-x-auto no-scrollbar">
+                {visibleCategories.map((cat) => {
+                  const count = categoryCounts[cat];
+                  const isActive = activeTab === cat;
+                  return (
+                    <button
+                      key={cat}
+                      onClick={() => setActiveTab(cat)}
+                      className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[11px] font-medium whitespace-nowrap transition-colors ${
+                        isActive
+                          ? "bg-primary text-primary-foreground shadow-sm"
+                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                      }`}
+                    >
+                      {categoryConfig[cat].icon}
+                      <span>{categoryLabels[cat].ar}</span>
+                      {count > 0 && (
+                        <span className={`min-w-[16px] h-4 rounded-full text-[9px] flex items-center justify-center font-bold ${
+                          isActive ? "bg-primary-foreground/20 text-primary-foreground" : "bg-destructive/10 text-destructive"
+                        }`}>
+                          {count}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Notification List */}
             <ScrollArea className="max-h-[400px]">
-              {notifications.length === 0 ? (
+              {filteredNotifications.length === 0 ? (
                 <p className="text-center text-sm text-muted-foreground py-8">{t("noNotifications")}</p>
               ) : (
                 <div className="divide-y">
-                  {notifications.map((n) => (
+                  {filteredNotifications.map((n) => (
                     <div
                       key={n.id}
                       className={`p-3 hover:bg-muted/30 transition-colors ${!n.is_read ? "bg-primary/5" : ""}`}
@@ -155,13 +228,12 @@ const NotificationPanel = () => {
                               variant="ghost"
                               size="icon"
                               className="h-7 w-7 text-[#25D366] hover:text-[#25D366] hover:bg-[#25D366]/10"
-                              onClick={() => handleWhatsAppClick(n)}
+                              onClick={() => openWhatsApp(n.metadata.whatsapp_phone, n.metadata.whatsapp_message)}
                               title={n.metadata?.whatsapp_label || "WhatsApp"}
                             >
                               <MessageCircle className="h-4 w-4" />
                             </Button>
                           )}
-                          {/* Second WhatsApp button if exists */}
                           {n.metadata?.whatsapp_phone_2 && (
                             <Button
                               variant="ghost"
