@@ -114,6 +114,28 @@ const Sessions = () => {
 
   const [showMyReports, setShowMyReports] = useState(false);
 
+  // Get admin/manager WhatsApp for homework forwarding
+  const { data: supervisorPhone } = useQuery({
+    queryKey: ["supervisor-phone"],
+    enabled: !isAdmin,
+    queryFn: async () => {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("user_id")
+        .in("role", ["admin", "manager"])
+        .limit(1);
+      if (!data?.[0]) return null;
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("whatsapp")
+        .eq("user_id", data[0].user_id)
+        .single();
+      return profile?.whatsapp || null;
+    },
+  });
+
+  const [homeworkSentForSession, setHomeworkSentForSession] = useState<string | null>(null);
+
   const submitReport = useMutation({
     mutationFn: async (session: any) => {
       const { data: teacher } = await supabase.from("teachers").select("id")
@@ -126,16 +148,18 @@ const Sessions = () => {
         admin_alert_reason: report.admin_alert ? report.admin_alert_reason : null,
       });
       if (error) throw error;
+      // Store session id so we can show WhatsApp button after success
       if (report.homework) {
-        await supabase.functions.invoke("send-homework-whatsapp", {
-          body: { student_id: session.student_id, homework: report.homework, student_name: session.students?.name },
-        });
+        setHomeworkSentForSession(session.id);
       }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["session-reports"] });
-      setReportDialog(null);
-      setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
+      // Don't close dialog immediately if homework exists - show WhatsApp button
+      if (!report.homework) {
+        setReportDialog(null);
+        setReport({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
+      }
       toast({ title: t("reportSent") });
     },
     onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
