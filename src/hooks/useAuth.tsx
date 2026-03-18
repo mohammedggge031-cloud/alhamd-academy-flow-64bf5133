@@ -36,26 +36,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     let mounted = true;
 
+    // Safety timeout — never stay loading forever
     const safetyTimer = setTimeout(() => {
       if (mounted) setLoading(false);
-    }, 6000);
+    }, 5000);
 
-    // Session-only auth: clear persisted session on new browser session
-    const isReturningSession = sessionStorage.getItem("auth_active");
-    if (!isReturningSession) {
-      supabase.auth.signOut().finally(() => {
-        sessionStorage.setItem("auth_active", "1");
-        if (mounted) setLoading(false);
-      });
-    }
-
+    // 1) Set up auth state listener FIRST
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      async (_event, newSession) => {
         if (!mounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchRole(session.user.id);
+        setSession(newSession);
+        setUser(newSession?.user ?? null);
+        if (newSession?.user) {
+          await fetchRole(newSession.user.id);
         } else {
           setRole(null);
         }
@@ -63,13 +56,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    if (isReturningSession) {
-      supabase.auth.getSession().then(async ({ data: { session } }) => {
+    // 2) Then check current session
+    const isReturningSession = sessionStorage.getItem("auth_active");
+
+    if (!isReturningSession) {
+      // New browser session — clear any persisted auth from localStorage
+      sessionStorage.setItem("auth_active", "1");
+      supabase.auth.signOut().catch(() => {}).finally(() => {
+        // onAuthStateChange will fire with null and set loading=false
+        // but just in case, ensure loading stops
+        if (mounted) setLoading(false);
+      });
+    } else {
+      // Returning tab/refresh — load existing session
+      supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
         if (!mounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await fetchRole(session.user.id);
+        setSession(existingSession);
+        setUser(existingSession?.user ?? null);
+        if (existingSession?.user) {
+          await fetchRole(existingSession.user.id);
         }
         if (mounted) setLoading(false);
       }).catch(() => {
@@ -83,7 +88,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       subscription.unsubscribe();
     };
   }, []);
-
 
   const signIn = async (email: string, password: string) => {
     const { error } = await supabase.auth.signInWithPassword({ email, password });
