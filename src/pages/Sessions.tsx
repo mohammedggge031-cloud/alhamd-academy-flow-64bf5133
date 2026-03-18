@@ -575,9 +575,7 @@ const Sessions = () => {
                     <Button size="sm" className="gap-1"
                       onClick={async () => {
                         await updateStatus.mutateAsync({ id: selectedSession.id, status: "confirmed" });
-                        supabase.functions.invoke("send-session-reminder", {
-                          body: { type: "teacher_joined", session_id: selectedSession.id },
-                        });
+                        // No longer calling send-session-reminder API - using notification system instead
                         // Auto-redirect to Zoom
                         const { data: teacherData } = await supabase
                           .from("teachers")
