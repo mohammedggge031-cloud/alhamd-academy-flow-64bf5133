@@ -1,61 +1,80 @@
 import { memo } from "react";
-import { Users, GraduationCap, Receipt, Clock, TrendingUp } from "lucide-react";
+import { Users, GraduationCap, Receipt, Clock, TrendingUp, AlertCircle } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
+import { withTimeout } from "@/lib/queryHelpers";
 
 const StatsGrid = memo(() => {
   const { t } = useLanguage();
   const today = new Date().toISOString().slice(0, 10);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
 
-  const { data: activeStudents = 0 } = useQuery({
+  const students = useQuery({
     queryKey: ["dash-students"],
-    queryFn: async () => {
-      const { count, error } = await supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    retry: 1,
+    queryFn: () => withTimeout(
+      supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true)
+        .then(({ count, error }) => { if (error) throw error; return count ?? 0; })
+    ),
   });
 
-  const { data: teacherCount = 0 } = useQuery({
+  const teachers = useQuery({
     queryKey: ["dash-teachers"],
-    queryFn: async () => {
-      const { count, error } = await supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    retry: 1,
+    queryFn: () => withTimeout(
+      supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true)
+        .then(({ count, error }) => { if (error) throw error; return count ?? 0; })
+    ),
   });
 
-  const { data: dueInvoices = 0 } = useQuery({
+  const invoices = useQuery({
     queryKey: ["dash-due-invoices"],
-    queryFn: async () => {
-      const { count, error } = await supabase.from("invoices").select("*", { count: "exact", head: true }).eq("status", "pending").lte("due_date", today);
-      if (error) throw error;
-      return count ?? 0;
-    },
-    retry: 1,
+    queryFn: () => withTimeout(
+      supabase.from("invoices").select("*", { count: "exact", head: true }).eq("status", "pending").lte("due_date", today)
+        .then(({ count, error }) => { if (error) throw error; return count ?? 0; })
+    ),
   });
 
-  const { data: monthlyHours = 0 } = useQuery({
+  const hours = useQuery({
     queryKey: ["dash-monthly-hours"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("sessions").select("duration_minutes").eq("status", "completed").gte("session_date", monthStart);
-      if (error) throw error;
-      return data ? Math.round(data.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / 60) : 0;
-    },
-    retry: 1,
+    queryFn: () => withTimeout(
+      supabase.from("sessions").select("duration_minutes").eq("status", "completed").gte("session_date", monthStart)
+        .then(({ data, error }) => {
+          if (error) throw error;
+          return data ? Math.round(data.reduce((sum, s) => sum + (s.duration_minutes || 0), 0) / 60) : 0;
+        })
+    ),
   });
+
+  const queries = [students, teachers, invoices, hours];
+  const anyLoading = queries.some((q) => q.isLoading);
+  const anyError = queries.some((q) => q.isError);
 
   const stats = [
-    { label: t("dashActiveStudents"), value: String(activeStudents), icon: Users, trend: "" },
-    { label: t("dashTeachers"), value: String(teacherCount), icon: GraduationCap, trend: t("dashActiveLabel") },
-    { label: t("dashDueInvoices"), value: String(dueInvoices), icon: Receipt, trend: "" },
-    { label: t("dashMonthlyHours"), value: String(monthlyHours), icon: Clock, trend: "" },
+    { label: t("dashActiveStudents"), value: String(students.data ?? 0), icon: Users, trend: "" },
+    { label: t("dashTeachers"), value: String(teachers.data ?? 0), icon: GraduationCap, trend: t("dashActiveLabel") },
+    { label: t("dashDueInvoices"), value: String(invoices.data ?? 0), icon: Receipt, trend: "" },
+    { label: t("dashMonthlyHours"), value: String(hours.data ?? 0), icon: Clock, trend: "" },
   ];
+
+  if (anyLoading) {
+    return (
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        {[1, 2, 3, 4].map((i) => (
+          <Card key={i} className="border-none shadow-sm">
+            <CardContent className="flex items-center gap-4 p-5">
+              <Skeleton className="h-12 w-12 rounded-xl" />
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+    );
+  }
 
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -66,9 +85,9 @@ const StatsGrid = memo(() => {
               <stat.icon className="h-6 w-6 text-primary" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{stat.value}</p>
+              <p className="text-2xl font-bold">{anyError ? "—" : stat.value}</p>
               <p className="text-xs text-muted-foreground">{stat.label}</p>
-              {stat.trend && (
+              {stat.trend && !anyError && (
                 <p className="mt-0.5 text-xs text-primary flex items-center gap-1">
                   <TrendingUp className="h-3 w-3" />
                   {stat.trend}
