@@ -3,15 +3,20 @@ import { AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 const AlertCards = memo(() => {
   const { t } = useLanguage();
+  const { session, isAuthReady } = useAuth();
+  const queryEnabled = isAuthReady && !!session?.user;
+
   const today = new Date().toISOString().slice(0, 10);
 
-  const { data: overdueInvoices = [], isLoading: loadingOverdue, isError: errorOverdue } = useQuery({
-    queryKey: ["dash-overdue"],
+  const { data: overdueInvoices = [], isLoading: loadingOverdue, isFetching: fetchingOverdue, isError: errorOverdue } = useQuery({
+    queryKey: ["dash-overdue", session?.user?.id, today],
+    enabled: queryEnabled,
     retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -26,8 +31,9 @@ const AlertCards = memo(() => {
     },
   });
 
-  const { data: lowBalance = [], isLoading: loadingLow, isError: errorLow } = useQuery({
-    queryKey: ["dash-low-balance"],
+  const { data: lowBalance = [], isLoading: loadingLow, isFetching: fetchingLow, isError: errorLow } = useQuery({
+    queryKey: ["dash-low-balance", session?.user?.id],
+    enabled: queryEnabled,
     retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -42,7 +48,7 @@ const AlertCards = memo(() => {
   });
 
   const renderContent = (loading: boolean, hasError: boolean, isEmpty: boolean, emptyMsg: string, children: React.ReactNode) => {
-    if (loading) return <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+    if (loading || !queryEnabled) return <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
     if (hasError) return <p className="text-center text-sm text-destructive py-3">حدث خطأ في تحميل البيانات</p>;
     if (isEmpty) return <p className="text-center text-sm text-muted-foreground py-3">{emptyMsg}</p>;
     return children;
@@ -58,7 +64,7 @@ const AlertCards = memo(() => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {renderContent(loadingOverdue, errorOverdue, overdueInvoices.length === 0, t("dashNoOverdue"),
+          {renderContent(loadingOverdue || fetchingOverdue, errorOverdue, overdueInvoices.length === 0, t("dashNoOverdue"),
             overdueInvoices.map((inv: any) => {
               const days = Math.ceil((Date.now() - new Date(inv.due_date).getTime()) / 86400000);
               return (
@@ -83,7 +89,7 @@ const AlertCards = memo(() => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {renderContent(loadingLow, errorLow, lowBalance.length === 0, t("dashNoLowBalance"),
+          {renderContent(loadingLow || fetchingLow, errorLow, lowBalance.length === 0, t("dashNoLowBalance"),
             lowBalance.map((s: any, i: number) => (
               <div key={i} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
                 <p className="text-sm font-medium">{s.name}</p>

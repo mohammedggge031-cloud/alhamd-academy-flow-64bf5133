@@ -3,16 +3,21 @@ import { Users, GraduationCap, Receipt, Clock, TrendingUp } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
 const StatsGrid = memo(() => {
   const { t } = useLanguage();
+  const { session, isAuthReady } = useAuth();
+  const queryEnabled = isAuthReady && !!session?.user;
+
   const today = new Date().toISOString().slice(0, 10);
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
 
   const students = useQuery({
-    queryKey: ["dash-students"],
+    queryKey: ["dash-students", session?.user?.id],
+    enabled: queryEnabled,
     retry: 1,
     queryFn: async () => {
       const { count, error } = await supabase.from("students").select("*", { count: "exact", head: true }).eq("is_active", true);
@@ -22,7 +27,8 @@ const StatsGrid = memo(() => {
   });
 
   const teachers = useQuery({
-    queryKey: ["dash-teachers"],
+    queryKey: ["dash-teachers", session?.user?.id],
+    enabled: queryEnabled,
     retry: 1,
     queryFn: async () => {
       const { count, error } = await supabase.from("teachers").select("*", { count: "exact", head: true }).eq("is_active", true);
@@ -32,7 +38,8 @@ const StatsGrid = memo(() => {
   });
 
   const invoices = useQuery({
-    queryKey: ["dash-due-invoices"],
+    queryKey: ["dash-due-invoices", session?.user?.id, today],
+    enabled: queryEnabled,
     retry: 1,
     queryFn: async () => {
       const { count, error } = await supabase.from("invoices").select("*", { count: "exact", head: true }).eq("status", "pending").lte("due_date", today);
@@ -42,7 +49,8 @@ const StatsGrid = memo(() => {
   });
 
   const hours = useQuery({
-    queryKey: ["dash-monthly-hours"],
+    queryKey: ["dash-monthly-hours", session?.user?.id, monthStart],
+    enabled: queryEnabled,
     retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase.from("sessions").select("duration_minutes").eq("status", "completed").gte("session_date", monthStart);
@@ -52,7 +60,7 @@ const StatsGrid = memo(() => {
   });
 
   const queries = [students, teachers, invoices, hours];
-  const anyLoading = queries.some((q) => q.isLoading);
+  const anyLoading = !queryEnabled || queries.some((q) => q.isLoading || q.isFetching);
   const anyError = queries.some((q) => q.isError);
 
   const stats = [

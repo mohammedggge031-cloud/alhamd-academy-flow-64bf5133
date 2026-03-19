@@ -43,8 +43,8 @@ const PageLoader = () => (
 );
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <PageLoader />;
+  const { user, isAuthReady } = useAuth();
+  if (!isAuthReady) return <PageLoader />;
   if (!user) return <Navigate to="/login" replace />;
   return <>{children}</>;
 };

@@ -1,10 +1,10 @@
-import { memo, useState, useEffect, useMemo } from "react";
-import { Globe, Clock, ArrowRightLeft } from "lucide-react";
+import { memo, useState, useEffect } from "react";
+import { Globe, ArrowRightLeft, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-
 
 const EGYPT_TZ = "Africa/Cairo";
 
@@ -71,24 +71,31 @@ const tzDisplayNames: Record<string, string> = {
 
 const TimezoneWidget = memo(() => {
   const { t } = useLanguage();
+  const { session, isAuthReady } = useAuth();
+  const queryEnabled = isAuthReady && !!session?.user;
   const [currentTimes, setCurrentTimes] = useState<Record<string, string>>({});
 
-  // Fetch unique timezones from active students
-  const { data: studentTimezones = [] } = useQuery({
-    queryKey: ["student-timezones"],
+  const { data: studentTimezones = [], isLoading, isFetching, isError } = useQuery({
+    queryKey: ["student-timezones", session?.user?.id],
+    enabled: queryEnabled,
     queryFn: async () => {
       const { data, error } = await supabase
         .from("students")
         .select("timezone, name")
         .eq("is_active", true)
         .not("timezone", "is", null);
-      if (error) throw error;
+      if (error) {
+        console.error("dash-student-timezones error:", error);
+        throw error;
+      }
       if (!data) return [];
+
       const tzMap: Record<string, number> = {};
       for (const s of data) {
         const tz = s.timezone || EGYPT_TZ;
         tzMap[tz] = (tzMap[tz] || 0) + 1;
       }
+
       return Object.entries(tzMap)
         .filter(([tz]) => tz !== EGYPT_TZ)
         .map(([tz, count]) => ({ tz, count }))
@@ -97,8 +104,12 @@ const TimezoneWidget = memo(() => {
     retry: 1,
   });
 
-  // Update times every second
   useEffect(() => {
+    if (!queryEnabled) {
+      setCurrentTimes({});
+      return;
+    }
+
     const update = () => {
       const times: Record<string, string> = { [EGYPT_TZ]: getCurrentTime(EGYPT_TZ) };
       for (const { tz } of studentTimezones) {
@@ -106,10 +117,11 @@ const TimezoneWidget = memo(() => {
       }
       setCurrentTimes(times);
     };
+
     update();
     const interval = setInterval(update, 1000);
     return () => clearInterval(interval);
-  }, [studentTimezones]);
+  }, [studentTimezones, queryEnabled]);
 
   const egyptTime = currentTimes[EGYPT_TZ] || "--:--";
 
@@ -122,7 +134,6 @@ const TimezoneWidget = memo(() => {
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Egypt time - main */}
         <div className="flex items-center justify-between p-3 rounded-xl bg-primary/10 border border-primary/20">
           <div className="flex items-center gap-2">
             <span className="text-lg">🇪🇬</span>
@@ -134,8 +145,11 @@ const TimezoneWidget = memo(() => {
           <p className="text-lg font-mono font-bold text-primary tabular-nums">{egyptTime}</p>
         </div>
 
-        {/* Student timezones */}
-        {studentTimezones.length === 0 ? (
+        {!queryEnabled || isLoading || isFetching ? (
+          <div className="flex justify-center py-2"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>
+        ) : isError ? (
+          <p className="text-center text-xs text-destructive py-2">حدث خطأ في تحميل البيانات</p>
+        ) : studentTimezones.length === 0 ? (
           <p className="text-center text-xs text-muted-foreground py-2">{t("allStudentsEgyptTime")}</p>
         ) : (
           <div className="space-y-2">
