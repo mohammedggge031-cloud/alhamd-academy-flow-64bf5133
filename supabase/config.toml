@@ -5,3 +5,6 @@ verify_jwt = false
 
 [functions.receive-subscription]
 verify_jwt = false
+
+[functions.login-by-phone]
+verify_jwt = false
