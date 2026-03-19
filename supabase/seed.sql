@@ -1,0 +1,30 @@
+-- ============================================================
+-- Alhamd Academy - Seed Data / Admin Setup
+-- ============================================================
+-- 
+-- IMPORTANT: This file does NOT create users directly.
+-- User creation requires the Supabase Auth API (not raw SQL).
+--
+-- To set up the admin account on a NEW Supabase project:
+--
+-- Option 1: Use the setup-admin edge function
+--   Deploy edge functions, then call:
+--   curl -X POST https://YOUR_PROJECT.supabase.co/functions/v1/setup-admin \
+--     -H "Content-Type: application/json" \
+--     -d '{"email":"info@alhamdacademy.net","password":"YOUR_SECURE_PASSWORD"}'
+--
+-- Option 2: Manual setup via Supabase Dashboard
+--   1. Go to Authentication > Users > Add User
+--   2. Create user with email: info@alhamdacademy.net
+--   3. Check "Auto Confirm" 
+--   4. Copy the user UUID
+--   5. Run the SQL below replacing 'USER_UUID_HERE':
+--
+-- INSERT INTO public.user_roles (user_id, role)
+-- VALUES ('USER_UUID_HERE', 'admin');
+--
+-- The profile will be auto-created by the handle_new_user trigger.
+--
+-- To create teacher accounts, use the create-teacher edge function
+-- or create users manually and assign the 'teacher' role.
+-- ============================================================
