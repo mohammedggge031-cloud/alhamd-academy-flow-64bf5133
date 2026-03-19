@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 
@@ -24,6 +25,9 @@ function getStudentLocalTime(egyptTime: string, sessionDate: string, studentTz: 
 
 const TodaySessions = memo(() => {
   const { t } = useLanguage();
+  const { session, isAuthReady } = useAuth();
+  const queryEnabled = isAuthReady && !!session?.user;
+
   const today = new Date().toISOString().slice(0, 10);
 
   const statusMap: Record<string, { label: string; className: string }> = {
@@ -35,8 +39,9 @@ const TodaySessions = memo(() => {
     postponed: { label: t("postponed"), className: "bg-warning text-warning-foreground" },
   };
 
-  const { data: todaySessions = [], isLoading, isError } = useQuery({
-    queryKey: ["dash-today-sessions"],
+  const { data: todaySessions = [], isLoading, isFetching, isError } = useQuery({
+    queryKey: ["dash-today-sessions", session?.user?.id, today],
+    enabled: queryEnabled,
     retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -58,7 +63,7 @@ const TodaySessions = memo(() => {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        {isLoading ? (
+        {!queryEnabled || isLoading || isFetching ? (
           <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
         ) : isError ? (
           <p className="text-center text-sm text-destructive py-6">حدث خطأ في تحميل البيانات</p>

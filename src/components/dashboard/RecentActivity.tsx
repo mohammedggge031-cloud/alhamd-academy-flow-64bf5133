@@ -4,16 +4,20 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 
 const RecentActivity = memo(() => {
   const { t } = useLanguage();
+  const { session, isAuthReady } = useAuth();
+  const queryEnabled = isAuthReady && !!session?.user;
   const navigate = useNavigate();
 
-  const { data: recentBookings = [], isLoading: loadingBookings, isError: errorBookings } = useQuery({
-    queryKey: ["dash-recent-bookings"],
+  const { data: recentBookings = [], isLoading: loadingBookings, isFetching: fetchingBookings, isError: errorBookings } = useQuery({
+    queryKey: ["dash-recent-bookings", session?.user?.id],
+    enabled: queryEnabled,
     retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -26,8 +30,9 @@ const RecentActivity = memo(() => {
     },
   });
 
-  const { data: recentSubs = [], isLoading: loadingSubs, isError: errorSubs } = useQuery({
-    queryKey: ["dash-recent-subs"],
+  const { data: recentSubs = [], isLoading: loadingSubs, isFetching: fetchingSubs, isError: errorSubs } = useQuery({
+    queryKey: ["dash-recent-subs", session?.user?.id],
+    enabled: queryEnabled,
     retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -44,7 +49,7 @@ const RecentActivity = memo(() => {
   const newSubsCount = recentSubs.filter((s: any) => s.status === "new").length;
 
   const renderContent = (loading: boolean, hasError: boolean, isEmpty: boolean, emptyMsg: string, children: React.ReactNode) => {
-    if (loading) return <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
+    if (loading || !queryEnabled) return <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-primary" /></div>;
     if (hasError) return <p className="text-center text-sm text-destructive py-3">حدث خطأ في تحميل البيانات</p>;
     if (isEmpty) return <p className="text-center text-sm text-muted-foreground py-3">{emptyMsg}</p>;
     return children;
@@ -66,7 +71,7 @@ const RecentActivity = memo(() => {
           </Button>
         </CardHeader>
         <CardContent className="space-y-2">
-          {renderContent(loadingBookings, errorBookings, recentBookings.length === 0, t("dashNoBookings"),
+          {renderContent(loadingBookings || fetchingBookings, errorBookings, recentBookings.length === 0, t("dashNoBookings"),
             recentBookings.map((b: any) => (
               <div key={b.id} className={`flex items-center justify-between rounded-lg p-3 ${!b.is_read ? "bg-primary/5" : "bg-muted/50"}`}>
                 <div className="flex items-center gap-3">
@@ -101,7 +106,7 @@ const RecentActivity = memo(() => {
           </Button>
         </CardHeader>
         <CardContent className="space-y-2">
-          {renderContent(loadingSubs, errorSubs, recentSubs.length === 0, t("dashNoSubs"),
+          {renderContent(loadingSubs || fetchingSubs, errorSubs, recentSubs.length === 0, t("dashNoSubs"),
             recentSubs.map((s: any) => (
               <div key={s.id} className={`flex items-center justify-between rounded-lg p-3 ${!s.is_read ? "bg-primary/5" : "bg-muted/50"}`}>
                 <div className="flex items-center gap-3">

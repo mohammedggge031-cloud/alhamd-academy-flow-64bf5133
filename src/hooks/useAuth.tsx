@@ -7,6 +7,7 @@ interface AuthContextType {
   session: Session | null;
   role: string | null;
   loading: boolean;
+  isAuthReady: boolean;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signOut: () => Promise<void>;
 }
@@ -18,69 +19,86 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [session, setSession] = useState<Session | null>(null);
   const [role, setRole] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAuthReady, setIsAuthReady] = useState(false);
 
-  const fetchRole = async (userId: string) => {
+  const fetchRole = async (userId: string): Promise<string | null> => {
     try {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from("user_roles")
         .select("role")
         .eq("user_id", userId)
         .maybeSingle();
-      setRole(data?.role ?? null);
-    } catch {
-      console.warn("Failed to fetch role, defaulting to null");
-      setRole(null);
+
+      if (error) {
+        console.warn("Failed to fetch role, defaulting to null", error);
+        return null;
+      }
+
+      return data?.role ?? null;
+    } catch (error) {
+      console.warn("Failed to fetch role, defaulting to null", error);
+      return null;
     }
   };
 
   useEffect(() => {
     let mounted = true;
+    let roleRequestVersion = 0;
 
-    // Safety timeout — never stay loading forever
-    const safetyTimer = setTimeout(() => {
-      if (mounted) setLoading(false);
-    }, 5000);
+    const finalizeAuthInit = () => {
+      if (!mounted) return;
+      setIsAuthReady(true);
+      setLoading(false);
+    };
 
-    // 1) Set up auth state listener FIRST
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, newSession) => {
-        if (!mounted) return;
-        setSession(newSession);
-        setUser(newSession?.user ?? null);
-        if (newSession?.user) {
-          await fetchRole(newSession.user.id);
-        } else {
-          setRole(null);
-        }
-        if (mounted) setLoading(false);
+    const applyAuthState = async (nextSession: Session | null) => {
+      const currentRoleRequest = ++roleRequestVersion;
+
+      if (!mounted) return;
+      setSession(nextSession);
+      setUser(nextSession?.user ?? null);
+
+      if (!nextSession?.user) {
+        setRole(null);
+        return;
       }
-    );
 
-    // 2) Then check current session
-    const isReturningSession = sessionStorage.getItem("auth_active");
+      const nextRole = await fetchRole(nextSession.user.id);
+      if (!mounted || currentRoleRequest !== roleRequestVersion) return;
+      setRole(nextRole);
+    };
 
-    if (!isReturningSession) {
-      // New browser session — clear any persisted auth from localStorage
-      sessionStorage.setItem("auth_active", "1");
-      supabase.auth.signOut().catch(() => {}).finally(() => {
-        // onAuthStateChange will fire with null and set loading=false
-        // but just in case, ensure loading stops
-        if (mounted) setLoading(false);
-      });
-    } else {
-      // Returning tab/refresh — load existing session
-      supabase.auth.getSession().then(async ({ data: { session: existingSession } }) => {
-        if (!mounted) return;
-        setSession(existingSession);
-        setUser(existingSession?.user ?? null);
-        if (existingSession?.user) {
-          await fetchRole(existingSession.user.id);
+    const safetyTimer = setTimeout(() => {
+      finalizeAuthInit();
+    }, 6000);
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+      void applyAuthState(nextSession);
+      finalizeAuthInit();
+    });
+
+    const restoreSession = async () => {
+      try {
+        const isReturningSession = sessionStorage.getItem("auth_active");
+
+        if (!isReturningSession) {
+          sessionStorage.setItem("auth_active", "1");
+          await supabase.auth.signOut();
+          await applyAuthState(null);
+          return;
         }
-        if (mounted) setLoading(false);
-      }).catch(() => {
-        if (mounted) setLoading(false);
-      });
-    }
+
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        await applyAuthState(existingSession);
+      } catch (error) {
+        console.warn("Auth initialization failed", error);
+        await applyAuthState(null);
+      } finally {
+        finalizeAuthInit();
+      }
+    };
+
+    void restoreSession();
 
     return () => {
       mounted = false;
@@ -102,7 +120,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, role, loading, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, role, loading, isAuthReady, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
