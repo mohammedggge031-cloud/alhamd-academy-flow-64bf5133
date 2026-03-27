@@ -400,6 +400,13 @@ const Bookings = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox checked={filteredSubs.length > 0 && filteredSubs.every(s => selectedSubIds.has(s.id))}
+                            onCheckedChange={(checked) => {
+                              if (checked) setSelectedSubIds(new Set(filteredSubs.map(s => s.id)));
+                              else setSelectedSubIds(new Set());
+                            }} />
+                        </TableHead>
                         <TableHead></TableHead>
                         <TableHead>{t("fullName")}</TableHead>
                         <TableHead>{t("bookingsPlan")}</TableHead>
@@ -412,7 +419,10 @@ const Bookings = () => {
                     </TableHeader>
                     <TableBody>
                       {subsPagination.paginatedItems.map((s) => (
-                        <TableRow key={s.id} className={!s.is_read ? "bg-primary/5 font-medium" : ""}>
+                        <TableRow key={s.id} className={`${!s.is_read ? "bg-primary/5 font-medium" : ""} ${selectedSubIds.has(s.id) ? "bg-destructive/5" : ""}`}>
+                          <TableCell>
+                            <Checkbox checked={selectedSubIds.has(s.id)} onCheckedChange={() => toggleSubSelect(s.id)} />
+                          </TableCell>
                           <TableCell>
                             {!s.is_read && <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />}
                           </TableCell>
