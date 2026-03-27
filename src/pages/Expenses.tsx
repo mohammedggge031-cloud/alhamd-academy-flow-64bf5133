@@ -167,6 +167,22 @@ const Expenses = () => {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title={t("delete")}
+        description={t("confirmDeleteExpense")}
+        confirmLabel={t("delete")}
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteId) {
+            deleteMutation.mutate(deleteId);
+            setDeleteId(null);
+          }
+        }}
+        isPending={deleteMutation.isPending}
+      />
     </div>
   );
 };
