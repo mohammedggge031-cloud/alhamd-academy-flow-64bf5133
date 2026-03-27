@@ -435,6 +435,7 @@ const Teachers = () => {
             </Card>
           ))}
         </div>
+        <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
       )}
 
       <TeacherProfileViewer
