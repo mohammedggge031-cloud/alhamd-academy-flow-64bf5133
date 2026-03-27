@@ -65,6 +65,17 @@ const Bookings = () => {
   const [selected, setSelected] = useState<Booking | null>(null);
   const [selectedSub, setSelectedSub] = useState<SubscriptionRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
+  const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
+  const [selectedSubIds, setSelectedSubIds] = useState<Set<string>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState<{ type: "cancelled" | "selected"; tab: "bookings" | "subscriptions" } | null>(null);
+
+  const toggleBookingSelect = (id: string) => {
+    setSelectedBookingIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+  const toggleSubSelect = (id: string) => {
+    setSelectedSubIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+
   const [activeTab, setActiveTab] = useState("bookings");
 
   const { data: bookings = [], isLoading: loadingBookings } = useQuery({
