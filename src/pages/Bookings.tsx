@@ -278,7 +278,7 @@ const Bookings = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap items-center">
         <Input placeholder={t("searchBookings")} value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -290,6 +290,17 @@ const Bookings = () => {
             <SelectItem value="cancelled">{t("bookingCancelled")}</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex gap-2 mr-auto">
+          {((activeTab === "bookings" && selectedBookingIds.size > 0) || (activeTab === "subscriptions" && selectedSubIds.size > 0)) && (
+            <Button size="sm" variant="destructive" className="gap-1" onClick={() => setConfirmDelete({ type: "selected", tab: activeTab as "bookings" | "subscriptions" })}>
+              <Trash2 className="h-3.5 w-3.5" /> {t("deleteSelected")} ({activeTab === "bookings" ? selectedBookingIds.size : selectedSubIds.size})
+            </Button>
+          )}
+          <Button size="sm" variant="outline" className="gap-1 text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
+            onClick={() => setConfirmDelete({ type: "cancelled", tab: activeTab as "bookings" | "subscriptions" })}>
+            <Trash2 className="h-3.5 w-3.5" /> {t("deleteCancelled")}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
