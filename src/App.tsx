@@ -54,6 +54,13 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
+const RoleGuard = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
+  const { role, isAuthReady } = useAuth();
+  if (!isAuthReady) return <PageLoader />;
+  if (!role || !allowedRoles.includes(role)) return <Navigate to="/" replace />;
+  return <>{children}</>;
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <LanguageProvider>
@@ -79,11 +86,11 @@ const App = () => (
                               <Route path="/teachers" element={<Teachers />} />
                               <Route path="/sessions" element={<Sessions />} />
                               <Route path="/invoices" element={<Invoices />} />
-                              <Route path="/expenses" element={<Expenses />} />
-                              <Route path="/reports" element={<Reports />} />
+                              <Route path="/expenses" element={<RoleGuard allowedRoles={["admin"]}><Expenses /></RoleGuard>} />
+                              <Route path="/reports" element={<RoleGuard allowedRoles={["admin"]}><Reports /></RoleGuard>} />
                               <Route path="/monthly-reports" element={<MonthlyReports />} />
                               <Route path="/my-profile" element={<TeacherProfile />} />
-                              <Route path="/settings" element={<SettingsPage />} />
+                              <Route path="/settings" element={<RoleGuard allowedRoles={["admin"]}><SettingsPage /></RoleGuard>} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
                           </Suspense>
