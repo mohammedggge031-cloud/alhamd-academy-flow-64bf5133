@@ -152,13 +152,13 @@ const Sessions = () => {
         </Button>
       </div>
 
-      {/* My Reports view */}
-      {!isAdmin && showMyReports && (
+      {/* Reports view */}
+      {showMyReports && (
         <Card className="border-none shadow-sm">
           <CardContent className="p-4 space-y-3">
             <h3 className="text-base font-bold flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              {t("myPreviousReports")} ({existingReports.length})
+              {isAdmin ? t("allSessionReports") : t("myPreviousReports")} ({existingReports.length})
             </h3>
             {existingReports.length === 0 && (
               <p className="text-center text-muted-foreground py-6">{t("noReportsYet")}</p>
@@ -167,7 +167,12 @@ const Sessions = () => {
               {existingReports.map((r: any) => (
                 <div key={r.id} className="py-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{r.students?.name ?? "—"}</p>
+                    <div>
+                      <p className="text-sm font-medium">{r.students?.name ?? "—"}</p>
+                      {isAdmin && r.teachers?.profiles?.full_name && (
+                        <p className="text-xs text-muted-foreground">{t("teacher")}: {r.teachers.profiles.full_name}</p>
+                      )}
+                    </div>
                     <span className="text-xs text-muted-foreground">{r.sessions?.session_date ?? ""}</span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -180,6 +185,22 @@ const Sessions = () => {
                     <div className="text-xs bg-muted/50 rounded-lg p-2">
                       <span className="font-medium text-foreground">{t("homeworkLabel")} </span>{r.homework}
                     </div>
+                  )}
+                  {/* WhatsApp send button for admin/manager */}
+                  {isAdmin && r.homework && (
+                    <Button size="sm" variant="outline" className="gap-1 text-xs text-[#25D366]"
+                      onClick={() => {
+                        const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
+                        const msg = buildHomeworkMessage(r.students?.name ?? "", r.homework);
+                        if (phone) {
+                          const cleanPhone = phone.replace(/[^0-9]/g, "");
+                          window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+                        } else {
+                          window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+                        }
+                      }}>
+                      <MessageCircle className="h-3 w-3" /> {t("sendReportToGuardian")}
+                    </Button>
                   )}
                 </div>
               ))}
