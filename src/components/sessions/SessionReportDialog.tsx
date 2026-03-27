@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, forwardRef } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ interface SessionReportDialogProps {
   levelLabels: Record<string, { label: string; className: string }>;
 }
 
-const SessionReportDialog = ({ session, onClose, getStudentName, levelLabels }: SessionReportDialogProps) => {
+const SessionReportDialog = forwardRef<HTMLDivElement, SessionReportDialogProps>(({ session, onClose, getStudentName, levelLabels }, _ref) => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -154,6 +154,7 @@ const SessionReportDialog = ({ session, onClose, getStudentName, levelLabels }: 
       </DialogContent>
     </Dialog>
   );
-};
+});
+SessionReportDialog.displayName = "SessionReportDialog";
 
 export default SessionReportDialog;
