@@ -82,6 +82,7 @@ const Sessions = () => {
   }, [sessions, reportedSessionIds, isAdmin]);
 
   const filtered = statusFilter === "all" ? sessions : sessions.filter((s: any) => s.status === statusFilter);
+  const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filtered, { pageSize: 50 });
   const getTeacherName = (s: any) => s.teachers?.profiles?.full_name ?? "—";
   const getStudentName = (s: any) => s.students?.name ?? "—";
 
