@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarPlus, Eye, Phone, Mail, Globe, BookOpen, Clock, MessageSquare, CheckCircle2, XCircle, Bell, CreditCard, Loader2 } from "lucide-react";
+import { CalendarPlus, Eye, Phone, Mail, Globe, BookOpen, Clock, MessageSquare, CheckCircle2, XCircle, Bell, CreditCard, Loader2, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
