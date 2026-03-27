@@ -36,6 +36,7 @@ const MonthlyReports = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isAdmin = role === "admin" || role === "manager";
+  // pagination is declared at component level (hooks rules)
 
   const gradeLabels: Record<string, { label: string; className: string }> = {
     A: { label: t("gradeA"), className: "bg-success text-success-foreground" },
