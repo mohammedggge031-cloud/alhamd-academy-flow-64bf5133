@@ -170,7 +170,34 @@ const Bookings = () => {
     },
   });
 
-  const openBooking = (booking: Booking) => {
+  const deleteBulk = useMutation({
+    mutationFn: async ({ type, tab }: { type: "cancelled" | "selected"; tab: "bookings" | "subscriptions" }) => {
+      if (tab === "bookings") {
+        const ids = type === "cancelled" ? bookings.filter(b => b.status === "cancelled").map(b => b.id) : Array.from(selectedBookingIds);
+        if (ids.length === 0) return 0;
+        const { error } = await supabase.from("trial_bookings").delete().in("id", ids);
+        if (error) throw error;
+        return ids.length;
+      } else {
+        const ids = type === "cancelled" ? subscriptions.filter(s => s.status === "cancelled").map(s => s.id) : Array.from(selectedSubIds);
+        if (ids.length === 0) return 0;
+        const { error } = await supabase.from("subscription_requests").delete().in("id", ids);
+        if (error) throw error;
+        return ids.length;
+      }
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["sidebar-unread"] });
+      setSelectedBookingIds(new Set());
+      setSelectedSubIds(new Set());
+      setConfirmDelete(null);
+      toast({ title: t("deleted"), description: `${count} ${t("itemsDeleted")}` });
+    },
+    onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
+  });
+
     setSelected(booking);
     setAdminNotes(booking.admin_notes || "");
     if (!booking.is_read) markBookingRead.mutate(booking.id);
