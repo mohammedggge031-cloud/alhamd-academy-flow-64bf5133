@@ -121,7 +121,7 @@ const Students = () => {
         <p className="text-center text-muted-foreground py-8">{t("noStudents")}</p>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((student: any) => (
+          {paginatedItems.map((student: any) => (
             <StudentCard
               key={student.id}
               student={student}
@@ -131,6 +131,7 @@ const Students = () => {
             />
           ))}
         </div>
+        <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
       )}
 
       {transferStudent && (
