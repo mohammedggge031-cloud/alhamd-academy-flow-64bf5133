@@ -198,6 +198,7 @@ const Bookings = () => {
     onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
   });
 
+  const openBooking = (booking: Booking) => {
     setSelected(booking);
     setAdminNotes(booking.admin_notes || "");
     if (!booking.is_read) markBookingRead.mutate(booking.id);
