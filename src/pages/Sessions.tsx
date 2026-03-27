@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/i18n/LanguageContext";
-import TeacherSchedule from "@/components/teachers/TeacherSchedule";
+import { buildHomeworkMessage } from "@/utils/whatsappLinks";
 import AddSessionDialog from "@/components/sessions/AddSessionDialog";
 import SessionDetailDialog from "@/components/sessions/SessionDetailDialog";
 import SessionReportDialog from "@/components/sessions/SessionReportDialog";
