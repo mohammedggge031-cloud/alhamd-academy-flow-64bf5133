@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { CalendarDays, Filter, Loader2, FileText, Eye, DollarSign, Badge as BadgeIcon } from "lucide-react";
+import { CalendarDays, Filter, Loader2, FileText, Eye, DollarSign, Badge as BadgeIcon, MessageCircle } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/usePagination";
 import { Card, CardContent } from "@/components/ui/card";
