@@ -83,14 +83,12 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
 
   useEffect(() => {
     const fetchTeachers = async () => {
-      const { data } = await supabase.from("teachers").select("id, user_id").eq("is_active", true);
+      const { data } = await supabase
+        .from("teachers")
+        .select("id, profiles:user_id(full_name)")
+        .eq("is_active", true);
       if (data) {
-        const teacherList: Teacher[] = [];
-        for (const t of data) {
-          const { data: profile } = await supabase.from("profiles").select("full_name").eq("user_id", t.user_id).maybeSingle();
-          teacherList.push({ id: t.id, name: profile?.full_name || "Teacher" });
-        }
-        setTeachers(teacherList);
+        setTeachers(data.map((t: any) => ({ id: t.id, name: t.profiles?.full_name || "Teacher" })));
       }
     };
     fetchTeachers();

@@ -391,10 +391,14 @@ const Teachers = () => {
                         <span className="font-medium">{teacher.monthly_absence_hours ?? 0} {t("hours")}</span>
                         <span className="text-muted-foreground">{t("waitingTime")}:</span>
                         <span className="font-medium">{teacher.monthly_waiting_minutes ?? 0} {t("minutes")}</span>
-                        <span className="text-muted-foreground">{t("hourlyRate")}:</span>
-                        <span className="font-bold text-primary">{(teacher as any).rate_currency === "EGP" ? "ج.م" : "$"}{teacher.hourly_rate}</span>
-                        <span className="text-muted-foreground">{t("salary")}:</span>
-                        <span className="font-bold text-primary">{(teacher as any).rate_currency === "EGP" ? "ج.م" : "$"}{teacher.monthly_salary ?? 0}</span>
+                        {role === "admin" && (
+                          <>
+                            <span className="text-muted-foreground">{t("hourlyRate")}:</span>
+                            <span className="font-bold text-primary">{(teacher as any).rate_currency === "EGP" ? "ج.م" : "$"}{teacher.hourly_rate}</span>
+                            <span className="text-muted-foreground">{t("salary")}:</span>
+                            <span className="font-bold text-primary">{(teacher as any).rate_currency === "EGP" ? "ج.م" : "$"}{teacher.monthly_salary ?? 0}</span>
+                          </>
+                        )}
                       </div>
                     </div>
                   </>

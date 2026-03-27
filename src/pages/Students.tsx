@@ -65,10 +65,12 @@ const Students = () => {
   };
 
   const filtered = students.filter(
-    (s: any) =>
-      s.name?.includes(search) ||
-      s.whatsapp?.includes(search) ||
-      s.country?.includes(search)
+    (s: any) => {
+      const q = search.toLowerCase();
+      return s.name?.toLowerCase().includes(q) ||
+        s.whatsapp?.includes(search) ||
+        s.country?.toLowerCase().includes(q);
+    }
   );
 
   const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filtered, { pageSize: 50 });
