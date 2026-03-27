@@ -331,28 +331,21 @@ const MonthlyReports = () => {
         </DialogContent>
       </Dialog>
 
-      {(() => {
-        const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(reports, { pageSize: 30 });
-        
-        if (isLoading) return (
-          <div className="flex justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          </div>
-        );
-        
-        if (reports.length === 0) return (
-          <Card className="border-none shadow-sm">
-            <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
-              <FileText className="h-12 w-12 mb-3 opacity-40" />
-              <p>{t("noMonthlyReports")}</p>
-            </CardContent>
-          </Card>
-        );
-        
-        return (
-          <>
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {paginatedItems.map((r: any) => (
+      {isLoading ? (
+        <div className="flex justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      ) : reports.length === 0 ? (
+        <Card className="border-none shadow-sm">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-muted-foreground">
+            <FileText className="h-12 w-12 mb-3 opacity-40" />
+            <p>{t("noMonthlyReports")}</p>
+          </CardContent>
+        </Card>
+      ) : (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {reportsPagination.paginatedItems.map((r: any) => (
             <Card key={r.id} className="border-none shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
