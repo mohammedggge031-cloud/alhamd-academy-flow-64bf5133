@@ -330,6 +330,13 @@ const Bookings = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox checked={filteredBookings.length > 0 && filteredBookings.every(b => selectedBookingIds.has(b.id))}
+                            onCheckedChange={(checked) => {
+                              if (checked) setSelectedBookingIds(new Set(filteredBookings.map(b => b.id)));
+                              else setSelectedBookingIds(new Set());
+                            }} />
+                        </TableHead>
                         <TableHead></TableHead>
                         <TableHead>{t("fullName")}</TableHead>
                         <TableHead>{t("bookingCourse")}</TableHead>
@@ -341,7 +348,10 @@ const Bookings = () => {
                     </TableHeader>
                     <TableBody>
                       {bookingsPagination.paginatedItems.map((b) => (
-                        <TableRow key={b.id} className={!b.is_read ? "bg-primary/5 font-medium" : ""}>
+                        <TableRow key={b.id} className={`${!b.is_read ? "bg-primary/5 font-medium" : ""} ${selectedBookingIds.has(b.id) ? "bg-destructive/5" : ""}`}>
+                          <TableCell>
+                            <Checkbox checked={selectedBookingIds.has(b.id)} onCheckedChange={() => toggleBookingSelect(b.id)} />
+                          </TableCell>
                           <TableCell>
                             {!b.is_read && <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />}
                           </TableCell>
