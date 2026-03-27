@@ -113,6 +113,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const signOut = async () => {
+    // Clear all cached data BEFORE signing out to prevent data leakage
+    try {
+      const { queryClient } = await import("@/App");
+      queryClient.clear();
+    } catch (e) {
+      console.warn("Failed to clear query cache:", e);
+    }
+    
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);

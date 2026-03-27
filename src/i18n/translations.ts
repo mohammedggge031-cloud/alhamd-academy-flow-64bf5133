@@ -567,6 +567,16 @@ const translations = {
   waitingMinutes: { en: "Waiting Minutes", ar: "دقائق الانتظار" },
   bonus: { en: "Bonus", ar: "مكافأة" },
   totalSalary: { en: "Total Salary", ar: "إجمالي الراتب" },
+
+  // Confirmation dialogs
+  confirm: { en: "Confirm", ar: "تأكيد" },
+  confirmAction: { en: "Confirm Action", ar: "تأكيد الإجراء" },
+  confirmChangeStatus: { en: "Are you sure you want to change the status to", ar: "هل أنت متأكد من تغيير الحالة إلى" },
+  confirmApprove: { en: "Confirm Approval", ar: "تأكيد الموافقة" },
+  confirmReject: { en: "Confirm Rejection", ar: "تأكيد الرفض" },
+  confirmApproveDesc: { en: "Are you sure you want to approve this request?", ar: "هل أنت متأكد من الموافقة على هذا الطلب؟" },
+  confirmRejectDesc: { en: "Are you sure you want to reject this request?", ar: "هل أنت متأكد من رفض هذا الطلب؟" },
+  confirmDeleteExpense: { en: "Are you sure you want to delete this expense?", ar: "هل أنت متأكد من حذف هذا المصروف؟" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

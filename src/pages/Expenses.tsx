@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { DollarSign, Plus, Trash2, Loader2, Megaphone, UserCog, MoreHorizontal } from "lucide-react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +16,7 @@ const Expenses = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ category: "other", description: "", amount: "", expense_month: new Date().toISOString().slice(0, 7) });
 
   const categoryLabels: Record<string, { label: string; icon: any }> = {
@@ -154,7 +156,7 @@ const Expenses = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-bold">${Number(exp.amount).toLocaleString()}</span>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteMutation.mutate(exp.id)}>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(exp.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
@@ -165,6 +167,22 @@ const Expenses = () => {
           )}
         </CardContent>
       </Card>
+
+      <ConfirmDialog
+        open={!!deleteId}
+        onOpenChange={(open) => !open && setDeleteId(null)}
+        title={t("delete")}
+        description={t("confirmDeleteExpense")}
+        confirmLabel={t("delete")}
+        variant="destructive"
+        onConfirm={() => {
+          if (deleteId) {
+            deleteMutation.mutate(deleteId);
+            setDeleteId(null);
+          }
+        }}
+        isPending={deleteMutation.isPending}
+      />
     </div>
   );
 };
