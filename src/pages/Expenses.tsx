@@ -156,7 +156,7 @@ const Expenses = () => {
                     </div>
                     <div className="flex items-center gap-3">
                       <span className="text-sm font-bold">${Number(exp.amount).toLocaleString()}</span>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => deleteMutation.mutate(exp.id)}>
+                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(exp.id)}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
