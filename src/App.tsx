@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/i18n/LanguageContext";
 import AppLayout from "./components/layout/AppLayout";
+import ErrorBoundary from "./components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
 
 // Lazy-loaded pages
@@ -36,6 +37,9 @@ const queryClient = new QueryClient({
   },
 });
 
+// Export queryClient so useAuth can clear it on logout
+export { queryClient };
+
 const PageLoader = () => (
   <div className="min-h-[50vh] flex items-center justify-center">
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -57,34 +61,38 @@ const App = () => (
         <Sonner />
         <BrowserRouter>
           <AuthProvider>
-            <Suspense fallback={<PageLoader />}>
-              <Routes>
-                <Route path="/login" element={<Login />} />
-                <Route path="/*" element={
-                  <ProtectedRoute>
-                    <AppLayout>
-                      <Suspense fallback={<PageLoader />}>
-                        <Routes>
-                          <Route path="/" element={<Dashboard />} />
-                          <Route path="/teacher-home" element={<TeacherDashboardPage />} />
-                          <Route path="/bookings" element={<Bookings />} />
-                          <Route path="/students" element={<Students />} />
-                          <Route path="/teachers" element={<Teachers />} />
-                          <Route path="/sessions" element={<Sessions />} />
-                          <Route path="/invoices" element={<Invoices />} />
-                          <Route path="/expenses" element={<Expenses />} />
-                          <Route path="/reports" element={<Reports />} />
-                          <Route path="/monthly-reports" element={<MonthlyReports />} />
-                          <Route path="/my-profile" element={<TeacherProfile />} />
-                          <Route path="/settings" element={<SettingsPage />} />
-                          <Route path="*" element={<NotFound />} />
-                        </Routes>
-                      </Suspense>
-                    </AppLayout>
-                  </ProtectedRoute>
-                } />
-              </Routes>
-            </Suspense>
+            <ErrorBoundary>
+              <Suspense fallback={<PageLoader />}>
+                <Routes>
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/*" element={
+                    <ProtectedRoute>
+                      <AppLayout>
+                        <ErrorBoundary>
+                          <Suspense fallback={<PageLoader />}>
+                            <Routes>
+                              <Route path="/" element={<Dashboard />} />
+                              <Route path="/teacher-home" element={<TeacherDashboardPage />} />
+                              <Route path="/bookings" element={<Bookings />} />
+                              <Route path="/students" element={<Students />} />
+                              <Route path="/teachers" element={<Teachers />} />
+                              <Route path="/sessions" element={<Sessions />} />
+                              <Route path="/invoices" element={<Invoices />} />
+                              <Route path="/expenses" element={<Expenses />} />
+                              <Route path="/reports" element={<Reports />} />
+                              <Route path="/monthly-reports" element={<MonthlyReports />} />
+                              <Route path="/my-profile" element={<TeacherProfile />} />
+                              <Route path="/settings" element={<SettingsPage />} />
+                              <Route path="*" element={<NotFound />} />
+                            </Routes>
+                          </Suspense>
+                        </ErrorBoundary>
+                      </AppLayout>
+                    </ProtectedRoute>
+                  } />
+                </Routes>
+              </Suspense>
+            </ErrorBoundary>
           </AuthProvider>
         </BrowserRouter>
       </TooltipProvider>
