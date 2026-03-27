@@ -74,6 +74,8 @@ const Invoices = () => {
     return list;
   }, [invoices, statusFilter, dateFrom, dateTo]);
 
+  const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filtered, { pageSize: 50 });
+
   const totalPaid = invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + Number(i.total), 0);
   const totalPending = invoices.filter((i: any) => i.status === "pending").reduce((s: number, i: any) => s + Number(i.total), 0);
   const totalOverdue = invoices.filter((i: any) => i.status === "overdue").reduce((s: number, i: any) => s + Number(i.total), 0);
