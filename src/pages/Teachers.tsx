@@ -293,7 +293,7 @@ const Teachers = () => {
         </div>
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((teacher) => (
+          {paginatedItems.map((teacher) => (
             <Card key={teacher.id} className="border-none shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
