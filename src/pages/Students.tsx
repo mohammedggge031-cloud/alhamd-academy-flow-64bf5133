@@ -120,18 +120,20 @@ const Students = () => {
       ) : filtered.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">{t("noStudents")}</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {paginatedItems.map((student: any) => (
-            <StudentCard
-              key={student.id}
-              student={student}
-              teacherName={getTeacherName(student)}
-              invoiceStatus={(invoiceStatuses as Record<string, string>)[student.id] || null}
-              onTransfer={() => setTransferStudent(student)}
-            />
-          ))}
-        </div>
-        <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {paginatedItems.map((student: any) => (
+              <StudentCard
+                key={student.id}
+                student={student}
+                teacherName={getTeacherName(student)}
+                invoiceStatus={(invoiceStatuses as Record<string, string>)[student.id] || null}
+                onTransfer={() => setTransferStudent(student)}
+              />
+            ))}
+          </div>
+          <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
+        </>
       )}
 
       {transferStudent && (
