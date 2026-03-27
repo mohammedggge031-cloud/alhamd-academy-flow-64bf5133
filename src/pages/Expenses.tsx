@@ -65,10 +65,16 @@ const Expenses = () => {
     },
   });
 
-  const totalAds = expenses.filter(e => e.category === "advertising").reduce((s, e) => s + Number(e.amount), 0);
-  const totalSalaries = expenses.filter(e => e.category === "admin_salary").reduce((s, e) => s + Number(e.amount), 0);
-  const totalOther = expenses.filter(e => e.category === "other").reduce((s, e) => s + Number(e.amount), 0);
+  const filteredExpenses = monthFilter === "all" ? expenses : expenses.filter(e => (e.expense_month as string)?.slice(0, 7) === monthFilter);
+
+  const totalAds = filteredExpenses.filter(e => e.category === "advertising").reduce((s, e) => s + Number(e.amount), 0);
+  const totalSalaries = filteredExpenses.filter(e => e.category === "admin_salary").reduce((s, e) => s + Number(e.amount), 0);
+  const totalOther = filteredExpenses.filter(e => e.category === "other").reduce((s, e) => s + Number(e.amount), 0);
   const grandTotal = totalAds + totalSalaries + totalOther;
+
+  const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filteredExpenses, { pageSize: 50 });
+
+  const uniqueMonths = [...new Set(expenses.map(e => (e.expense_month as string)?.slice(0, 7)).filter(Boolean))].sort().reverse();
 
   return (
     <div className="space-y-6 animate-fade-in">
