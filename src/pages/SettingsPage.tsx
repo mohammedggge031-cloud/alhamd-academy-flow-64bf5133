@@ -73,6 +73,7 @@ const SettingsPage = () => {
       setSettings(newSettings);
       setSettingsDirty(false);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dbSettings]);
 
   const updateSetting = (key: string, value: string) => {
