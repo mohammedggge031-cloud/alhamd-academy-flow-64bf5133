@@ -292,6 +292,7 @@ const Teachers = () => {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
+        <>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {paginatedItems.map((teacher) => (
             <Card key={teacher.id} className="border-none shadow-sm hover:shadow-md transition-shadow">
