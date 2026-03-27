@@ -145,13 +145,11 @@ const Sessions = () => {
             <SelectItem value="postponed">{t("postponed")}</SelectItem>
           </SelectContent>
         </Select>
-        {!isAdmin && (
-          <Button size="sm" variant={showMyReports ? "default" : "outline"} className="gap-1 mr-auto"
-            onClick={() => setShowMyReports(!showMyReports)}>
-            <Eye className="h-3.5 w-3.5" />
-            {t("myReports")}
-          </Button>
-        )}
+      <Button size="sm" variant={showMyReports ? "default" : "outline"} className="gap-1 mr-auto"
+          onClick={() => setShowMyReports(!showMyReports)}>
+          <Eye className="h-3.5 w-3.5" />
+          {isAdmin ? t("viewReports") : t("myReports")}
+        </Button>
       </div>
 
       {/* My Reports view */}
