@@ -160,6 +160,10 @@ const Invoices = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-due-invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-overdue"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-low-balance"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-students"] });
       toast({ title: t("paymentRecorded") });
     },
     onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),

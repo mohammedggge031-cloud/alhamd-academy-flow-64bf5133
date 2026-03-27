@@ -47,6 +47,8 @@ const SessionDetailDialog = ({
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-today-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-monthly-hours"] });
       onClose();
       toast({ title: t("statusUpdated") });
     },
