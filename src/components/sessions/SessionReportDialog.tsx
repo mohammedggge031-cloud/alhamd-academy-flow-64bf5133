@@ -19,7 +19,7 @@ interface SessionReportDialogProps {
   levelLabels: Record<string, { label: string; className: string }>;
 }
 
-const SessionReportDialog = ({ session, onClose, getStudentName, levelLabels }: SessionReportDialogProps) => {
+const SessionReportDialog = forwardRef<HTMLDivElement, SessionReportDialogProps>(({ session, onClose, getStudentName, levelLabels }, _ref) => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
