@@ -44,6 +44,8 @@ const AddSessionDialog = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-today-sessions"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-monthly-hours"] });
       setOpen(false);
       setForm({ student_id: "", teacher_id: "", session_date: "", start_time: "", duration_minutes: "60" });
       toast({ title: t("sessionAdded") });
