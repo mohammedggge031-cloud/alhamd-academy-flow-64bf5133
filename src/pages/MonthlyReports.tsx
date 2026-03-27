@@ -2,6 +2,8 @@ import { useState } from "react";
 import { FileText, Plus, Loader2, BookOpen, Download, Send, Pencil, Eye, MessageCircle } from "lucide-react";
 import { openReportPreview, generateWhatsAppText } from "@/utils/reportGenerator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {

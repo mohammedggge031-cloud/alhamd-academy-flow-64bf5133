@@ -158,34 +158,37 @@ const Expenses = () => {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-          ) : expenses.length === 0 ? (
+          ) : filteredExpenses.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-6">{t("noExpenses")}</p>
           ) : (
-            <div className="divide-y">
-              {expenses.map((exp: any) => {
-                const cat = categoryLabels[exp.category] ?? categoryLabels.other;
-                const Icon = cat.icon;
-                return (
-                  <div key={exp.id} className="flex items-center justify-between py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center">
-                        <Icon className="h-4 w-4 text-primary" />
+            <>
+              <div className="divide-y">
+                {paginatedItems.map((exp: any) => {
+                  const cat = categoryLabels[exp.category] ?? categoryLabels.other;
+                  const Icon = cat.icon;
+                  return (
+                    <div key={exp.id} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center">
+                          <Icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{exp.description}</p>
+                          <p className="text-xs text-muted-foreground">{cat.label} • {exp.expense_month?.slice(0, 7)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{exp.description}</p>
-                        <p className="text-xs text-muted-foreground">{cat.label} • {exp.expense_month?.slice(0, 7)}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold">${Number(exp.amount).toLocaleString()}</span>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(exp.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold">${Number(exp.amount).toLocaleString()}</span>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(exp.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+              <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
+            </>
           )}
         </CardContent>
       </Card>
