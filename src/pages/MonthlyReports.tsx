@@ -62,6 +62,8 @@ const MonthlyReports = () => {
     },
   });
 
+  const reportsPagination = usePagination(reports, { pageSize: 30 });
+
   const { data: myStudents = [] } = useQuery({
     queryKey: ["my-students-for-reports"],
     enabled: !isAdmin,
