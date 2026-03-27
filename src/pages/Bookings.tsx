@@ -194,6 +194,8 @@ const Bookings = () => {
       queryClient.invalidateQueries({ queryKey: ["bookings"] });
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
       queryClient.invalidateQueries({ queryKey: ["sidebar-unread"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-recent-bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-recent-subs"] });
       setSelectedBookingIds(new Set());
       setSelectedSubIds(new Set());
       setConfirmDelete(null);
