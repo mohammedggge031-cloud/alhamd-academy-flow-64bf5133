@@ -200,7 +200,7 @@ const Sessions = () => {
               {filtered.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">{t("noSessions")}</p>
               )}
-              {filtered.map((session: any) => {
+              {paginatedItems.map((session: any) => {
                 const statusBorderColors: Record<string, string> = {
                   upcoming: "border-r-4 border-r-accent-foreground",
                   confirmed: "border-r-4 border-r-primary",
