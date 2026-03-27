@@ -466,7 +466,6 @@ const translations = {
   confirmDeleteCancelled: { en: "Are you sure you want to delete all cancelled entries?", ar: "هل أنت متأكد من حذف جميع الطلبات الملغية؟" },
   confirmDeleteSelected: { en: "Are you sure you want to delete the selected entries?", ar: "هل أنت متأكد من حذف الطلبات المحددة؟" },
   itemsDeleted: { en: "items deleted", ar: "عنصر تم حذفه" },
-  itemsDeleted: { en: "items deleted", ar: "عنصر تم حذفه" },
   selectAll: { en: "Select All", ar: "تحديد الكل" },
 
   // Teacher Profile
