@@ -423,11 +423,10 @@ const MonthlyReports = () => {
               </CardContent>
             </Card>
           ))}
-            </div>
-            <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
-          </>
-        );
-      })()}
+          </div>
+          <PaginationControls page={reportsPagination.page} totalPages={reportsPagination.totalPages} totalItems={reportsPagination.totalItems} onPageChange={reportsPagination.setPage} hasNext={reportsPagination.hasNext} hasPrev={reportsPagination.hasPrev} />
+        </>
+      )}
     </div>
   );
 };
