@@ -324,7 +324,7 @@ const Invoices = () => {
             <div className="divide-y">
               {filtered.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">{t("noData")}</p>
-              ) : filtered.map((invoice: any) => {
+              ) : paginatedItems.map((invoice: any) => {
                 const status = statusConfig[invoice.status] || statusConfig.pending;
                 const discountPct = Number(invoice.discount) || 0;
                 return (
