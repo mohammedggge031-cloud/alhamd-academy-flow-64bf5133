@@ -70,7 +70,7 @@ const Teachers = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
-      toast({ title: "تم التحديث" });
+      toast({ title: t("success") });
     },
     onError: (err: Error) => {
       toast({ title: t("error"), description: err.message, variant: "destructive" });
