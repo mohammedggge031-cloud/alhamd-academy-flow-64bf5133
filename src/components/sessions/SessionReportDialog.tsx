@@ -154,6 +154,7 @@ const SessionReportDialog = forwardRef<HTMLDivElement, SessionReportDialogProps>
       </DialogContent>
     </Dialog>
   );
-};
+});
+SessionReportDialog.displayName = "SessionReportDialog";
 
 export default SessionReportDialog;
