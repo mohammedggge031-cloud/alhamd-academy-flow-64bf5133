@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,19 +12,37 @@ import logo from "@/assets/logo.jpeg";
 
 const isEmailInput = (value: string) => value.includes("@");
 
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_MS = 60_000; // 1 minute
+
 const Login = () => {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const attemptsRef = useRef(0);
   const navigate = useNavigate();
   const { toast } = useToast();
   const { t, lang, setLang } = useLanguage();
 
   const isEmail = useMemo(() => isEmailInput(identifier), [identifier]);
+  const isLockedOut = lockoutUntil !== null && Date.now() < lockoutUntil;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+
+    // Rate limiting check
+    if (isLockedOut) {
+      const remaining = Math.ceil(((lockoutUntil ?? 0) - Date.now()) / 1000);
+      toast({
+        title: t("loginError"),
+        description: `${t("tooManyAttempts")} ${remaining}s`,
+        variant: "destructive",
+      });
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -53,8 +71,20 @@ const Login = () => {
           await supabase.auth.setSession(data.session);
         }
       }
+
+      // Reset attempts on success
+      attemptsRef.current = 0;
       navigate("/");
     } catch (err: any) {
+      // Increment failed attempts
+      attemptsRef.current += 1;
+      if (attemptsRef.current >= MAX_ATTEMPTS) {
+        setLockoutUntil(Date.now() + LOCKOUT_MS);
+        attemptsRef.current = 0;
+        // Auto-unlock after lockout period
+        setTimeout(() => setLockoutUntil(null), LOCKOUT_MS);
+      }
+
       toast({
         title: t("loginError"),
         description: err.message,
@@ -63,7 +93,7 @@ const Login = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [identifier, password, isEmail, isLockedOut, lockoutUntil, navigate, toast, t]);
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-primary p-4 relative overflow-hidden">
@@ -97,41 +127,32 @@ const Login = () => {
             <div className="space-y-2">
               <Label className="text-foreground font-medium">{t("loginIdentifier")}</Label>
               <Input
-                type="text"
-                placeholder="+201001234567"
-                value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)}
-                dir="ltr"
-                required
-                autoComplete="username"
+                type="text" placeholder="+201001234567" value={identifier}
+                onChange={(e) => setIdentifier(e.target.value)} dir="ltr" required autoComplete="username"
                 className="border-input bg-background focus-visible:ring-primary h-11"
               />
               <p className="text-xs text-muted-foreground">
-                {identifier.length > 0
-                  ? isEmail ? `📧 ${t("loginDetectedEmail")}` : `📱 ${t("loginDetectedPhone")}`
-                  : t("loginPhoneDefault")
-                }
+                {identifier.length > 0 ? isEmail ? `📧 ${t("loginDetectedEmail")}` : `📱 ${t("loginDetectedPhone")}` : t("loginPhoneDefault")}
               </p>
             </div>
             <div className="space-y-2">
               <Label className="text-foreground font-medium">{t("loginPassword")}</Label>
               <div className="relative">
                 <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  dir="ltr"
-                  required
-                  className="pe-10 border-input bg-background focus-visible:ring-primary h-11"
-                  autoComplete="current-password"
+                  type={showPassword ? "text" : "password"} placeholder="••••••••" value={password}
+                  onChange={(e) => setPassword(e.target.value)} dir="ltr" required
+                  className="pe-10 border-input bg-background focus-visible:ring-primary h-11" autoComplete="current-password"
                 />
-                <button type="button" tabIndex={-1} onClick={() => setShowPassword(!showPassword)} className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
+                <button type="button" tabIndex={-1} onClick={() => setShowPassword(!showPassword)}
+                  className="absolute end-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors">
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
             </div>
-            <Button type="submit" className="w-full gap-2 h-11 text-base bg-primary hover:bg-primary/90 shadow-md" disabled={isLoading}>
+            {isLockedOut && (
+              <p className="text-xs text-destructive text-center animate-pulse">{t("tooManyAttempts")}</p>
+            )}
+            <Button type="submit" className="w-full gap-2 h-11 text-base bg-primary hover:bg-primary/90 shadow-md" disabled={isLoading || isLockedOut}>
               <LogIn className="h-4 w-4" />
               {isLoading ? t("loginLoading") : t("loginButton")}
             </Button>

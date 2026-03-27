@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2, MessageCircle, Check, X } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -71,6 +73,8 @@ const Invoices = () => {
     if (dateTo) list = list.filter((i: any) => i.created_at <= dateTo + "T23:59:59");
     return list;
   }, [invoices, statusFilter, dateFrom, dateTo]);
+
+  const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filtered, { pageSize: 50 });
 
   const totalPaid = invoices.filter((i: any) => i.status === "paid").reduce((s: number, i: any) => s + Number(i.total), 0);
   const totalPending = invoices.filter((i: any) => i.status === "pending").reduce((s: number, i: any) => s + Number(i.total), 0);
@@ -320,7 +324,7 @@ const Invoices = () => {
             <div className="divide-y">
               {filtered.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">{t("noData")}</p>
-              ) : filtered.map((invoice: any) => {
+              ) : paginatedItems.map((invoice: any) => {
                 const status = statusConfig[invoice.status] || statusConfig.pending;
                 const discountPct = Number(invoice.discount) || 0;
                 return (
@@ -399,6 +403,7 @@ const Invoices = () => {
                 );
               })}
             </div>
+            <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
           </CardContent>
         </Card>
       )}

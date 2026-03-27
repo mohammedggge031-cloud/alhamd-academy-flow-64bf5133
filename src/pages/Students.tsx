@@ -1,4 +1,6 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 import { Users, Plus, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,6 +71,8 @@ const Students = () => {
       s.country?.includes(search)
   );
 
+  const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filtered, { pageSize: 50 });
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -116,17 +120,20 @@ const Students = () => {
       ) : filtered.length === 0 ? (
         <p className="text-center text-muted-foreground py-8">{t("noStudents")}</p>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((student: any) => (
-            <StudentCard
-              key={student.id}
-              student={student}
-              teacherName={getTeacherName(student)}
-              invoiceStatus={(invoiceStatuses as Record<string, string>)[student.id] || null}
-              onTransfer={() => setTransferStudent(student)}
-            />
-          ))}
-        </div>
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {paginatedItems.map((student: any) => (
+              <StudentCard
+                key={student.id}
+                student={student}
+                teacherName={getTeacherName(student)}
+                invoiceStatus={(invoiceStatuses as Record<string, string>)[student.id] || null}
+                onTransfer={() => setTransferStudent(student)}
+              />
+            ))}
+          </div>
+          <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
+        </>
       )}
 
       {transferStudent && (

@@ -1,5 +1,7 @@
 import { useState } from "react";
 import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe, DollarSign } from "lucide-react";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -134,6 +136,8 @@ const Teachers = () => {
     const matchesGender = genderFilter === "all" || teacher.gender === genderFilter;
     return matchesSearch && matchesSubject && matchesProfile && matchesGender;
   });
+
+  const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filtered, { pageSize: 50 });
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -288,8 +292,9 @@ const Teachers = () => {
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
       ) : (
+        <>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {filtered.map((teacher) => (
+          {paginatedItems.map((teacher) => (
             <Card key={teacher.id} className="border-none shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -431,6 +436,8 @@ const Teachers = () => {
             </Card>
           ))}
         </div>
+        <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
+        </>
       )}
 
       <TeacherProfileViewer

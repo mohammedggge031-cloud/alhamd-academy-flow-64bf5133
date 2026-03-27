@@ -1,5 +1,7 @@
 import { useState, useMemo } from "react";
 import { CalendarDays, Filter, Loader2, FileText, Eye, DollarSign, Badge as BadgeIcon } from "lucide-react";
+import PaginationControls from "@/components/PaginationControls";
+import { usePagination } from "@/hooks/usePagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -80,6 +82,7 @@ const Sessions = () => {
   }, [sessions, reportedSessionIds, isAdmin]);
 
   const filtered = statusFilter === "all" ? sessions : sessions.filter((s: any) => s.status === statusFilter);
+  const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filtered, { pageSize: 50 });
   const getTeacherName = (s: any) => s.teachers?.profiles?.full_name ?? "—";
   const getStudentName = (s: any) => s.students?.name ?? "—";
 
@@ -197,7 +200,7 @@ const Sessions = () => {
               {filtered.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">{t("noSessions")}</p>
               )}
-              {filtered.map((session: any) => {
+              {paginatedItems.map((session: any) => {
                 const statusBorderColors: Record<string, string> = {
                   upcoming: "border-r-4 border-r-accent-foreground",
                   confirmed: "border-r-4 border-r-primary",
@@ -252,6 +255,7 @@ const Sessions = () => {
                 );
               })}
             </div>
+            <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
           </CardContent>
         </Card>
       ))}
