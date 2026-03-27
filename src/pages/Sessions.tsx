@@ -1,5 +1,5 @@
 import { useState, useMemo } from "react";
-import { CalendarDays, Filter, Loader2, FileText, Eye, DollarSign, Badge as BadgeIcon } from "lucide-react";
+import { CalendarDays, Filter, Loader2, FileText, Eye, DollarSign, Badge as BadgeIcon, MessageCircle } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/usePagination";
 import { Card, CardContent } from "@/components/ui/card";
@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { buildHomeworkMessage } from "@/utils/whatsappLinks";
 import TeacherSchedule from "@/components/teachers/TeacherSchedule";
 import AddSessionDialog from "@/components/sessions/AddSessionDialog";
 import SessionDetailDialog from "@/components/sessions/SessionDetailDialog";
@@ -68,7 +69,7 @@ const Sessions = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("session_reports")
-        .select(`*, students:student_id(name), sessions:session_id(session_date, start_time)`)
+        .select(`*, students:student_id(name, whatsapp, guardian_whatsapp), sessions:session_id(session_date, start_time), teachers:teacher_id(profiles:user_id(full_name))`)
         .order("created_at", { ascending: false });
       return data ?? [];
     },
@@ -145,22 +146,20 @@ const Sessions = () => {
             <SelectItem value="postponed">{t("postponed")}</SelectItem>
           </SelectContent>
         </Select>
-        {!isAdmin && (
-          <Button size="sm" variant={showMyReports ? "default" : "outline"} className="gap-1 mr-auto"
-            onClick={() => setShowMyReports(!showMyReports)}>
-            <Eye className="h-3.5 w-3.5" />
-            {t("myReports")}
-          </Button>
-        )}
+      <Button size="sm" variant={showMyReports ? "default" : "outline"} className="gap-1 mr-auto"
+          onClick={() => setShowMyReports(!showMyReports)}>
+          <Eye className="h-3.5 w-3.5" />
+          {isAdmin ? t("viewReports") : t("myReports")}
+        </Button>
       </div>
 
-      {/* My Reports view */}
-      {!isAdmin && showMyReports && (
+      {/* Reports view */}
+      {showMyReports && (
         <Card className="border-none shadow-sm">
           <CardContent className="p-4 space-y-3">
             <h3 className="text-base font-bold flex items-center gap-2">
               <FileText className="h-5 w-5 text-primary" />
-              {t("myPreviousReports")} ({existingReports.length})
+              {isAdmin ? t("allSessionReports") : t("myPreviousReports")} ({existingReports.length})
             </h3>
             {existingReports.length === 0 && (
               <p className="text-center text-muted-foreground py-6">{t("noReportsYet")}</p>
@@ -169,7 +168,12 @@ const Sessions = () => {
               {existingReports.map((r: any) => (
                 <div key={r.id} className="py-3 space-y-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-medium">{r.students?.name ?? "—"}</p>
+                    <div>
+                      <p className="text-sm font-medium">{r.students?.name ?? "—"}</p>
+                      {isAdmin && r.teachers?.profiles?.full_name && (
+                        <p className="text-xs text-muted-foreground">{t("teacher")}: {r.teachers.profiles.full_name}</p>
+                      )}
+                    </div>
                     <span className="text-xs text-muted-foreground">{r.sessions?.session_date ?? ""}</span>
                   </div>
                   <div className="flex items-center gap-2 flex-wrap">
@@ -182,6 +186,22 @@ const Sessions = () => {
                     <div className="text-xs bg-muted/50 rounded-lg p-2">
                       <span className="font-medium text-foreground">{t("homeworkLabel")} </span>{r.homework}
                     </div>
+                  )}
+                  {/* WhatsApp send button for admin/manager */}
+                  {isAdmin && r.homework && (
+                    <Button size="sm" variant="outline" className="gap-1 text-xs text-[#25D366]"
+                      onClick={() => {
+                        const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
+                        const msg = buildHomeworkMessage(r.students?.name ?? "", r.homework);
+                        if (phone) {
+                          const cleanPhone = phone.replace(/[^0-9]/g, "");
+                          window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+                        } else {
+                          window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
+                        }
+                      }}>
+                      <MessageCircle className="h-3 w-3" /> {t("sendReportToGuardian")}
+                    </Button>
                   )}
                 </div>
               ))}
