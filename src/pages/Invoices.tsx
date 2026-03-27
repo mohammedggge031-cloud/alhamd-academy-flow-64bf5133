@@ -121,6 +121,8 @@ const Invoices = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-due-invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-overdue"] });
       setDialogOpen(false); setSelectedStudents([]); setAmount(""); setHours(""); setDiscount("0"); setDueDate("");
       toast({ title: t("invoiceCreated") });
     },
