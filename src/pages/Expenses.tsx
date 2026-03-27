@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { DollarSign, Plus, Trash2, Loader2, Megaphone, UserCog, MoreHorizontal } from "lucide-react";
+import { DollarSign, Plus, Trash2, Loader2, Megaphone, UserCog, MoreHorizontal, Filter } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -17,6 +19,7 @@ const Expenses = () => {
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
+  const [monthFilter, setMonthFilter] = useState<string>("all");
   const [form, setForm] = useState({ category: "other", description: "", amount: "", expense_month: new Date().toISOString().slice(0, 7) });
 
   const categoryLabels: Record<string, { label: string; icon: any }> = {
@@ -62,10 +65,16 @@ const Expenses = () => {
     },
   });
 
-  const totalAds = expenses.filter(e => e.category === "advertising").reduce((s, e) => s + Number(e.amount), 0);
-  const totalSalaries = expenses.filter(e => e.category === "admin_salary").reduce((s, e) => s + Number(e.amount), 0);
-  const totalOther = expenses.filter(e => e.category === "other").reduce((s, e) => s + Number(e.amount), 0);
+  const filteredExpenses = monthFilter === "all" ? expenses : expenses.filter(e => (e.expense_month as string)?.slice(0, 7) === monthFilter);
+
+  const totalAds = filteredExpenses.filter(e => e.category === "advertising").reduce((s, e) => s + Number(e.amount), 0);
+  const totalSalaries = filteredExpenses.filter(e => e.category === "admin_salary").reduce((s, e) => s + Number(e.amount), 0);
+  const totalOther = filteredExpenses.filter(e => e.category === "other").reduce((s, e) => s + Number(e.amount), 0);
   const grandTotal = totalAds + totalSalaries + totalOther;
+
+  const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filteredExpenses, { pageSize: 50 });
+
+  const uniqueMonths = [...new Set(expenses.map(e => (e.expense_month as string)?.slice(0, 7)).filter(Boolean))].sort().reverse();
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -115,6 +124,19 @@ const Expenses = () => {
         </Dialog>
       </div>
 
+      <div className="flex items-center gap-3">
+        <Filter className="h-4 w-4 text-muted-foreground" />
+        <Select value={monthFilter} onValueChange={setMonthFilter}>
+          <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">{t("all")}</SelectItem>
+            {uniqueMonths.map(m => (
+              <SelectItem key={m} value={m}>{m}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
           { label: t("advertising"), value: totalAds, color: "text-primary" },
@@ -136,34 +158,37 @@ const Expenses = () => {
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center py-6"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>
-          ) : expenses.length === 0 ? (
+          ) : filteredExpenses.length === 0 ? (
             <p className="text-center text-sm text-muted-foreground py-6">{t("noExpenses")}</p>
           ) : (
-            <div className="divide-y">
-              {expenses.map((exp: any) => {
-                const cat = categoryLabels[exp.category] ?? categoryLabels.other;
-                const Icon = cat.icon;
-                return (
-                  <div key={exp.id} className="flex items-center justify-between py-3">
-                    <div className="flex items-center gap-3">
-                      <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center">
-                        <Icon className="h-4 w-4 text-primary" />
+            <>
+              <div className="divide-y">
+                {paginatedItems.map((exp: any) => {
+                  const cat = categoryLabels[exp.category] ?? categoryLabels.other;
+                  const Icon = cat.icon;
+                  return (
+                    <div key={exp.id} className="flex items-center justify-between py-3">
+                      <div className="flex items-center gap-3">
+                        <div className="h-9 w-9 rounded-full bg-accent flex items-center justify-center">
+                          <Icon className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{exp.description}</p>
+                          <p className="text-xs text-muted-foreground">{cat.label} • {exp.expense_month?.slice(0, 7)}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">{exp.description}</p>
-                        <p className="text-xs text-muted-foreground">{cat.label} • {exp.expense_month?.slice(0, 7)}</p>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm font-bold">${Number(exp.amount).toLocaleString()}</span>
+                        <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(exp.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm font-bold">${Number(exp.amount).toLocaleString()}</span>
-                      <Button variant="ghost" size="icon" className="text-destructive" onClick={() => setDeleteId(exp.id)}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+              <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
+            </>
           )}
         </CardContent>
       </Card>

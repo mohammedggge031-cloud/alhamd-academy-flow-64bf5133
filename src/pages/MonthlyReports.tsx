@@ -2,6 +2,8 @@ import { useState } from "react";
 import { FileText, Plus, Loader2, BookOpen, Download, Send, Pencil, Eye, MessageCircle } from "lucide-react";
 import { openReportPreview, generateWhatsAppText } from "@/utils/reportGenerator";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -34,6 +36,7 @@ const MonthlyReports = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isAdmin = role === "admin" || role === "manager";
+  // pagination is declared at component level (hooks rules)
 
   const gradeLabels: Record<string, { label: string; className: string }> = {
     A: { label: t("gradeA"), className: "bg-success text-success-foreground" },
@@ -58,6 +61,8 @@ const MonthlyReports = () => {
       return data ?? [];
     },
   });
+
+  const reportsPagination = usePagination(reports, { pageSize: 30 });
 
   const { data: myStudents = [] } = useQuery({
     queryKey: ["my-students-for-reports"],
@@ -338,8 +343,9 @@ const MonthlyReports = () => {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {reports.map((r: any) => (
+        <>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {reportsPagination.paginatedItems.map((r: any) => (
             <Card key={r.id} className="border-none shadow-sm hover:shadow-md transition-shadow">
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
@@ -417,7 +423,9 @@ const MonthlyReports = () => {
               </CardContent>
             </Card>
           ))}
-        </div>
+          </div>
+          <PaginationControls page={reportsPagination.page} totalPages={reportsPagination.totalPages} totalItems={reportsPagination.totalItems} onPageChange={reportsPagination.setPage} hasNext={reportsPagination.hasNext} hasPrev={reportsPagination.hasPrev} />
+        </>
       )}
     </div>
   );
