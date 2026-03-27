@@ -613,6 +613,17 @@ const Bookings = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title={confirmDelete?.type === "cancelled" ? t("deleteCancelled") : t("deleteSelected")}
+        description={confirmDelete?.type === "cancelled" ? t("confirmDeleteCancelled") : t("confirmDeleteSelected")}
+        confirmLabel={t("deleted")}
+        variant="destructive"
+        onConfirm={() => confirmDelete && deleteBulk.mutate(confirmDelete)}
+        isPending={deleteBulk.isPending}
+      />
     </div>
   );
 };
