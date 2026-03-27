@@ -67,10 +67,10 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
   useEffect(() => {
     const channel = supabase
       .channel("sidebar-realtime")
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "trial_bookings" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "trial_bookings" }, () => {
         qc.invalidateQueries({ queryKey: ["sidebar-unread"] });
       })
-      .on("postgres_changes", { event: "INSERT", schema: "public", table: "subscription_requests" }, () => {
+      .on("postgres_changes", { event: "*", schema: "public", table: "subscription_requests" }, () => {
         qc.invalidateQueries({ queryKey: ["sidebar-unread"] });
       })
       .subscribe();
