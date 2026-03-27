@@ -461,6 +461,13 @@ const translations = {
   bookingAdminNotes: { en: "Admin Notes", ar: "ملاحظات الإدارة" },
   bookingNotesPlaceholder: { en: "Add notes about this booking...", ar: "أضف ملاحظات عن هذا الحجز..." },
   bookingReceivedAt: { en: "Received at", ar: "تم الاستلام في" },
+  deleteCancelled: { en: "Delete Cancelled", ar: "حذف الملغية" },
+  deleteSelected: { en: "Delete Selected", ar: "حذف المحدد" },
+  confirmDeleteCancelled: { en: "Are you sure you want to delete all cancelled entries?", ar: "هل أنت متأكد من حذف جميع الطلبات الملغية؟" },
+  confirmDeleteSelected: { en: "Are you sure you want to delete the selected entries?", ar: "هل أنت متأكد من حذف الطلبات المحددة؟" },
+  deleted: { en: "Deleted", ar: "تم الحذف" },
+  itemsDeleted: { en: "items deleted", ar: "عنصر تم حذفه" },
+  selectAll: { en: "Select All", ar: "تحديد الكل" },
 
   // Teacher Profile
   myProfile: { en: "My Profile", ar: "ملفي الشخصي" },
