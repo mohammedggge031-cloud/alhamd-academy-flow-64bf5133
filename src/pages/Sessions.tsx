@@ -255,6 +255,7 @@ const Sessions = () => {
                 );
               })}
             </div>
+            <PaginationControls page={page} totalPages={totalPages} totalItems={totalItems} onPageChange={setPage} hasNext={hasNext} hasPrev={hasPrev} />
           </CardContent>
         </Card>
       ))}
