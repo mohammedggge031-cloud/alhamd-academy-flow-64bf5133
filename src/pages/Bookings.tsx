@@ -167,6 +167,8 @@ const Bookings = () => {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["sidebar-unread"] });
+      queryClient.invalidateQueries({ queryKey: ["dash-recent-subs"] });
       setSelectedSub(null);
       toast({ title: t("success"), description: t("statusUpdated") });
     },
