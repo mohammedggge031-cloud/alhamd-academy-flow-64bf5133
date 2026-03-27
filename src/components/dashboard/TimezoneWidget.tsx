@@ -119,7 +119,8 @@ const TimezoneWidget = memo(() => {
     };
 
     update();
-    const interval = setInterval(update, 1000);
+    // Update every 30 seconds instead of every second for better performance
+    const interval = setInterval(update, 30_000);
     return () => clearInterval(interval);
   }, [studentTimezones, queryEnabled]);
 

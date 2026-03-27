@@ -1,6 +1,8 @@
 import { useState } from "react";
-import { DollarSign, Plus, Trash2, Loader2, Megaphone, UserCog, MoreHorizontal } from "lucide-react";
+import { DollarSign, Plus, Trash2, Loader2, Megaphone, UserCog, MoreHorizontal, Filter } from "lucide-react";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { usePagination } from "@/hooks/usePagination";
+import PaginationControls from "@/components/PaginationControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
