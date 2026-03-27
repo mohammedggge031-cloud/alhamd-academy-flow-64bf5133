@@ -68,7 +68,7 @@ const Sessions = () => {
     queryFn: async () => {
       const { data } = await supabase
         .from("session_reports")
-        .select(`*, students:student_id(name), sessions:session_id(session_date, start_time)`)
+        .select(`*, students:student_id(name, whatsapp, guardian_whatsapp), sessions:session_id(session_date, start_time), teachers:teacher_id(profiles:user_id(full_name))`)
         .order("created_at", { ascending: false });
       return data ?? [];
     },
