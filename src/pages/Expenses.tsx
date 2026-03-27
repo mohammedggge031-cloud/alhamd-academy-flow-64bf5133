@@ -16,6 +16,7 @@ const Expenses = () => {
   const queryClient = useQueryClient();
   const { t } = useLanguage();
   const [open, setOpen] = useState(false);
+  const [deleteId, setDeleteId] = useState<string | null>(null);
   const [form, setForm] = useState({ category: "other", description: "", amount: "", expense_month: new Date().toISOString().slice(0, 7) });
 
   const categoryLabels: Record<string, { label: string; icon: any }> = {
