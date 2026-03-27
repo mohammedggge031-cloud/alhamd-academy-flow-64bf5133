@@ -507,7 +507,7 @@ const Bookings = () => {
                 {selectedSub.sessions_per_week && (
                   <div className="flex items-center gap-2">
                     <Clock className="h-4 w-4 text-muted-foreground" />
-                    <span>{selectedSub.sessions_per_week} {t("sessionsPerWeek")}</span>
+                    <span>{selectedSub.sessions_per_week} حصة/أسبوع</span>
                   </div>
                 )}
               </div>
