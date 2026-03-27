@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { CalendarPlus, Eye, Phone, Mail, Globe, BookOpen, Clock, MessageSquare, CheckCircle2, XCircle, Bell, CreditCard, Loader2 } from "lucide-react";
+import { CalendarPlus, Eye, Phone, Mail, Globe, BookOpen, Clock, MessageSquare, CheckCircle2, XCircle, Bell, CreditCard, Loader2, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -15,6 +15,8 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow,
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Checkbox } from "@/components/ui/checkbox";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -63,6 +65,17 @@ const Bookings = () => {
   const [selected, setSelected] = useState<Booking | null>(null);
   const [selectedSub, setSelectedSub] = useState<SubscriptionRequest | null>(null);
   const [adminNotes, setAdminNotes] = useState("");
+  const [selectedBookingIds, setSelectedBookingIds] = useState<Set<string>>(new Set());
+  const [selectedSubIds, setSelectedSubIds] = useState<Set<string>>(new Set());
+  const [confirmDelete, setConfirmDelete] = useState<{ type: "cancelled" | "selected"; tab: "bookings" | "subscriptions" } | null>(null);
+
+  const toggleBookingSelect = (id: string) => {
+    setSelectedBookingIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+  const toggleSubSelect = (id: string) => {
+    setSelectedSubIds(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+  };
+
   const [activeTab, setActiveTab] = useState("bookings");
 
   const { data: bookings = [], isLoading: loadingBookings } = useQuery({
@@ -157,6 +170,34 @@ const Bookings = () => {
     },
   });
 
+  const deleteBulk = useMutation({
+    mutationFn: async ({ type, tab }: { type: "cancelled" | "selected"; tab: "bookings" | "subscriptions" }) => {
+      if (tab === "bookings") {
+        const ids = type === "cancelled" ? bookings.filter(b => b.status === "cancelled").map(b => b.id) : Array.from(selectedBookingIds);
+        if (ids.length === 0) return 0;
+        const { error } = await supabase.from("trial_bookings").delete().in("id", ids);
+        if (error) throw error;
+        return ids.length;
+      } else {
+        const ids = type === "cancelled" ? subscriptions.filter(s => s.status === "cancelled").map(s => s.id) : Array.from(selectedSubIds);
+        if (ids.length === 0) return 0;
+        const { error } = await supabase.from("subscription_requests").delete().in("id", ids);
+        if (error) throw error;
+        return ids.length;
+      }
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: ["bookings"] });
+      queryClient.invalidateQueries({ queryKey: ["subscriptions"] });
+      queryClient.invalidateQueries({ queryKey: ["sidebar-unread"] });
+      setSelectedBookingIds(new Set());
+      setSelectedSubIds(new Set());
+      setConfirmDelete(null);
+      toast({ title: t("deleted"), description: `${count} ${t("itemsDeleted")}` });
+    },
+    onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
+  });
+
   const openBooking = (booking: Booking) => {
     setSelected(booking);
     setAdminNotes(booking.admin_notes || "");
@@ -237,7 +278,7 @@ const Bookings = () => {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-3">
+      <div className="flex gap-3 flex-wrap items-center">
         <Input placeholder={t("searchBookings")} value={search} onChange={(e) => setSearch(e.target.value)} className="max-w-xs" />
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-40"><SelectValue /></SelectTrigger>
@@ -249,6 +290,17 @@ const Bookings = () => {
             <SelectItem value="cancelled">{t("bookingCancelled")}</SelectItem>
           </SelectContent>
         </Select>
+        <div className="flex gap-2 mr-auto">
+          {((activeTab === "bookings" && selectedBookingIds.size > 0) || (activeTab === "subscriptions" && selectedSubIds.size > 0)) && (
+            <Button size="sm" variant="destructive" className="gap-1" onClick={() => setConfirmDelete({ type: "selected", tab: activeTab as "bookings" | "subscriptions" })}>
+              <Trash2 className="h-3.5 w-3.5" /> {t("deleteSelected")} ({activeTab === "bookings" ? selectedBookingIds.size : selectedSubIds.size})
+            </Button>
+          )}
+          <Button size="sm" variant="outline" className="gap-1 text-destructive border-destructive/30 hover:bg-destructive hover:text-destructive-foreground"
+            onClick={() => setConfirmDelete({ type: "cancelled", tab: activeTab as "bookings" | "subscriptions" })}>
+            <Trash2 className="h-3.5 w-3.5" /> {t("deleteCancelled")}
+          </Button>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -278,6 +330,13 @@ const Bookings = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox checked={filteredBookings.length > 0 && filteredBookings.every(b => selectedBookingIds.has(b.id))}
+                            onCheckedChange={(checked) => {
+                              if (checked) setSelectedBookingIds(new Set(filteredBookings.map(b => b.id)));
+                              else setSelectedBookingIds(new Set());
+                            }} />
+                        </TableHead>
                         <TableHead></TableHead>
                         <TableHead>{t("fullName")}</TableHead>
                         <TableHead>{t("bookingCourse")}</TableHead>
@@ -289,7 +348,10 @@ const Bookings = () => {
                     </TableHeader>
                     <TableBody>
                       {bookingsPagination.paginatedItems.map((b) => (
-                        <TableRow key={b.id} className={!b.is_read ? "bg-primary/5 font-medium" : ""}>
+                        <TableRow key={b.id} className={`${!b.is_read ? "bg-primary/5 font-medium" : ""} ${selectedBookingIds.has(b.id) ? "bg-destructive/5" : ""}`}>
+                          <TableCell>
+                            <Checkbox checked={selectedBookingIds.has(b.id)} onCheckedChange={() => toggleBookingSelect(b.id)} />
+                          </TableCell>
                           <TableCell>
                             {!b.is_read && <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />}
                           </TableCell>
@@ -338,6 +400,13 @@ const Bookings = () => {
                   <Table>
                     <TableHeader>
                       <TableRow>
+                        <TableHead className="w-10">
+                          <Checkbox checked={filteredSubs.length > 0 && filteredSubs.every(s => selectedSubIds.has(s.id))}
+                            onCheckedChange={(checked) => {
+                              if (checked) setSelectedSubIds(new Set(filteredSubs.map(s => s.id)));
+                              else setSelectedSubIds(new Set());
+                            }} />
+                        </TableHead>
                         <TableHead></TableHead>
                         <TableHead>{t("fullName")}</TableHead>
                         <TableHead>{t("bookingsPlan")}</TableHead>
@@ -350,7 +419,10 @@ const Bookings = () => {
                     </TableHeader>
                     <TableBody>
                       {subsPagination.paginatedItems.map((s) => (
-                        <TableRow key={s.id} className={!s.is_read ? "bg-primary/5 font-medium" : ""}>
+                        <TableRow key={s.id} className={`${!s.is_read ? "bg-primary/5 font-medium" : ""} ${selectedSubIds.has(s.id) ? "bg-destructive/5" : ""}`}>
+                          <TableCell>
+                            <Checkbox checked={selectedSubIds.has(s.id)} onCheckedChange={() => toggleSubSelect(s.id)} />
+                          </TableCell>
                           <TableCell>
                             {!s.is_read && <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />}
                           </TableCell>
@@ -541,6 +613,17 @@ const Bookings = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={!!confirmDelete}
+        onOpenChange={(open) => !open && setConfirmDelete(null)}
+        title={confirmDelete?.type === "cancelled" ? t("deleteCancelled") : t("deleteSelected")}
+        description={confirmDelete?.type === "cancelled" ? t("confirmDeleteCancelled") : t("confirmDeleteSelected")}
+        confirmLabel={t("deleted")}
+        variant="destructive"
+        onConfirm={() => confirmDelete && deleteBulk.mutate(confirmDelete)}
+        isPending={deleteBulk.isPending}
+      />
     </div>
   );
 };
