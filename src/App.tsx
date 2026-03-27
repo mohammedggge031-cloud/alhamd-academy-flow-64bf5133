@@ -86,11 +86,11 @@ const App = () => (
                               <Route path="/teachers" element={<Teachers />} />
                               <Route path="/sessions" element={<Sessions />} />
                               <Route path="/invoices" element={<Invoices />} />
-                              <Route path="/expenses" element={<Expenses />} />
-                              <Route path="/reports" element={<Reports />} />
+                              <Route path="/expenses" element={<RoleGuard allowedRoles={["admin"]}><Expenses /></RoleGuard>} />
+                              <Route path="/reports" element={<RoleGuard allowedRoles={["admin"]}><Reports /></RoleGuard>} />
                               <Route path="/monthly-reports" element={<MonthlyReports />} />
                               <Route path="/my-profile" element={<TeacherProfile />} />
-                              <Route path="/settings" element={<SettingsPage />} />
+                              <Route path="/settings" element={<RoleGuard allowedRoles={["admin"]}><SettingsPage /></RoleGuard>} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
                           </Suspense>
