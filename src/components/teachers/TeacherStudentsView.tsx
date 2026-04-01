@@ -185,7 +185,7 @@ const TeacherStudentsView = () => {
             <Users className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-xl font-bold">{t("myStudents" as any) || "طلابي"}</h1>
+            <h1 className="text-xl font-bold">{t("myStudents") || "طلابي"}</h1>
             <p className="text-sm text-muted-foreground">{monthLabel}</p>
           </div>
         </div>
@@ -210,7 +210,7 @@ const TeacherStudentsView = () => {
             </div>
             <div>
               <p className="text-xl font-bold">{students.length}</p>
-              <p className="text-[10px] text-muted-foreground">{t("studentsLabel" as any) || "الطلاب"}</p>
+              <p className="text-[10px] text-muted-foreground">{t("studentsLabel") || "الطلاب"}</p>
             </div>
           </CardContent>
         </Card>
@@ -232,7 +232,7 @@ const TeacherStudentsView = () => {
             </div>
             <div>
               <p className="text-xl font-bold">{totals.absent}</p>
-              <p className="text-[10px] text-muted-foreground">{t("absence" as any) || "غياب"}</p>
+              <p className="text-[10px] text-muted-foreground">{t("absence") || "غياب"}</p>
             </div>
           </CardContent>
         </Card>
@@ -243,7 +243,7 @@ const TeacherStudentsView = () => {
             </div>
             <div>
               <p className="text-xl font-bold">{totals.totalHours}</p>
-              <p className="text-[10px] text-muted-foreground">{t("teachingHours" as any) || "ساعات التدريس"}</p>
+              <p className="text-[10px] text-muted-foreground">{t("teachingHours") || "ساعات التدريس"}</p>
             </div>
           </CardContent>
         </Card>
@@ -254,11 +254,11 @@ const TeacherStudentsView = () => {
         <TabsList className="grid w-full grid-cols-2">
           <TabsTrigger value="students" className="gap-1.5">
             <User className="h-4 w-4" />
-            {t("navStudents" as any) || "الطلاب"}
+            {t("navStudents") || "الطلاب"}
           </TabsTrigger>
           <TabsTrigger value="sessions" className="gap-1.5">
             <BarChart3 className="h-4 w-4" />
-            {t("sessionDetails" as any) || "تفاصيل الحصص"}
+            {t("sessionDetailsTeacher") || "تفاصيل الحصص"}
           </TabsTrigger>
         </TabsList>
 
@@ -302,7 +302,7 @@ const TeacherStudentsView = () => {
                         <div className="flex-1 min-w-0">
                           <p className="font-semibold text-sm truncate">{student.name}</p>
                           <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                            {student.age && <span>{student.age} {t("age" as any) || "سنة"}</span>}
+                            {student.age && <span>{student.age} {t("age") || "سنة"}</span>}
                             {student.country && <span>· {student.country}</span>}
                           </div>
                         </div>
@@ -312,7 +312,7 @@ const TeacherStudentsView = () => {
                       <div className="grid grid-cols-4 gap-1 text-center">
                         <div className="rounded-lg bg-muted/50 p-2">
                           <p className="text-base font-bold">{stats.total}</p>
-                          <p className="text-[9px] text-muted-foreground">{t("total" as any) || "الكل"}</p>
+                          <p className="text-[9px] text-muted-foreground">{t("total") || "الكل"}</p>
                         </div>
                         <div className="rounded-lg bg-success/5 p-2">
                           <p className="text-base font-bold text-success">{stats.completed}</p>
@@ -320,7 +320,7 @@ const TeacherStudentsView = () => {
                         </div>
                         <div className="rounded-lg bg-destructive/5 p-2">
                           <p className="text-base font-bold text-destructive">{stats.absent}</p>
-                          <p className="text-[9px] text-muted-foreground">{t("absence" as any) || "غياب"}</p>
+                          <p className="text-[9px] text-muted-foreground">{t("absence") || "غياب"}</p>
                         </div>
                         <div className="rounded-lg bg-warning/5 p-2">
                           <p className="text-base font-bold text-warning">{stats.postponed}</p>
@@ -330,7 +330,7 @@ const TeacherStudentsView = () => {
 
                       {/* Hours bar */}
                       <div className="flex items-center justify-between text-xs">
-                        <span className="text-muted-foreground">{t("teachingHours" as any) || "ساعات التدريس"}</span>
+                        <span className="text-muted-foreground">{t("teachingHours") || "ساعات التدريس"}</span>
                         <span className="font-semibold">{hoursCompleted} {t("hour")}</span>
                       </div>
 
@@ -346,7 +346,7 @@ const TeacherStudentsView = () => {
                         }}
                       >
                         <Filter className="h-3 w-3" />
-                        {t("sessionDetails" as any) || "تفاصيل الحصص"}
+                        {t("sessionDetailsTeacher") || "تفاصيل الحصص"}
                       </Button>
                     </CardContent>
                   </Card>
@@ -362,10 +362,10 @@ const TeacherStudentsView = () => {
           <div className="flex flex-col sm:flex-row gap-3">
             <Select value={selectedStudent} onValueChange={setSelectedStudent}>
               <SelectTrigger className="w-full sm:w-[200px]">
-                <SelectValue placeholder={t("all") + " " + (t("navStudents" as any) || "الطلاب")} />
+                <SelectValue placeholder={t("all") + " " + (t("navStudents") || "الطلاب")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">{t("all")} {t("navStudents" as any) || "الطلاب"}</SelectItem>
+                <SelectItem value="all">{t("all")} {t("navStudents") || "الطلاب"}</SelectItem>
                 {students.map(s => (
                   <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                 ))}
@@ -376,7 +376,7 @@ const TeacherStudentsView = () => {
               <PopoverTrigger asChild>
                 <Button variant="outline" className={cn("w-full sm:w-[200px] justify-start text-start font-normal", !selectedDate && "text-muted-foreground")}>
                   <CalendarDays className="me-2 h-4 w-4" />
-                  {selectedDate ? format(selectedDate, "yyyy-MM-dd") : (t("filterByDate" as any) || "فلتر بالتاريخ")}
+                  {selectedDate ? format(selectedDate, "yyyy-MM-dd") : (t("filterByDate") || "فلتر بالتاريخ")}
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -391,7 +391,7 @@ const TeacherStudentsView = () => {
 
             {(selectedStudent !== "all" || selectedDate) && (
               <Button variant="ghost" size="sm" onClick={() => { setSelectedStudent("all"); setSelectedDate(undefined); }}>
-                {t("clearFilters" as any) || "مسح الفلتر"}
+                {t("clearFilters") || "مسح الفلتر"}
               </Button>
             )}
           </div>
@@ -416,7 +416,7 @@ const TeacherStudentsView = () => {
                       <TableHead className="text-xs">{t("date")}</TableHead>
                       <TableHead className="text-xs">{t("student")}</TableHead>
                       <TableHead className="text-xs">{t("time")}</TableHead>
-                      <TableHead className="text-xs text-center">{t("duration" as any) || "المدة"}</TableHead>
+                      <TableHead className="text-xs text-center">{t("duration") || "المدة"}</TableHead>
                       <TableHead className="text-xs text-center">{t("status")}</TableHead>
                       <TableHead className="text-xs">{t("notes")}</TableHead>
                     </TableRow>
@@ -455,9 +455,9 @@ const TeacherStudentsView = () => {
 
               {/* Summary footer */}
               <div className="border-t bg-muted/20 p-3 flex flex-wrap gap-4 text-xs">
-                <span className="font-medium">{t("total" as any) || "الإجمالي"}: {filteredSessions.length} {t("sessionsCount" as any) || "حصة"}</span>
+                <span className="font-medium">{t("total") || "الإجمالي"}: {filteredSessions.length} {t("sessionsCount" as any) || "حصة"}</span>
                 <span className="text-success">{t("completed")}: {filteredSessions.filter(s => s.status === "completed").length}</span>
-                <span className="text-destructive">{t("absence" as any) || "غياب"}: {filteredSessions.filter(s => s.status === "absent_student").length}</span>
+                <span className="text-destructive">{t("absence") || "غياب"}: {filteredSessions.filter(s => s.status === "absent_student").length}</span>
                 <span className="text-warning">{t("postponed")}: {filteredSessions.filter(s => s.status === "postponed").length}</span>
               </div>
             </Card>
