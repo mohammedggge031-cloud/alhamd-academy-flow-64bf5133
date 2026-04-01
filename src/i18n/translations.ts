@@ -601,12 +601,7 @@ const translations = {
   myStudents: { en: "My Students", ar: "طلابي" },
   sessionDetails: { en: "Session Details", ar: "تفاصيل الحصص" },
   filterByDate: { en: "Filter by date", ar: "فلتر بالتاريخ" },
-  clearFilters: { en: "Clear filters", ar: "مسح الفلتر" },
-  total: { en: "Total", ar: "الإجمالي" },
   duration: { en: "Duration", ar: "المدة" },
-  absence: { en: "Absence", ar: "غياب" },
-  age: { en: "years", ar: "سنة" },
-  cancelled: { en: "Cancelled", ar: "ملغية" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
