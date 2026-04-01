@@ -23,6 +23,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const Bookings = lazy(() => import("./pages/Bookings"));
 const TeacherProfile = lazy(() => import("./pages/TeacherProfile"));
 const TeacherDashboardPage = lazy(() => import("./pages/TeacherDashboardPage"));
+const TeacherStudentsPage = lazy(() => import("./pages/TeacherStudentsPage"));
 const Login = lazy(() => import("./pages/Login"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
