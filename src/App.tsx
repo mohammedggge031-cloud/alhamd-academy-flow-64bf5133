@@ -23,6 +23,7 @@ const SettingsPage = lazy(() => import("./pages/SettingsPage"));
 const Bookings = lazy(() => import("./pages/Bookings"));
 const TeacherProfile = lazy(() => import("./pages/TeacherProfile"));
 const TeacherDashboardPage = lazy(() => import("./pages/TeacherDashboardPage"));
+const TeacherStudentsPage = lazy(() => import("./pages/TeacherStudentsPage"));
 const Login = lazy(() => import("./pages/Login"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
@@ -89,6 +90,7 @@ const App = () => (
                               <Route path="/expenses" element={<RoleGuard allowedRoles={["admin"]}><Expenses /></RoleGuard>} />
                               <Route path="/reports" element={<RoleGuard allowedRoles={["admin"]}><Reports /></RoleGuard>} />
                               <Route path="/monthly-reports" element={<MonthlyReports />} />
+                              <Route path="/my-students" element={<TeacherStudentsPage />} />
                               <Route path="/my-profile" element={<TeacherProfile />} />
                               <Route path="/settings" element={<RoleGuard allowedRoles={["admin"]}><SettingsPage /></RoleGuard>} />
                               <Route path="*" element={<NotFound />} />

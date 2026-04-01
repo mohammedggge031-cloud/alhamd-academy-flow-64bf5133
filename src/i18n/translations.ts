@@ -595,6 +595,14 @@ const translations = {
   confirmApproveDesc: { en: "Are you sure you want to approve this request?", ar: "هل أنت متأكد من الموافقة على هذا الطلب؟" },
   confirmRejectDesc: { en: "Are you sure you want to reject this request?", ar: "هل أنت متأكد من رفض هذا الطلب؟" },
   confirmDeleteExpense: { en: "Are you sure you want to delete this expense?", ar: "هل أنت متأكد من حذف هذا المصروف؟" },
+
+  // Teacher students view
+  navMyStudents: { en: "My Students", ar: "طلابي" },
+  myStudents: { en: "My Students", ar: "طلابي" },
+  sessionDetailsTeacher: { en: "Session Details", ar: "تفاصيل الحصص" },
+  filterByDate: { en: "Filter by date", ar: "فلتر بالتاريخ" },
+  clearFilters: { en: "Clear filters", ar: "مسح الفلتر" },
+  duration: { en: "Duration", ar: "المدة" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
