@@ -599,8 +599,9 @@ const translations = {
   // Teacher students view
   navMyStudents: { en: "My Students", ar: "طلابي" },
   myStudents: { en: "My Students", ar: "طلابي" },
-  sessionDetails: { en: "Session Details", ar: "تفاصيل الحصص" },
+  sessionDetailsTeacher: { en: "Session Details", ar: "تفاصيل الحصص" },
   filterByDate: { en: "Filter by date", ar: "فلتر بالتاريخ" },
+  clearFilters: { en: "Clear filters", ar: "مسح الفلتر" },
   duration: { en: "Duration", ar: "المدة" },
 } as const;
 
