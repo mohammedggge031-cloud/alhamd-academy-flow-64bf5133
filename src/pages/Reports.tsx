@@ -139,6 +139,7 @@ const Reports = () => {
   const reports = [
     { name: t("attendanceReport"), description: t("attendanceDesc"), type: "attendance" },
     { name: t("performanceReport"), description: t("performanceDesc"), type: "performance" },
+    { name: lang === "ar" ? "تقرير بيانات الطلاب" : "Students Data Report", description: lang === "ar" ? "تصدير شامل لبيانات جميع الطلاب" : "Complete students data export", type: "students" },
     { name: t("invoiceReport"), description: t("invoiceReportDesc"), type: "invoices" },
     { name: t("lowBalanceReport"), description: t("lowBalanceDesc"), type: "low_balance" },
     { name: t("pnlReport"), description: t("pnlDesc"), type: "pnl" },
