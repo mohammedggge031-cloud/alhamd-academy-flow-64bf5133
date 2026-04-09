@@ -27,6 +27,16 @@ const CertificatesPage = memo(() => {
   const queryEnabled = isAuthReady && !!session?.user;
   const previewRef = useRef<HTMLDivElement>(null);
 
+  // Load Amiri font for Arabic certificate rendering
+  useState(() => {
+    if (!document.querySelector('link[href*="Amiri"]')) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = "https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&display=swap";
+      document.head.appendChild(link);
+    }
+  });
+
   const [selectedStudent, setSelectedStudent] = useState("");
   const [template, setTemplate] = useState("appreciation");
   const [customText, setCustomText] = useState("");
