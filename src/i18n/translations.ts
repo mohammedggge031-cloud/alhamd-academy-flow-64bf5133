@@ -78,6 +78,16 @@ const translations = {
   dashLowBalance: { en: "Low Balance", ar: "رصيد منخفض" },
   dashNoLowBalance: { en: "No students with low balance", ar: "لا يوجد طلاب برصيد منخفض" },
   dashOverdueDays: { en: "days overdue", ar: "أيام تأخير" },
+  dashSessionsChart: { en: "Sessions Overview (6 Months)", ar: "نظرة عامة على الحصص (6 أشهر)" },
+  dashCompletionRate: { en: "Session Completion Rate", ar: "نسبة إتمام الحصص" },
+  dashCompletionLabel: { en: "Completion", ar: "إتمام" },
+  dashQuickActions: { en: "Quick Actions", ar: "إجراءات سريعة" },
+  dashAddSession: { en: "Add Session", ar: "إضافة حصة" },
+  dashAddInvoice: { en: "Add Invoice", ar: "إضافة فاتورة" },
+  dashViewReports: { en: "View Reports", ar: "التقارير" },
+  dashExportData: { en: "Export Data", ar: "تصدير البيانات" },
+  dashCertificates: { en: "Certificates", ar: "الشهادات" },
+  navCertificates: { en: "Certificates", ar: "استوديو الشهادات" },
 
   // Students
   studentsTitle: { en: "Student Management", ar: "إدارة الطلاب" },
