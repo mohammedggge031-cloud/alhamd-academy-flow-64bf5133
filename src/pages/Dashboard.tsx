@@ -9,12 +9,16 @@ import TodaySessions from "@/components/dashboard/TodaySessions";
 import AlertCards from "@/components/dashboard/AlertCards";
 import RecentActivity from "@/components/dashboard/RecentActivity";
 import TimezoneWidget from "@/components/dashboard/TimezoneWidget";
+import SessionsChart from "@/components/dashboard/SessionsChart";
+import SessionCompletionDonut from "@/components/dashboard/SessionCompletionDonut";
+import QuickActions from "@/components/dashboard/QuickActions";
 
 // All dashboard query key prefixes for bulk invalidation
 export const DASHBOARD_QUERY_KEYS = [
   "dash-students", "dash-teachers", "dash-due-invoices", "dash-monthly-hours",
   "dash-today-sessions", "dash-overdue", "dash-low-balance",
   "dash-recent-bookings", "dash-recent-subs", "sidebar-unread",
+  "dash-sessions-chart", "dash-completion-donut",
 ];
 
 export function invalidateDashboardQueries(queryClient: ReturnType<typeof useQueryClient>) {
@@ -30,7 +34,6 @@ const Dashboard = () => {
 
   // Realtime: auto-refresh dashboard when any relevant table changes
   useEffect(() => {
-    const tables = ["students", "teachers", "sessions", "invoices", "trial_bookings", "subscription_requests"];
     const channel = supabase
       .channel("dashboard-realtime")
       .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => invalidateDashboardQueries(queryClient))
@@ -57,11 +60,18 @@ const Dashboard = () => {
 
       <StatsGrid />
 
+      <QuickActions />
+
       <div className="grid gap-6 lg:grid-cols-3">
         <TodaySessions />
         <div className="space-y-6">
           <TimezoneWidget />
         </div>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <SessionsChart />
+        <SessionCompletionDonut />
       </div>
 
       <AlertCards />

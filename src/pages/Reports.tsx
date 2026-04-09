@@ -6,7 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const Reports = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const monthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0, 10);
   const monthEnd = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0).toISOString().slice(0, 10);
 
@@ -53,8 +53,9 @@ const Reports = () => {
     { title: t("teachingHours"), value: String(totalHours), icon: Clock, color: "text-primary" },
   ];
 
-  const generateCSV = async (type: string) => {
-    let csvContent = "";
+  const exportData = async (type: string, format: "csv" | "xlsx" = "csv") => {
+    let rows: Record<string, any>[] = [];
+    let headers: string[] = [];
     let filename = "";
 
     if (type === "attendance") {
@@ -62,54 +63,84 @@ const Reports = () => {
         .from("sessions")
         .select("session_date, status, duration_minutes, students:student_id(name), teachers:teacher_id(user_id, profiles:user_id(full_name))")
         .gte("session_date", monthStart).lte("session_date", monthEnd).order("session_date");
-      csvContent = "Date,Student,Teacher,Status,Duration (min)\n";
-      (data ?? []).forEach((s: any) => {
-        csvContent += `${s.session_date},${s.students?.name},${s.teachers?.profiles?.full_name},${s.status},${s.duration_minutes}\n`;
-      });
-      filename = "attendance_report.csv";
+      headers = ["التاريخ", "الطالب", "المعلم", "الحالة", "المدة (دقيقة)"];
+      rows = (data ?? []).map((s: any) => ({
+        "التاريخ": s.session_date, "الطالب": s.students?.name, "المعلم": s.teachers?.profiles?.full_name,
+        "الحالة": s.status, "المدة (دقيقة)": s.duration_minutes,
+      }));
+      filename = "attendance_report";
     } else if (type === "performance") {
       const { data } = await supabase
         .from("teachers")
         .select("monthly_hours, monthly_absence_hours, monthly_waiting_minutes, monthly_salary, hourly_rate, profiles:user_id(full_name)")
         .eq("is_active", true);
-      csvContent = "Teacher,Hours,Absence Hours,Waiting Min,Rate,Salary\n";
-      (data ?? []).forEach((t: any) => {
-        csvContent += `${t.profiles?.full_name},${t.monthly_hours},${t.monthly_absence_hours},${t.monthly_waiting_minutes},${t.hourly_rate},${t.monthly_salary}\n`;
-      });
-      filename = "teacher_performance.csv";
-    } else if (type === "low_balance") {
+      headers = ["المعلم", "الساعات", "ساعات الغياب", "دقائق الانتظار", "ريت الساعة", "الراتب"];
+      rows = (data ?? []).map((t: any) => ({
+        "المعلم": t.profiles?.full_name, "الساعات": t.monthly_hours, "ساعات الغياب": t.monthly_absence_hours,
+        "دقائق الانتظار": t.monthly_waiting_minutes, "ريت الساعة": t.hourly_rate, "الراتب": t.monthly_salary,
+      }));
+      filename = "teacher_performance";
+    } else if (type === "students") {
       const { data } = await supabase
-        .from("students").select("name, remaining_hours, paid_hours, attended_hours")
-        .eq("is_active", true).lte("remaining_hours", 2).order("remaining_hours");
-      csvContent = "Student,Remaining,Paid,Attended\n";
-      (data ?? []).forEach((s: any) => {
-        csvContent += `${s.name},${s.remaining_hours},${s.paid_hours},${s.attended_hours}\n`;
-      });
-      filename = "low_balance_students.csv";
+        .from("students")
+        .select("name, age, country, remaining_hours, paid_hours, attended_hours, absence_hours, whatsapp, guardian_whatsapp, is_active")
+        .order("name");
+      headers = ["الاسم", "السن", "الدولة", "المتبقي", "المدفوع", "المحضور", "الغياب", "واتساب الطالب", "واتساب ولي الأمر", "نشط"];
+      rows = (data ?? []).map((s: any) => ({
+        "الاسم": s.name, "السن": s.age, "الدولة": s.country, "المتبقي": s.remaining_hours,
+        "المدفوع": s.paid_hours, "المحضور": s.attended_hours, "الغياب": s.absence_hours,
+        "واتساب الطالب": s.whatsapp, "واتساب ولي الأمر": s.guardian_whatsapp, "نشط": s.is_active ? "نعم" : "لا",
+      }));
+      filename = "students_data";
     } else if (type === "invoices") {
       const { data } = await supabase
         .from("invoices").select("*, students:student_id(name)")
         .gte("created_at", monthStart).order("created_at");
-      csvContent = "Student,Amount,Discount,Total,Status,Due Date\n";
-      (data ?? []).forEach((inv: any) => {
-        csvContent += `${inv.students?.name},${inv.amount},${inv.discount},${inv.total},${inv.status},${inv.due_date}\n`;
-      });
-      filename = "invoices_report.csv";
+      headers = ["الطالب", "المبلغ", "الخصم", "الإجمالي", "الحالة", "تاريخ الاستحقاق"];
+      rows = (data ?? []).map((inv: any) => ({
+        "الطالب": inv.students?.name, "المبلغ": inv.amount, "الخصم": inv.discount,
+        "الإجمالي": inv.total, "الحالة": inv.status, "تاريخ الاستحقاق": inv.due_date,
+      }));
+      filename = "invoices_report";
+    } else if (type === "low_balance") {
+      const { data } = await supabase
+        .from("students").select("name, remaining_hours, paid_hours, attended_hours")
+        .eq("is_active", true).lte("remaining_hours", 2).order("remaining_hours");
+      headers = ["الطالب", "المتبقي", "المدفوع", "المحضور"];
+      rows = (data ?? []).map((s: any) => ({
+        "الطالب": s.name, "المتبقي": s.remaining_hours, "المدفوع": s.paid_hours, "المحضور": s.attended_hours,
+      }));
+      filename = "low_balance_students";
     } else if (type === "pnl") {
-      csvContent = "Item,Amount\n";
-      csvContent += `Total Income,$${totalIncome}\n`;
-      csvContent += `Teacher Salaries,$${totalTeacherSalaries}\n`;
-      csvContent += `Expenses & Ads,$${totalExpenses}\n`;
-      csvContent += `Net Profit,$${netProfit}\n`;
-      filename = "profit_loss.csv";
+      headers = ["البند", "المبلغ"];
+      rows = [
+        { "البند": "إجمالي الدخل", "المبلغ": totalIncome },
+        { "البند": "رواتب المعلمين", "المبلغ": totalTeacherSalaries },
+        { "البند": "المصاريف والإعلانات", "المبلغ": totalExpenses },
+        { "البند": "صافي الربح", "المبلغ": netProfit },
+      ];
+      filename = "profit_loss";
     }
 
-    if (csvContent) {
+    if (rows.length === 0) return;
+
+    if (format === "xlsx") {
+      const XLSX = await import("xlsx");
+      const ws = XLSX.utils.json_to_sheet(rows, { header: headers });
+      ws["!cols"] = headers.map(() => ({ wch: 20 }));
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Sheet1");
+      XLSX.writeFile(wb, `${filename}.xlsx`);
+    } else {
       const BOM = "\uFEFF";
+      let csvContent = headers.join(",") + "\n";
+      rows.forEach((row) => {
+        csvContent += headers.map((h) => `"${row[h] ?? ""}"`).join(",") + "\n";
+      });
       const blob = new Blob([BOM + csvContent], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
-      a.href = url; a.download = filename; a.click();
+      a.href = url; a.download = `${filename}.csv`; a.click();
       URL.revokeObjectURL(url);
     }
   };
@@ -117,6 +148,7 @@ const Reports = () => {
   const reports = [
     { name: t("attendanceReport"), description: t("attendanceDesc"), type: "attendance" },
     { name: t("performanceReport"), description: t("performanceDesc"), type: "performance" },
+    { name: lang === "ar" ? "تقرير بيانات الطلاب" : "Students Data Report", description: lang === "ar" ? "تصدير شامل لبيانات جميع الطلاب" : "Complete students data export", type: "students" },
     { name: t("invoiceReport"), description: t("invoiceReportDesc"), type: "invoices" },
     { name: t("lowBalanceReport"), description: t("lowBalanceDesc"), type: "low_balance" },
     { name: t("pnlReport"), description: t("pnlDesc"), type: "pnl" },
@@ -160,10 +192,16 @@ const Reports = () => {
                   <p className="text-sm font-medium">{report.name}</p>
                   <p className="text-xs text-muted-foreground">{report.description}</p>
                 </div>
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => generateCSV(report.type)}>
-                  <Download className="h-3 w-3" />
-                  CSV
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => exportData(report.type, "csv")}>
+                    <Download className="h-3 w-3" />
+                    CSV
+                  </Button>
+                  <Button size="sm" className="gap-1.5 text-xs" onClick={() => exportData(report.type, "xlsx")}>
+                    <Download className="h-3 w-3" />
+                    Excel
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
