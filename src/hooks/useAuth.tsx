@@ -1,6 +1,8 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+
+const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours
 
 interface AuthContextType {
   user: User | null;
@@ -112,20 +114,55 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     return { error };
   };
 
-  const signOut = async () => {
-    // Clear all cached data BEFORE signing out to prevent data leakage
+  const signOut = useCallback(async () => {
     try {
       const { queryClient } = await import("@/App");
       queryClient.clear();
     } catch (e) {
       console.warn("Failed to clear query cache:", e);
     }
-    
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setRole(null);
-  };
+  }, []);
+
+  // Idle timeout: sign out after 2 hours of inactivity
+  const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const resetIdleTimer = useCallback(() => {
+    if (idleTimer.current) clearTimeout(idleTimer.current);
+    if (!user) return;
+    // Save last activity timestamp
+    sessionStorage.setItem("last_activity", Date.now().toString());
+    idleTimer.current = setTimeout(() => {
+      console.log("Session expired due to inactivity");
+      signOut();
+    }, IDLE_TIMEOUT_MS);
+  }, [user, signOut]);
+
+  useEffect(() => {
+    if (!user) return;
+
+    // Check if session already expired from last activity
+    const lastActivity = sessionStorage.getItem("last_activity");
+    if (lastActivity) {
+      const elapsed = Date.now() - parseInt(lastActivity, 10);
+      if (elapsed >= IDLE_TIMEOUT_MS) {
+        signOut();
+        return;
+      }
+    }
+
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach((e) => window.addEventListener(e, resetIdleTimer, { passive: true }));
+    resetIdleTimer();
+
+    return () => {
+      events.forEach((e) => window.removeEventListener(e, resetIdleTimer));
+      if (idleTimer.current) clearTimeout(idleTimer.current);
+    };
+  }, [user, resetIdleTimer, signOut]);
 
   return (
     <AuthContext.Provider value={{ user, session, role, loading, isAuthReady, signIn, signOut }}>
