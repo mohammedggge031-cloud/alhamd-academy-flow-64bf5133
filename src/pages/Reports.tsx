@@ -102,6 +102,15 @@ const Reports = () => {
         "الإجمالي": inv.total, "الحالة": inv.status, "تاريخ الاستحقاق": inv.due_date,
       }));
       filename = "invoices_report";
+    } else if (type === "low_balance") {
+      const { data } = await supabase
+        .from("students").select("name, remaining_hours, paid_hours, attended_hours")
+        .eq("is_active", true).lte("remaining_hours", 2).order("remaining_hours");
+      headers = ["الطالب", "المتبقي", "المدفوع", "المحضور"];
+      rows = (data ?? []).map((s: any) => ({
+        "الطالب": s.name, "المتبقي": s.remaining_hours, "المدفوع": s.paid_hours, "المحضور": s.attended_hours,
+      }));
+      filename = "low_balance_students";
     } else if (type === "pnl") {
       headers = ["البند", "المبلغ"];
       rows = [
