@@ -183,10 +183,16 @@ const Reports = () => {
                   <p className="text-sm font-medium">{report.name}</p>
                   <p className="text-xs text-muted-foreground">{report.description}</p>
                 </div>
-                <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => generateCSV(report.type)}>
-                  <Download className="h-3 w-3" />
-                  CSV
-                </Button>
+                <div className="flex gap-2">
+                  <Button size="sm" variant="outline" className="gap-1.5 text-xs" onClick={() => exportData(report.type, "csv")}>
+                    <Download className="h-3 w-3" />
+                    CSV
+                  </Button>
+                  <Button size="sm" className="gap-1.5 text-xs" onClick={() => exportData(report.type, "xlsx")}>
+                    <Download className="h-3 w-3" />
+                    Excel
+                  </Button>
+                </div>
               </div>
             ))}
           </div>
