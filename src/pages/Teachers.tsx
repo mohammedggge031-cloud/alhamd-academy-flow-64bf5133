@@ -50,6 +50,8 @@ const Teachers = () => {
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
   const [profileFilter, setProfileFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
+  const [resetPasswordTeacher, setResetPasswordTeacher] = useState<{ userId: string; name: string } | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [form, setForm] = useState({
     name: "", password: "", age: "", rate: "", rateCurrency: "USD",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
