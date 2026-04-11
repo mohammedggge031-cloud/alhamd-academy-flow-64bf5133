@@ -30,7 +30,7 @@ const Regulations = () => {
   const isAdmin = role === "admin";
 
   // Independent language toggle for regulations, defaults to site language
-  const [regLang, setRegLang] = useState<"ar" | "en">(siteLang === "en" ? "en" : "ar");
+  const [regLang, setRegLang] = useState<"ar" | "en">("ar");
 
   const [editSection, setEditSection] = useState<RegulationSection | null>(null);
   const [editDialog, setEditDialog] = useState(false);
