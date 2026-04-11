@@ -79,6 +79,24 @@ const Teachers = () => {
     },
   });
 
+  const resetTeacherPassword = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const res = await supabase.functions.invoke("manage-managers", {
+        body: { action: "reset_password", target_user_id: userId, new_password: password },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+    },
+    onSuccess: () => {
+      toast({ title: t("success"), description: t("passwordResetSuccess") });
+      setResetPasswordTeacher(null);
+      setResetPasswordValue("");
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ["teachers"],
     queryFn: async () => {
