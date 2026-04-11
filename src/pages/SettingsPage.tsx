@@ -21,7 +21,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 
 const SettingsPage = () => {
   const { t, lang, setLang } = useLanguage();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [managerDialog, setManagerDialog] = useState(false);
