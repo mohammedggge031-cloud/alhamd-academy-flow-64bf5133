@@ -8,6 +8,7 @@ import {
   Receipt,
   BarChart3,
   BookOpen,
+  ScrollText,
   Settings,
   DollarSign,
   CalendarPlus,
