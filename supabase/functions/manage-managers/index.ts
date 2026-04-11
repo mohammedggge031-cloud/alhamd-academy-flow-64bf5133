@@ -6,6 +6,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
 
+const PRIMARY_ADMIN_EMAIL = "info@alhamdacademy.net";
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -32,17 +34,18 @@ serve(async (req) => {
     const callerId = claimsData.claims.sub as string;
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
-    // Only admin can manage managers
-    const { data: roleData } = await adminClient
+    // Check caller role
+    const { data: callerRoleData } = await adminClient
       .from("user_roles")
       .select("role")
       .eq("user_id", callerId)
-      .eq("role", "admin")
+      .in("role", ["admin"])
       .maybeSingle();
 
-    if (!roleData) throw new Error("المدير الرئيسي فقط يمكنه إدارة المشرفين");
+    if (!callerRoleData) throw new Error("المدير فقط يمكنه إدارة الحسابات");
 
-    const { action, email, password, full_name, manager_user_id, dot_color } = await req.json();
+    const body = await req.json();
+    const { action, email, password, full_name, manager_user_id, dot_color, role: targetRole, target_user_id, new_password } = body;
 
     if (action === "create") {
       // Validate inputs
@@ -56,6 +59,8 @@ serve(async (req) => {
         throw new Error("الاسم مطلوب");
       }
 
+      const assignRole = targetRole === "admin" ? "admin" : "manager";
+
       // Create user
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
         email: email.trim().toLowerCase(),
@@ -67,8 +72,8 @@ serve(async (req) => {
 
       const userId = newUser.user.id;
 
-      // Assign manager role
-      await adminClient.from("user_roles").insert({ user_id: userId, role: "manager" });
+      // Assign role
+      await adminClient.from("user_roles").insert({ user_id: userId, role: assignRole });
 
       // Set dot_color if provided
       if (dot_color) {
@@ -80,42 +85,55 @@ serve(async (req) => {
       });
 
     } else if (action === "list") {
-      // List all managers
-      const { data: managers } = await adminClient
+      // List all managers AND admins (except primary admin - they see themselves)
+      const { data: allRoles } = await adminClient
         .from("user_roles")
-        .select("user_id")
-        .eq("role", "manager");
+        .select("user_id, role")
+        .in("role", ["manager", "admin"]);
 
-      if (!managers || managers.length === 0) {
+      if (!allRoles || allRoles.length === 0) {
         return new Response(JSON.stringify({ managers: [] }), {
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
       }
 
-      const managerIds = managers.map((m: any) => m.user_id);
+      const userIds = allRoles.map((m: any) => m.user_id);
+      const roleMap = Object.fromEntries(allRoles.map((m: any) => [m.user_id, m.role]));
+
       const { data: profiles } = await adminClient
         .from("profiles")
         .select("user_id, full_name, dot_color")
-        .in("user_id", managerIds);
+        .in("user_id", userIds);
 
-      // Get emails from auth
       const result = [];
       for (const profile of (profiles || [])) {
         const { data: userData } = await adminClient.auth.admin.getUserById(profile.user_id);
+        const userEmail = userData?.user?.email || "";
         result.push({
           user_id: profile.user_id,
           full_name: profile.full_name,
-          email: userData?.user?.email || "",
+          email: userEmail,
           dot_color: profile.dot_color || null,
+          role: roleMap[profile.user_id] || "manager",
+          is_primary: userEmail.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase(),
         });
       }
+
+      // Sort: primary admin first, then admins, then managers
+      result.sort((a, b) => {
+        if (a.is_primary) return -1;
+        if (b.is_primary) return 1;
+        if (a.role === "admin" && b.role !== "admin") return -1;
+        if (b.role === "admin" && a.role !== "admin") return 1;
+        return 0;
+      });
 
       return new Response(JSON.stringify({ managers: result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
 
     } else if (action === "update_color") {
-      if (!manager_user_id || !dot_color) throw new Error("معرف المشرف واللون مطلوبان");
+      if (!manager_user_id || !dot_color) throw new Error("معرف المستخدم واللون مطلوبان");
       
       await adminClient.from("profiles").update({ dot_color }).eq("user_id", manager_user_id);
       
@@ -124,21 +142,60 @@ serve(async (req) => {
       });
 
     } else if (action === "delete") {
-      if (!manager_user_id) throw new Error("معرف المشرف مطلوب");
+      if (!manager_user_id) throw new Error("معرف المستخدم مطلوب");
 
-      // Verify target is actually a manager
-      const { data: targetRole } = await adminClient
+      // Check if target is the primary admin
+      const { data: targetUser } = await adminClient.auth.admin.getUserById(manager_user_id);
+      if (targetUser?.user?.email?.toLowerCase() === PRIMARY_ADMIN_EMAIL.toLowerCase()) {
+        throw new Error("لا يمكن حذف حساب المدير الرئيسي");
+      }
+
+      // Cannot delete yourself
+      if (manager_user_id === callerId) {
+        throw new Error("لا يمكنك حذف حسابك الخاص");
+      }
+
+      // Verify target is manager or admin (not teacher via this route)
+      const { data: targetRoleData } = await adminClient
         .from("user_roles")
         .select("role")
         .eq("user_id", manager_user_id)
-        .eq("role", "manager")
+        .in("role", ["manager", "admin"])
         .maybeSingle();
 
-      if (!targetRole) throw new Error("هذا المستخدم ليس مشرفاً");
+      if (!targetRoleData) throw new Error("هذا المستخدم ليس مشرفاً أو مديراً");
 
-      // Delete user (cascades to user_roles and profiles)
+      // Delete user (cascades)
       const { error: deleteError } = await adminClient.auth.admin.deleteUser(manager_user_id);
       if (deleteError) throw deleteError;
+
+      return new Response(JSON.stringify({ success: true }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+
+    } else if (action === "reset_password") {
+      // Admin can reset password for managers and teachers, not for other admins
+      if (!target_user_id || !new_password) throw new Error("معرف المستخدم وكلمة المرور الجديدة مطلوبان");
+      if (typeof new_password !== "string" || new_password.length < 8 || new_password.length > 128) {
+        throw new Error("كلمة المرور يجب أن تكون بين 8 و 128 حرف");
+      }
+
+      // Cannot reset another admin's password
+      const { data: targetRoleCheck } = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", target_user_id)
+        .eq("role", "admin")
+        .maybeSingle();
+
+      if (targetRoleCheck && target_user_id !== callerId) {
+        throw new Error("لا يمكنك تغيير كلمة مرور مدير آخر");
+      }
+
+      const { error: updateError } = await adminClient.auth.admin.updateUserById(target_user_id, {
+        password: new_password,
+      });
+      if (updateError) throw updateError;
 
       return new Response(JSON.stringify({ success: true }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" },

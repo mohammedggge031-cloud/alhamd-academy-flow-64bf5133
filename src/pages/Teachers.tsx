@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe, DollarSign } from "lucide-react";
+import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe, DollarSign, KeyRound } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -50,6 +50,8 @@ const Teachers = () => {
   const [subjectFilter, setSubjectFilter] = useState<string>("all");
   const [profileFilter, setProfileFilter] = useState<string>("all");
   const [genderFilter, setGenderFilter] = useState<string>("all");
+  const [resetPasswordTeacher, setResetPasswordTeacher] = useState<{ userId: string; name: string } | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
   const [form, setForm] = useState({
     name: "", password: "", age: "", rate: "", rateCurrency: "USD",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
@@ -71,6 +73,24 @@ const Teachers = () => {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["teachers"] });
       toast({ title: t("success") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
+  const resetTeacherPassword = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const res = await supabase.functions.invoke("manage-managers", {
+        body: { action: "reset_password", target_user_id: userId, new_password: password },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+    },
+    onSuccess: () => {
+      toast({ title: t("success"), description: t("passwordResetSuccess") });
+      setResetPasswordTeacher(null);
+      setResetPasswordValue("");
     },
     onError: (err: Error) => {
       toast({ title: t("error"), description: err.message, variant: "destructive" });
@@ -425,6 +445,17 @@ const Teachers = () => {
                         <DollarSign className="h-3.5 w-3.5" />
                       </Button>
                     )}
+                    {role === "admin" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setResetPasswordTeacher({ userId: teacher.user_id, name: teacher.profiles?.full_name ?? "" })}
+                        title={t("resetPassword")}
+                      >
+                        <KeyRound className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button
                       variant={teacher.show_on_website ? "default" : "outline"}
                       size="sm"
@@ -468,6 +499,33 @@ const Teachers = () => {
           onOpenChange={(open) => !open && setSalaryTeacher(null)}
         />
       )}
+
+      {/* Reset teacher password dialog */}
+      <Dialog open={!!resetPasswordTeacher} onOpenChange={(open) => { if (!open) { setResetPasswordTeacher(null); setResetPasswordValue(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("resetPasswordFor")} {resetPasswordTeacher?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label>{t("newPassword")}</Label>
+              <Input type="password" dir="ltr" value={resetPasswordValue} onChange={(e) => setResetPasswordValue(e.target.value)} placeholder="••••••••" />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => {
+                if (resetPasswordTeacher) {
+                  resetTeacherPassword.mutate({ userId: resetPasswordTeacher.userId, password: resetPasswordValue });
+                }
+              }}
+              disabled={resetTeacherPassword.isPending || resetPasswordValue.length < 8}
+            >
+              {resetTeacherPassword.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t("resetPassword")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

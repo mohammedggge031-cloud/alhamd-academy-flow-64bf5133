@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { Settings, Bell, Globe, Shield, Languages, UserPlus, Trash2, Loader2, Users, Save } from "lucide-react";
+import { Settings, Bell, Globe, Shield, Languages, UserPlus, Trash2, Loader2, Users, Save, KeyRound } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
@@ -25,9 +26,11 @@ const SettingsPage = () => {
   const queryClient = useQueryClient();
   const [managerDialog, setManagerDialog] = useState(false);
   const [deleteManagerId, setDeleteManagerId] = useState<string | null>(null);
-  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "", dot_color: "#3B82F6" });
+  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager" as "manager" | "admin" });
   const [changePasswordForm, setChangePasswordForm] = useState({ current: "", new: "", confirm: "" });
   const [showChangePassword, setShowChangePassword] = useState(false);
+  const [resetPasswordDialog, setResetPasswordDialog] = useState<{ userId: string; name: string } | null>(null);
+  const [resetPasswordValue, setResetPasswordValue] = useState("");
 
   // Settings state
   const [settings, setSettings] = useState({
@@ -115,7 +118,7 @@ const SettingsPage = () => {
     },
   });
 
-  // Manager management
+  // Manager management - now includes admins too
   const { data: managers = [], isLoading: loadingManagers } = useQuery({
     queryKey: ["managers"],
     queryFn: async () => {
@@ -130,7 +133,14 @@ const SettingsPage = () => {
   const addManager = useMutation({
     mutationFn: async () => {
       const res = await supabase.functions.invoke("manage-managers", {
-        body: { action: "create", email: managerForm.email, password: managerForm.password, full_name: managerForm.name, dot_color: managerForm.dot_color },
+        body: {
+          action: "create",
+          email: managerForm.email,
+          password: managerForm.password,
+          full_name: managerForm.name,
+          dot_color: managerForm.dot_color,
+          role: managerForm.role,
+        },
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
@@ -139,7 +149,7 @@ const SettingsPage = () => {
       queryClient.invalidateQueries({ queryKey: ["managers"] });
       toast({ title: t("success"), description: t("managerAdded") });
       setManagerDialog(false);
-      setManagerForm({ name: "", email: "", password: "", dot_color: "#3B82F6" });
+      setManagerForm({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager" });
     },
     onError: (err: Error) => {
       toast({ title: t("error"), description: err.message, variant: "destructive" });
@@ -176,6 +186,24 @@ const SettingsPage = () => {
     },
   });
 
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ userId, password }: { userId: string; password: string }) => {
+      const res = await supabase.functions.invoke("manage-managers", {
+        body: { action: "reset_password", target_user_id: userId, new_password: password },
+      });
+      if (res.error) throw new Error(res.error.message);
+      if (res.data?.error) throw new Error(res.data.error);
+    },
+    onSuccess: () => {
+      toast({ title: t("success"), description: t("passwordResetSuccess") });
+      setResetPasswordDialog(null);
+      setResetPasswordValue("");
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
   return (
     <div className="space-y-6 animate-fade-in max-w-2xl">
       <div>
@@ -202,33 +230,54 @@ const SettingsPage = () => {
         </CardContent>
       </Card>
 
-      {/* Manager Management - Admin Only */}
+      {/* Account Management - Admin Only */}
       {role === "admin" && (
         <Card className="border-none shadow-sm">
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center gap-2 text-lg">
                 <Users className="h-5 w-5 text-primary" />
-                {t("managerManagement")}
+                {t("accountManagement")}
               </div>
               <Dialog open={managerDialog} onOpenChange={setManagerDialog}>
                 <DialogTrigger asChild>
-                  <Button size="sm" className="gap-2"><UserPlus className="h-4 w-4" />{t("addManager")}</Button>
+                  <Button size="sm" className="gap-2"><UserPlus className="h-4 w-4" />{t("addAccount")}</Button>
                 </DialogTrigger>
                 <DialogContent>
-                  <DialogHeader><DialogTitle>{t("addManager")}</DialogTitle></DialogHeader>
+                  <DialogHeader><DialogTitle>{t("addAccount")}</DialogTitle></DialogHeader>
                   <div className="space-y-4">
                     <div className="grid gap-2">
+                      <Label>{t("accountRole")}</Label>
+                      <div className="flex gap-2">
+                        <Button
+                          type="button"
+                          variant={managerForm.role === "manager" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setManagerForm({ ...managerForm, role: "manager" })}
+                        >
+                          {t("manager")}
+                        </Button>
+                        <Button
+                          type="button"
+                          variant={managerForm.role === "admin" ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => setManagerForm({ ...managerForm, role: "admin" })}
+                        >
+                          {t("admin")}
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="grid gap-2">
                       <Label>{t("managerName")}</Label>
-                      <Input value={managerForm.name} onChange={(e) => setManagerForm({ ...managerForm, name: e.target.value })} placeholder="مشرف جديد" />
+                      <Input value={managerForm.name} onChange={(e) => setManagerForm({ ...managerForm, name: e.target.value })} placeholder="اسم الحساب" />
                     </div>
                     <div className="grid gap-2">
                       <Label>{t("managerEmail")}</Label>
-                      <Input type="email" value={managerForm.email} onChange={(e) => setManagerForm({ ...managerForm, email: e.target.value })} placeholder="manager@example.com" />
+                      <Input type="email" value={managerForm.email} onChange={(e) => setManagerForm({ ...managerForm, email: e.target.value })} placeholder="email@example.com" dir="ltr" />
                     </div>
                     <div className="grid gap-2">
                       <Label>{t("managerPassword")}</Label>
-                      <Input type="password" value={managerForm.password} onChange={(e) => setManagerForm({ ...managerForm, password: e.target.value })} placeholder="••••••••" />
+                      <Input type="password" value={managerForm.password} onChange={(e) => setManagerForm({ ...managerForm, password: e.target.value })} placeholder="••••••••" dir="ltr" />
                     </div>
                     <div className="grid gap-2">
                       <Label>لون التعريف</Label>
@@ -242,7 +291,7 @@ const SettingsPage = () => {
                     </div>
                     <Button className="w-full" onClick={() => addManager.mutate()} disabled={addManager.isPending || !managerForm.name || !managerForm.email || !managerForm.password}>
                       {addManager.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
-                      {t("addManager")}
+                      {t("addAccount")}
                     </Button>
                   </div>
                 </DialogContent>
@@ -250,7 +299,7 @@ const SettingsPage = () => {
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <p className="text-sm text-muted-foreground mb-4">{t("managerManagementDesc")}</p>
+            <p className="text-sm text-muted-foreground mb-4">{t("accountManagementDesc")}</p>
             {loadingManagers ? (
               <div className="flex justify-center py-4"><Loader2 className="h-5 w-5 animate-spin text-muted-foreground" /></div>
             ) : managers.length === 0 ? (
@@ -262,7 +311,16 @@ const SettingsPage = () => {
                     <div className="flex items-center gap-3">
                       <span className="h-4 w-4 rounded-full shrink-0 border border-border" style={{ backgroundColor: m.dot_color || "#999" }} />
                       <div>
-                        <p className="font-medium text-sm">{m.full_name}</p>
+                        <div className="flex items-center gap-2">
+                          <p className="font-medium text-sm">{m.full_name}</p>
+                          {m.is_primary ? (
+                            <Badge variant="default" className="text-[10px] px-1.5 py-0">{t("primaryAdmin")}</Badge>
+                          ) : m.role === "admin" ? (
+                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t("coAdmin")}</Badge>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t("manager")}</Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">{m.email}</p>
                       </div>
                     </div>
@@ -274,10 +332,19 @@ const SettingsPage = () => {
                             style={{ backgroundColor: opt.color }} onClick={() => updateColor.mutate({ userId: m.user_id, color: opt.color })} title={opt.label} />
                         ))}
                       </div>
-                      <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => setDeleteManagerId(m.user_id)} disabled={deleteManager.isPending}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                      {/* Reset password button - only for non-admin or self */}
+                      {(m.role !== "admin" || m.is_primary === false) && !m.is_primary && (
+                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary"
+                          onClick={() => setResetPasswordDialog({ userId: m.user_id, name: m.full_name })} title={t("resetPassword")}>
+                          <KeyRound className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {!m.is_primary && (
+                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => setDeleteManagerId(m.user_id)} disabled={deleteManager.isPending}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -417,6 +484,33 @@ const SettingsPage = () => {
         }}
         isPending={deleteManager.isPending}
       />
+
+      {/* Reset password dialog */}
+      <Dialog open={!!resetPasswordDialog} onOpenChange={(open) => { if (!open) { setResetPasswordDialog(null); setResetPasswordValue(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("resetPasswordFor")} {resetPasswordDialog?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label>{t("newPassword")}</Label>
+              <Input type="password" dir="ltr" value={resetPasswordValue} onChange={(e) => setResetPasswordValue(e.target.value)} placeholder="••••••••" />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => {
+                if (resetPasswordDialog) {
+                  resetPasswordMutation.mutate({ userId: resetPasswordDialog.userId, password: resetPasswordValue });
+                }
+              }}
+              disabled={resetPasswordMutation.isPending || resetPasswordValue.length < 8}
+            >
+              {resetPasswordMutation.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t("resetPassword")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

@@ -4,16 +4,19 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Globe, Eye, EyeOff, LogIn } from "lucide-react";
+import { Lock, Globe, Eye, EyeOff, LogIn, Loader2, HelpCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from "@/components/ui/dialog";
 import logo from "@/assets/logo.jpeg";
 
 const isEmailInput = (value: string) => value.includes("@");
 
 const MAX_ATTEMPTS = 5;
-const LOCKOUT_MS = 60_000; // 1 minute
+const LOCKOUT_MS = 60_000;
 
 const Login = () => {
   const [identifier, setIdentifier] = useState("");
@@ -26,13 +29,17 @@ const Login = () => {
   const { toast } = useToast();
   const { t, lang, setLang } = useLanguage();
 
+  // Forgot password state
+  const [forgotOpen, setForgotOpen] = useState(false);
+  const [forgotIdentifier, setForgotIdentifier] = useState("");
+  const [forgotLoading, setForgotLoading] = useState(false);
+
   const isEmail = useMemo(() => isEmailInput(identifier), [identifier]);
   const isLockedOut = lockoutUntil !== null && Date.now() < lockoutUntil;
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Rate limiting check
     if (isLockedOut) {
       const remaining = Math.ceil(((lockoutUntil ?? 0) - Date.now()) / 1000);
       toast({
@@ -72,16 +79,13 @@ const Login = () => {
         }
       }
 
-      // Reset attempts on success
       attemptsRef.current = 0;
       navigate("/");
     } catch (err: any) {
-      // Increment failed attempts
       attemptsRef.current += 1;
       if (attemptsRef.current >= MAX_ATTEMPTS) {
         setLockoutUntil(Date.now() + LOCKOUT_MS);
         attemptsRef.current = 0;
-        // Auto-unlock after lockout period
         setTimeout(() => setLockoutUntil(null), LOCKOUT_MS);
       }
 
@@ -94,6 +98,31 @@ const Login = () => {
       setIsLoading(false);
     }
   }, [identifier, password, isEmail, isLockedOut, lockoutUntil, navigate, toast, t]);
+
+  const handleForgotPassword = async () => {
+    if (!forgotIdentifier.trim()) return;
+    setForgotLoading(true);
+    try {
+      const { error } = await supabase.functions.invoke("forgot-password", {
+        body: { identifier: forgotIdentifier.trim() },
+      });
+      if (error) throw error;
+      toast({
+        title: t("success"),
+        description: t("forgotPasswordSent"),
+      });
+      setForgotOpen(false);
+      setForgotIdentifier("");
+    } catch (err: any) {
+      toast({
+        title: t("error"),
+        description: err.message,
+        variant: "destructive",
+      });
+    } finally {
+      setForgotLoading(false);
+    }
+  };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-primary p-4 relative overflow-hidden">
@@ -157,8 +186,50 @@ const Login = () => {
               {isLoading ? t("loginLoading") : t("loginButton")}
             </Button>
           </form>
+
+          {/* Forgot Password Link */}
+          <div className="mt-4 text-center">
+            <button
+              type="button"
+              onClick={() => setForgotOpen(true)}
+              className="text-sm text-muted-foreground hover:text-primary transition-colors underline-offset-4 hover:underline inline-flex items-center gap-1"
+            >
+              <HelpCircle className="h-3.5 w-3.5" />
+              {t("forgotPassword")}
+            </button>
+          </div>
         </CardContent>
       </Card>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={forgotOpen} onOpenChange={setForgotOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{t("forgotPassword")}</DialogTitle>
+            <DialogDescription>{t("forgotPasswordDesc")}</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label>{t("forgotPasswordIdentifier")}</Label>
+              <Input
+                type="text"
+                dir="ltr"
+                value={forgotIdentifier}
+                onChange={(e) => setForgotIdentifier(e.target.value)}
+                placeholder="+201001234567 أو email@example.com"
+              />
+            </div>
+            <Button
+              className="w-full gap-2"
+              onClick={handleForgotPassword}
+              disabled={forgotLoading || !forgotIdentifier.trim()}
+            >
+              {forgotLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t("sendRequest")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

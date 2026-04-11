@@ -8,3 +8,6 @@ verify_jwt = false
 
 [functions.login-by-phone]
 verify_jwt = false
+
+[functions.forgot-password]
+verify_jwt = false
