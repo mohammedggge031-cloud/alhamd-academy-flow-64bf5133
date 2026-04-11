@@ -72,12 +72,38 @@ serve(async (req) => {
       userName = profile?.full_name || sanitizedPhone;
     }
 
-    // Send notification to all admins and managers
+    // Determine requester's role to route notifications correctly
+    // Manager forgot password → notify admins only
+    // Teacher forgot password → notify admins AND managers
+    const foundUserId = isEmail
+      ? (await adminClient.auth.admin.listUsers({ perPage: 1000 })).data?.users?.find(
+          (u: any) => u.email?.toLowerCase() === trimmed.toLowerCase()
+        )?.id
+      : (await adminClient.auth.admin.listUsers({ perPage: 1000 })).data?.users?.find(
+          (u: any) => {
+            const sanitizedPhone = trimmed.replace(/[^0-9+]/g, "");
+            const possibleEmail = `teacher_${sanitizedPhone.replace("+", "")}@alhamdacademy.net`;
+            return u.email?.toLowerCase() === possibleEmail.toLowerCase() || u.phone === sanitizedPhone;
+          }
+        )?.id;
+
+    // Check if requester is a manager
+    const { data: requesterRole } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", foundUserId!)
+      .maybeSingle();
+
+    const isRequesterManager = requesterRole?.role === "manager";
+
+    // If requester is manager → only admins get notified
+    // If requester is teacher → admins AND managers get notified
+    const rolesToNotify = isRequesterManager ? ["admin"] : ["admin", "manager"];
+
     const { data: adminManagerRoles } = await adminClient
       .from("user_roles")
       .select("user_id")
-      .in("role", ["admin", "manager"]);
-
+      .in("role", rolesToNotify);
     if (adminManagerRoles && adminManagerRoles.length > 0) {
       const groupId = crypto.randomUUID();
       const notifications = adminManagerRoles.map((r: any) => ({
