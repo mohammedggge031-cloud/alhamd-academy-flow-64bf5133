@@ -445,7 +445,7 @@ const Teachers = () => {
                         <DollarSign className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    {role === "admin" && (
+                    {user?.email?.toLowerCase() === "info@alhamdacademy.net" && (
                       <Button
                         variant="outline"
                         size="sm"

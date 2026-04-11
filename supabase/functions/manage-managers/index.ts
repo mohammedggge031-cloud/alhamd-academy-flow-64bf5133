@@ -174,22 +174,19 @@ serve(async (req) => {
       });
 
     } else if (action === "reset_password") {
-      // Admin can reset password for managers and teachers, not for other admins
+      // Only primary admin can reset others' passwords; other admins can only change their own
       if (!target_user_id || !new_password) throw new Error("معرف المستخدم وكلمة المرور الجديدة مطلوبان");
       if (typeof new_password !== "string" || new_password.length < 8 || new_password.length > 128) {
         throw new Error("كلمة المرور يجب أن تكون بين 8 و 128 حرف");
       }
 
-      // Cannot reset another admin's password
-      const { data: targetRoleCheck } = await adminClient
-        .from("user_roles")
-        .select("role")
-        .eq("user_id", target_user_id)
-        .eq("role", "admin")
-        .maybeSingle();
+      // Get caller email to check if primary admin
+      const { data: callerUser } = await adminClient.auth.admin.getUserById(callerId);
+      const callerEmail = callerUser?.user?.email?.toLowerCase() || "";
+      const isPrimaryAdmin = callerEmail === PRIMARY_ADMIN_EMAIL.toLowerCase();
 
-      if (targetRoleCheck && target_user_id !== callerId) {
-        throw new Error("لا يمكنك تغيير كلمة مرور مدير آخر");
+      if (target_user_id !== callerId && !isPrimaryAdmin) {
+        throw new Error("المدير الرئيسي فقط يمكنه إعادة تعيين كلمات المرور للآخرين");
       }
 
       const { error: updateError } = await adminClient.auth.admin.updateUserById(target_user_id, {
