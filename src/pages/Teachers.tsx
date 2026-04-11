@@ -445,6 +445,17 @@ const Teachers = () => {
                         <DollarSign className="h-3.5 w-3.5" />
                       </Button>
                     )}
+                    {role === "admin" && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2"
+                        onClick={() => setResetPasswordTeacher({ userId: teacher.user_id, name: teacher.profiles?.full_name ?? "" })}
+                        title={t("resetPassword")}
+                      >
+                        <KeyRound className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                     <Button
                       variant={teacher.show_on_website ? "default" : "outline"}
                       size="sm"
