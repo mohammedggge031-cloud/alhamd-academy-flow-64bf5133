@@ -56,7 +56,7 @@ const Teachers = () => {
     name: "", password: "", age: "", rate: "", rateCurrency: "USD",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
   });
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isAdmin = role === "admin" || role === "manager";
@@ -445,7 +445,7 @@ const Teachers = () => {
                         <DollarSign className="h-3.5 w-3.5" />
                       </Button>
                     )}
-                    {role === "admin" && (
+                    {user?.email?.toLowerCase() === "info@alhamdacademy.net" && (
                       <Button
                         variant="outline"
                         size="sm"

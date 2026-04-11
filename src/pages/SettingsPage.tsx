@@ -21,7 +21,7 @@ import ConfirmDialog from "@/components/ConfirmDialog";
 
 const SettingsPage = () => {
   const { t, lang, setLang } = useLanguage();
-  const { role } = useAuth();
+  const { role, user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [managerDialog, setManagerDialog] = useState(false);
@@ -332,8 +332,8 @@ const SettingsPage = () => {
                             style={{ backgroundColor: opt.color }} onClick={() => updateColor.mutate({ userId: m.user_id, color: opt.color })} title={opt.label} />
                         ))}
                       </div>
-                      {/* Reset password button - only for non-admin or self */}
-                      {(m.role !== "admin" || m.is_primary === false) && !m.is_primary && (
+                      {/* Reset password button - only primary admin can reset others */}
+                      {user?.email?.toLowerCase() === "info@alhamdacademy.net" && !m.is_primary && (
                         <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary"
                           onClick={() => setResetPasswordDialog({ userId: m.user_id, name: m.full_name })} title={t("resetPassword")}>
                           <KeyRound className="h-4 w-4" />
