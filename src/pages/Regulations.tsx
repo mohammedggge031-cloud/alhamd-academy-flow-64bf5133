@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -31,12 +31,22 @@ const Regulations = () => {
 
   // Independent language toggle for regulations, defaults to site language
   const [regLang, setRegLang] = useState<"ar" | "en">("ar");
+  const hasInitializedRegLang = useRef(false);
 
   const [editSection, setEditSection] = useState<RegulationSection | null>(null);
   const [editDialog, setEditDialog] = useState(false);
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [newSectionDialog, setNewSectionDialog] = useState(false);
   const [newSection, setNewSection] = useState({ title: "", title_en: "", items: "", items_en: "" });
+
+  useEffect(() => {
+    if (!hasInitializedRegLang.current) {
+      hasInitializedRegLang.current = true;
+      return;
+    }
+
+    setRegLang(siteLang === "en" ? "en" : "ar");
+  }, [siteLang]);
 
   const { data: sections = [], isLoading } = useQuery({
     queryKey: ["regulations"],
