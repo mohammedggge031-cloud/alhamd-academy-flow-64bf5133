@@ -366,6 +366,33 @@ export type Database = {
         }
         Relationships: []
       }
+      regulations: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          section_order: number
+          section_title: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items?: Json
+          section_order?: number
+          section_title: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          section_order?: number
+          section_title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       session_reports: {
         Row: {
           admin_alert: boolean | null

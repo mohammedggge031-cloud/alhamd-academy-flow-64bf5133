@@ -40,6 +40,7 @@ const translations = {
   navExpenses: { en: "Expenses", ar: "المصاريف" },
   navReports: { en: "Reports", ar: "التقارير" },
   navStudentReports: { en: "Student Reports", ar: "تقارير الطلاب" },
+  navRegulations: { en: "Regulations", ar: "اللائحة التنظيمية" },
   navSettings: { en: "Settings", ar: "الإعدادات" },
   signOut: { en: "Sign Out", ar: "تسجيل الخروج" },
   admin: { en: "Admin", ar: "المدير" },

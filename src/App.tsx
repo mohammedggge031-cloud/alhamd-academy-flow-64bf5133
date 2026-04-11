@@ -26,6 +26,7 @@ const TeacherDashboardPage = lazy(() => import("./pages/TeacherDashboardPage"));
 const TeacherStudentsPage = lazy(() => import("./pages/TeacherStudentsPage"));
 const Login = lazy(() => import("./pages/Login"));
 const Certificates = lazy(() => import("./pages/Certificates"));
+const Regulations = lazy(() => import("./pages/Regulations"));
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient({
@@ -94,6 +95,7 @@ const App = () => (
                               <Route path="/my-students" element={<TeacherStudentsPage />} />
                               <Route path="/my-profile" element={<TeacherProfile />} />
                               <Route path="/certificates" element={<Certificates />} />
+                              <Route path="/regulations" element={<Regulations />} />
                               <Route path="/settings" element={<RoleGuard allowedRoles={["admin"]}><SettingsPage /></RoleGuard>} />
                               <Route path="*" element={<NotFound />} />
                             </Routes>
