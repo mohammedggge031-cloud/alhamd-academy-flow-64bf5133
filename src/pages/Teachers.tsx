@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe, DollarSign } from "lucide-react";
+import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe, DollarSign, KeyRound } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
