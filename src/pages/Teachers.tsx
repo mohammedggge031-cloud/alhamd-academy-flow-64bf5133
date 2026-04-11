@@ -499,6 +499,33 @@ const Teachers = () => {
           onOpenChange={(open) => !open && setSalaryTeacher(null)}
         />
       )}
+
+      {/* Reset teacher password dialog */}
+      <Dialog open={!!resetPasswordTeacher} onOpenChange={(open) => { if (!open) { setResetPasswordTeacher(null); setResetPasswordValue(""); } }}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("resetPasswordFor")} {resetPasswordTeacher?.name}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label>{t("newPassword")}</Label>
+              <Input type="password" dir="ltr" value={resetPasswordValue} onChange={(e) => setResetPasswordValue(e.target.value)} placeholder="••••••••" />
+            </div>
+            <Button
+              className="w-full"
+              onClick={() => {
+                if (resetPasswordTeacher) {
+                  resetTeacherPassword.mutate({ userId: resetPasswordTeacher.userId, password: resetPasswordValue });
+                }
+              }}
+              disabled={resetTeacherPassword.isPending || resetPasswordValue.length < 8}
+            >
+              {resetTeacherPassword.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
+              {t("resetPassword")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
