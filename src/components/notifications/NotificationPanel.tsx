@@ -29,7 +29,7 @@ const categoryConfig: Record<NotificationCategory, { icon: React.ReactNode; type
   homework: { icon: <BookOpen className="h-3.5 w-3.5" />, types: ["homework"] },
   reports: { icon: <FileText className="h-3.5 w-3.5" />, types: ["monthly_report"] },
   invoices: { icon: <CreditCard className="h-3.5 w-3.5" />, types: ["invoice"] },
-  alerts: { icon: <AlertTriangle className="h-3.5 w-3.5" />, types: ["admin_alert"] },
+  alerts: { icon: <AlertTriangle className="h-3.5 w-3.5" />, types: ["admin_alert", "password_reset_request"] },
 };
 
 const NotificationPanel = () => {
@@ -123,8 +123,8 @@ const NotificationPanel = () => {
     homework: "📚",
     invoice: "💳",
     admin_alert: "⚠️",
+    password_reset_request: "🔑",
   };
-
   const categoryLabels: Record<NotificationCategory, string> = {
     all: "الكل",
     reminders_6h: "تذكير ٦س",
