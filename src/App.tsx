@@ -43,12 +43,11 @@ const queryClient = new QueryClient({
 // Export queryClient so useAuth can clear it on logout
 export { queryClient };
 
-const PageLoader = forwardRef<HTMLDivElement>((_, ref) => (
-  <div ref={ref} className="min-h-[50vh] flex items-center justify-center">
+const PageLoader = () => (
+  <div className="min-h-[50vh] flex items-center justify-center">
     <Loader2 className="h-8 w-8 animate-spin text-primary" />
   </div>
-));
-PageLoader.displayName = "PageLoader";
+);
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const { user, isAuthReady } = useAuth();
