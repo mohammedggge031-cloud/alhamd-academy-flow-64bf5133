@@ -63,7 +63,7 @@ const DIMENSION_PRESETS = [
   { id: "custom", label: "Custom", width: 780, aspectRatio: "1.414" },
 ];
 
-const SIGNATURE_SVG = `<svg width="120" height="45" viewBox="0 0 400 150" xmlns="http://www.w3.org/2000/svg"><path d="M40 90 Q120 20 200 80 Q260 120 320 60 T380 70" fill="none" stroke="#0B3D91" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
+import signatureImg from "@/assets/sig-mark-2.png";
 
 const CertificatesPage = memo(() => {
   const { t, lang } = useLanguage();
@@ -874,7 +874,7 @@ const CertificateTemplate = memo(({
       }}>
         <div style={{ textAlign: "center" }}>
           {showSignature && (
-            <div dangerouslySetInnerHTML={{ __html: SIGNATURE_SVG }} style={{ marginBottom: 2 }} />
+            <img src={signatureImg} alt="Signature" style={{ width: 120, height: 45, objectFit: "contain", marginBottom: 2 }} />
           )}
           <div style={{ width: 90, borderTop: `1px solid ${gold}`, marginBottom: 4, opacity: 0.6 }} />
           <span {...editable}>{signatureName}</span>
