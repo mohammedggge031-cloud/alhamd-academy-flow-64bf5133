@@ -16,24 +16,8 @@ export const AdminSignatureToggle = () => {
     managerStatuses, toggleMy, toggleManager,
   } = useSignaturePermission();
 
-  if (!isAdmin && !isManager) return null;
-
-  // Manager just sees status (can't toggle)
-  if (isManager) {
-    return (
-      <div className="flex items-center gap-2">
-        <Switch checked={myEnabled} disabled />
-        <Label className="text-xs text-muted-foreground">
-          {lang === "ar" ? "التوقيع الرسمي" : "Official Signature"}
-          {!myEnabled && (
-            <span className="text-[10px] mr-1 text-muted-foreground">
-              ({lang === "ar" ? "معطّل من الإدارة" : "Disabled by admin"})
-            </span>
-          )}
-        </Label>
-      </div>
-    );
-  }
+  // Only admin sees the toggle UI; managers never see it
+  if (!isAdmin) return null;
 
   // Admin: toggle self + manage managers
   return (
