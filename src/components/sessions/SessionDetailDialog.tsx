@@ -3,7 +3,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
-import { Check, XCircle, Clock, FileText, DollarSign } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import { Check, XCircle, Clock, FileText, DollarSign, Pause, Plus } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -32,13 +33,15 @@ const SessionDetailDialog = ({
   getStudentName,
   getTeacherName,
 }: SessionDetailDialogProps) => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isAdmin = role === "admin" || role === "manager";
 
   const [confirmAction, setConfirmAction] = useState<{ status: string; label: string } | null>(null);
+  const [exceptionMinutes, setExceptionMinutes] = useState("");
+  const [showExceptionInput, setShowExceptionInput] = useState(false);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -126,7 +129,7 @@ const SessionDetailDialog = ({
             {!isAdmin && selectedSession.status === "upcoming" && (
               <div className="space-y-3 pt-2">
                 <Label className="text-sm font-medium">{t("adminActionsLabel")}</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button size="sm" className="gap-1"
                     onClick={async () => {
                       await updateStatus.mutateAsync({ id: selectedSession.id, status: "confirmed" });
@@ -147,15 +150,29 @@ const SessionDetailDialog = ({
                     onClick={() => handleStatusWithConfirm("absent_student", t("markAbsent"))}>
                     <XCircle className="h-3 w-3" />{t("markAbsent")}
                   </Button>
+                  <Button size="sm" variant="outline" className="gap-1"
+                    onClick={() => handleStatusWithConfirm("postponed", t("postponeSession"))}>
+                    <Pause className="h-3 w-3" />{t("postponeSession")}
+                  </Button>
                 </div>
               </div>
             )}
 
             {!isAdmin && selectedSession.status === "confirmed" && (
-              <Button size="sm" className="w-full bg-success hover:bg-success/90 text-success-foreground gap-1"
-                onClick={() => handleStatusWithConfirm("completed", t("markComplete"))}>
-                <Check className="h-3 w-3" />{t("markComplete")}
-              </Button>
+              <div className="grid grid-cols-3 gap-2">
+                <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground gap-1"
+                  onClick={() => handleStatusWithConfirm("completed", t("markComplete"))}>
+                  <Check className="h-3 w-3" />{t("markComplete")}
+                </Button>
+                <Button size="sm" variant="destructive" className="gap-1"
+                  onClick={() => handleStatusWithConfirm("absent_student", t("markAbsent"))}>
+                  <XCircle className="h-3 w-3" />{t("markAbsent")}
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1"
+                  onClick={() => handleStatusWithConfirm("postponed", t("postponeSession"))}>
+                  <Pause className="h-3 w-3" />{t("postponeSession")}
+                </Button>
+              </div>
             )}
 
             {!isAdmin && (selectedSession.status === "upcoming" || selectedSession.status === "confirmed") && (
@@ -202,7 +219,65 @@ const SessionDetailDialog = ({
               </Badge>
             )}
 
-            {/* Admin actions */}
+            {/* Admin: Exception minutes for absent sessions */}
+            {isAdmin && selectedSession.status === "absent_student" && (
+              <div className="space-y-3 pt-2 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    {lang === "ar" ? "دقائق استثنائية للمعلم" : "Exception Minutes for Teacher"}
+                  </Label>
+                  {!showExceptionInput && (
+                    <Button size="sm" variant="outline" className="gap-1 text-xs"
+                      onClick={() => {
+                        setExceptionMinutes(String(selectedSession.exception_minutes || 0));
+                        setShowExceptionInput(true);
+                      }}>
+                      <Plus className="h-3 w-3" />
+                      {lang === "ar" ? "إضافة" : "Add"}
+                    </Button>
+                  )}
+                </div>
+                {selectedSession.exception_minutes > 0 && !showExceptionInput && (
+                  <p className="text-sm text-muted-foreground">
+                    {lang === "ar" ? `تم إضافة ${selectedSession.exception_minutes} دقيقة استثنائية` : `${selectedSession.exception_minutes} exception minutes added`}
+                  </p>
+                )}
+                {showExceptionInput && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="120"
+                      value={exceptionMinutes}
+                      onChange={(e) => setExceptionMinutes(e.target.value)}
+                      placeholder={lang === "ar" ? "عدد الدقائق" : "Minutes"}
+                      className="w-24"
+                    />
+                    <Button size="sm" className="gap-1"
+                      onClick={async () => {
+                        const mins = parseInt(exceptionMinutes) || 0;
+                        const { error } = await supabase.from("sessions")
+                          .update({ exception_minutes: mins } as any)
+                          .eq("id", selectedSession.id);
+                        if (error) {
+                          toast({ title: t("error"), description: error.message, variant: "destructive" });
+                        } else {
+                          queryClient.invalidateQueries({ queryKey: ["sessions"] });
+                          setShowExceptionInput(false);
+                          toast({ title: lang === "ar" ? "تم حفظ الدقائق الاستثنائية" : "Exception minutes saved" });
+                        }
+                      }}>
+                      {lang === "ar" ? "حفظ" : "Save"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowExceptionInput(false)}>
+                      {lang === "ar" ? "إلغاء" : "Cancel"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {isAdmin && selectedSession.status === "upcoming" && (
               <div className="space-y-3 pt-2">
                 <Label className="text-sm font-medium">{t("adminActions")}</Label>
