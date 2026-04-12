@@ -159,10 +159,20 @@ const SessionDetailDialog = ({
             )}
 
             {!isAdmin && selectedSession.status === "confirmed" && (
-              <Button size="sm" className="w-full bg-success hover:bg-success/90 text-success-foreground gap-1"
-                onClick={() => handleStatusWithConfirm("completed", t("markComplete"))}>
-                <Check className="h-3 w-3" />{t("markComplete")}
-              </Button>
+              <div className="grid grid-cols-3 gap-2">
+                <Button size="sm" className="bg-success hover:bg-success/90 text-success-foreground gap-1"
+                  onClick={() => handleStatusWithConfirm("completed", t("markComplete"))}>
+                  <Check className="h-3 w-3" />{t("markComplete")}
+                </Button>
+                <Button size="sm" variant="destructive" className="gap-1"
+                  onClick={() => handleStatusWithConfirm("absent_student", t("markAbsent"))}>
+                  <XCircle className="h-3 w-3" />{t("markAbsent")}
+                </Button>
+                <Button size="sm" variant="outline" className="gap-1"
+                  onClick={() => handleStatusWithConfirm("postponed", t("postponeSession"))}>
+                  <Pause className="h-3 w-3" />{t("postponeSession")}
+                </Button>
+              </div>
             )}
 
             {!isAdmin && (selectedSession.status === "upcoming" || selectedSession.status === "confirmed") && (
