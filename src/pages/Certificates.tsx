@@ -296,7 +296,7 @@ const CertificatesPage = memo(() => {
                 certDate={certDate}
                 certNumber={certNumber}
                 signatureName={signatureName}
-                manualEdit={manualEdit}
+                manualEdit={true}
               />
             </div>
           </CardContent>
