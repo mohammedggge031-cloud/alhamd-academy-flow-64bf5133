@@ -26,7 +26,7 @@ const Invoices = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [showSignature, setShowSignature] = useState(false);
+  
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -193,7 +193,7 @@ const Invoices = () => {
           </h1>
           <div className="flex items-center gap-4">
             <p className="text-muted-foreground">{invoices.length} {t("invoicesCount")}</p>
-            <AdminSignatureToggle enabled={showSignature} onToggle={setShowSignature} />
+            <AdminSignatureToggle />
           </div>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
@@ -409,7 +409,7 @@ const Invoices = () => {
                           <MessageCircle className="h-4 w-4" />
                         </Button>
                       )}
-                      <AdminSignatureDisplay enabled={showSignature} className="ml-2" />
+                      <AdminSignatureDisplay className="ml-2" />
                     </div>
                   </div>
                 );
