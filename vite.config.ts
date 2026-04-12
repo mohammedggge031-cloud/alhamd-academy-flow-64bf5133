@@ -25,5 +25,33 @@ export default defineConfig(({ mode }) => {
         "@": path.resolve(__dirname, "./src"),
       },
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            // Core React ecosystem
+            'vendor-react': ['react', 'react-dom', 'react-router-dom'],
+            // UI framework
+            'vendor-ui': [
+              '@radix-ui/react-dialog',
+              '@radix-ui/react-dropdown-menu',
+              '@radix-ui/react-popover',
+              '@radix-ui/react-select',
+              '@radix-ui/react-tabs',
+              '@radix-ui/react-tooltip',
+            ],
+            // Charts (loaded only on dashboard)
+            'vendor-charts': ['recharts'],
+            // Data query layer
+            'vendor-query': ['@tanstack/react-query'],
+            // Supabase client
+            'vendor-supabase': ['@supabase/supabase-js'],
+            // Date utilities
+            'vendor-date': ['date-fns'],
+          },
+        },
+      },
+      chunkSizeWarningLimit: 400,
+    },
   };
 });
