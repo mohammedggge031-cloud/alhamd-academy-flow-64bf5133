@@ -40,6 +40,8 @@ const SessionDetailDialog = ({
   const isAdmin = role === "admin" || role === "manager";
 
   const [confirmAction, setConfirmAction] = useState<{ status: string; label: string } | null>(null);
+  const [exceptionMinutes, setExceptionMinutes] = useState("");
+  const [showExceptionInput, setShowExceptionInput] = useState(false);
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
