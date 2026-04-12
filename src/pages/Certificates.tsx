@@ -67,7 +67,6 @@ const CertificatesPage = memo(() => {
 
   const [selectedStudent, setSelectedStudent] = useState("");
   const [template, setTemplate] = useState("appreciation");
-  const [manualEdit, setManualEdit] = useState(false);
 
   const templateConfig = CERT_TEMPLATES.find((t) => t.id === template)!;
 
