@@ -79,7 +79,12 @@ const Login = () => {
         }
       }
 
+      // Mark session active for persistence policy
+      sessionStorage.setItem("auth_active", "1");
       attemptsRef.current = 0;
+
+      // Small delay to let auth state propagate before navigating
+      await new Promise((r) => setTimeout(r, 150));
       navigate("/");
     } catch (err: any) {
       attemptsRef.current += 1;
