@@ -33,7 +33,7 @@ const MonthlyReports = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
-  const [showSignature, setShowSignature] = useState(false);
+  
   const { role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -233,7 +233,7 @@ const MonthlyReports = () => {
             {t("monthlyReportsTitle")}
           </h1>
           <p className="text-muted-foreground">{t("monthlyReportsSubtitle")}</p>
-          <AdminSignatureToggle enabled={showSignature} onToggle={setShowSignature} />
+          <AdminSignatureToggle />
         </div>
 
         <Button className="gap-2" onClick={openNew}>
@@ -422,7 +422,7 @@ const MonthlyReports = () => {
                   <Button variant="outline" size="sm" className="gap-1 text-xs text-[#25D366]" onClick={() => sendWhatsapp(r)}>
                     <MessageCircle className="h-3 w-3" /> {isAdmin ? t("sendReportWhatsapp") : t("sendViaWhatsapp")}
                   </Button>
-                  <AdminSignatureDisplay enabled={showSignature} className="ml-auto" />
+                  <AdminSignatureDisplay className="ml-auto" />
                 </div>
               </CardContent>
             </Card>
