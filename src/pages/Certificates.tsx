@@ -6,12 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Switch } from "@/components/ui/switch";
+import { Slider } from "@/components/ui/slider";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Award, Printer, MousePointerClick } from "lucide-react";
+import { Award, Printer } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import academyLogo from "@/assets/academy-logo.jpeg";
 
@@ -48,6 +48,14 @@ const CERT_TEMPLATES = [
 
 const generateCertNumber = () => `CERT-${String(Math.floor(Math.random() * 90000) + 10000)}`;
 
+const DIMENSION_PRESETS = [
+  { id: "a4-landscape", label: "A4 Landscape", width: 780, aspectRatio: "1.414" },
+  { id: "a4-portrait", label: "A4 Portrait", width: 560, aspectRatio: "0.707" },
+  { id: "letter-landscape", label: "Letter Landscape", width: 780, aspectRatio: "1.294" },
+  { id: "square", label: "Square", width: 600, aspectRatio: "1" },
+  { id: "custom", label: "Custom", width: 780, aspectRatio: "1.414" },
+];
+
 const CertificatesPage = memo(() => {
   const { t, lang } = useLanguage();
   const { session, isAuthReady } = useAuth();
@@ -55,7 +63,6 @@ const CertificatesPage = memo(() => {
   const queryEnabled = isAuthReady && !!session?.user;
   const previewRef = useRef<HTMLDivElement>(null);
 
-  // Load Amiri font
   useState(() => {
     if (!document.querySelector('link[href*="Amiri"]')) {
       const link = document.createElement("link");
@@ -70,7 +77,6 @@ const CertificatesPage = memo(() => {
 
   const templateConfig = CERT_TEMPLATES.find((t) => t.id === template)!;
 
-  // All editable fields with defaults from template
   const [customTextAr, setCustomTextAr] = useState(templateConfig.defaultTextAr);
   const [customTextEn, setCustomTextEn] = useState(templateConfig.defaultTextEn);
   const [academyNameAr, setAcademyNameAr] = useState("أكاديمية الحمد");
@@ -91,7 +97,32 @@ const CertificatesPage = memo(() => {
   });
   const [certNumber] = useState(generateCertNumber);
 
-  // Update texts when template changes
+  // Style controls
+  const [titleFontSize, setTitleFontSize] = useState(100); // percentage
+  const [bodyFontSize, setBodyFontSize] = useState(100);
+  const [nameFontSize, setNameFontSize] = useState(100);
+  const [titleColorAr, setTitleColorAr] = useState("#0a2a5e");
+  const [titleColorEn, setTitleColorEn] = useState("#0a2a5e");
+  const [bodyColorAr, setBodyColorAr] = useState("#555555");
+  const [bodyColorEn, setBodyColorEn] = useState("#888888");
+  const [nameColor, setNameColor] = useState("#8B6914");
+  const [bgColor, setBgColor] = useState("#fffef5");
+  const [borderColor, setBorderColor] = useState("#b8860b");
+
+  // Dimension controls
+  const [dimensionPreset, setDimensionPreset] = useState("a4-landscape");
+  const [certWidth, setCertWidth] = useState(780);
+  const [certAspectRatio, setCertAspectRatio] = useState("1.414");
+
+  const handleDimensionChange = (presetId: string) => {
+    setDimensionPreset(presetId);
+    if (presetId !== "custom") {
+      const preset = DIMENSION_PRESETS.find(p => p.id === presetId)!;
+      setCertWidth(preset.width);
+      setCertAspectRatio(preset.aspectRatio);
+    }
+  };
+
   const handleTemplateChange = (newTemplate: string) => {
     setTemplate(newTemplate);
     const config = CERT_TEMPLATES.find((t) => t.id === newTemplate)!;
@@ -133,11 +164,11 @@ const CertificatesPage = memo(() => {
         * { margin:0; padding:0; box-sizing:border-box; }
         body { display:flex; justify-content:center; align-items:center; min-height:100vh; background:#fff; }
         [contenteditable] { outline: none !important; border: none !important; box-shadow: none !important; }
-        @media print { body { background:transparent; } @page { size: landscape A4; margin: 0; } }
+        @media print { body { background:transparent; } @page { size: ${parseFloat(certAspectRatio) > 1 ? 'landscape' : 'portrait'} A4; margin: 0; } }
       </style></head><body>${el.innerHTML}</body></html>`);
     printWin.document.close();
     setTimeout(() => { printWin.print(); printWin.close(); }, 600);
-  }, [selectedStudent, toast, lang]);
+  }, [selectedStudent, toast, lang, certAspectRatio]);
 
   if (!queryEnabled || isLoading) {
     return (
@@ -193,74 +224,201 @@ const CertificatesPage = memo(() => {
               </Select>
             </div>
 
-
             <p className="text-xs text-muted-foreground">
               {lang === "ar" ? "اضغط على أي نص في الشهادة لتعديله مباشرة" : "Click any text on the certificate to edit it directly"}
             </p>
 
             <Tabs defaultValue="text" className="w-full">
-              <TabsList className="w-full grid grid-cols-2">
+              <TabsList className="w-full grid grid-cols-3">
                 <TabsTrigger value="text">{lang === "ar" ? "النصوص" : "Text"}</TabsTrigger>
-                <TabsTrigger value="branding">{lang === "ar" ? "الهوية" : "Branding"}</TabsTrigger>
+                <TabsTrigger value="style">{lang === "ar" ? "التنسيق" : "Style"}</TabsTrigger>
+                <TabsTrigger value="size">{lang === "ar" ? "المقاس" : "Size"}</TabsTrigger>
               </TabsList>
 
               <TabsContent value="text" className="space-y-3 mt-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">{lang === "ar" ? "عنوان الشهادة (عربي)" : "Certificate Title (Arabic)"}</Label>
+                  <Label className="text-xs">{lang === "ar" ? "عنوان الشهادة (عربي)" : "Title (AR)"}</Label>
                   <Input value={certTitleAr} onChange={(e) => setCertTitleAr(e.target.value)} dir="rtl" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{lang === "ar" ? "عنوان الشهادة (إنجليزي)" : "Certificate Title (English)"}</Label>
+                  <Label className="text-xs">{lang === "ar" ? "عنوان الشهادة (إنجليزي)" : "Title (EN)"}</Label>
                   <Input value={certTitleEn} onChange={(e) => setCertTitleEn(e.target.value)} dir="ltr" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{lang === "ar" ? "المقدمة (عربي)" : "Intro (Arabic)"}</Label>
+                  <Label className="text-xs">{lang === "ar" ? "المقدمة (عربي)" : "Intro (AR)"}</Label>
                   <Input value={introAr} onChange={(e) => setIntroAr(e.target.value)} dir="rtl" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{lang === "ar" ? "المقدمة (إنجليزي)" : "Intro (English)"}</Label>
+                  <Label className="text-xs">{lang === "ar" ? "المقدمة (إنجليزي)" : "Intro (EN)"}</Label>
                   <Input value={introEn} onChange={(e) => setIntroEn(e.target.value)} dir="ltr" />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">{lang === "ar" ? "نص عربي" : "Arabic Text"}</Label>
                   <textarea
                     className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[70px]"
-                    value={customTextAr}
-                    onChange={(e) => setCustomTextAr(e.target.value)}
-                    dir="rtl"
+                    value={customTextAr} onChange={(e) => setCustomTextAr(e.target.value)} dir="rtl"
                   />
                 </div>
                 <div className="space-y-1">
                   <Label className="text-xs">{lang === "ar" ? "نص إنجليزي" : "English Text"}</Label>
                   <textarea
                     className="flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring min-h-[70px]"
-                    value={customTextEn}
-                    onChange={(e) => setCustomTextEn(e.target.value)}
-                    dir="ltr"
+                    value={customTextEn} onChange={(e) => setCustomTextEn(e.target.value)} dir="ltr"
                   />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{lang === "ar" ? "اسم الموقّع" : "Signatory Name"}</Label>
+                  <Label className="text-xs">{lang === "ar" ? "اسم الموقّع" : "Signatory"}</Label>
                   <Input value={signatureName} onChange={(e) => setSignatureName(e.target.value)} />
                 </div>
-              </TabsContent>
-
-              <TabsContent value="branding" className="space-y-3 mt-3">
                 <div className="space-y-1">
-                  <Label className="text-xs">{lang === "ar" ? "اسم الأكاديمية (عربي)" : "Academy Name (Arabic)"}</Label>
+                  <Label className="text-xs">{lang === "ar" ? "اسم الأكاديمية (عربي)" : "Academy (AR)"}</Label>
                   <Input value={academyNameAr} onChange={(e) => setAcademyNameAr(e.target.value)} dir="rtl" />
                 </div>
                 <div className="space-y-1">
-                  <Label className="text-xs">{lang === "ar" ? "اسم الأكاديمية (إنجليزي)" : "Academy Name (English)"}</Label>
+                  <Label className="text-xs">{lang === "ar" ? "اسم الأكاديمية (إنجليزي)" : "Academy (EN)"}</Label>
                   <Input value={academyNameEn} onChange={(e) => setAcademyNameEn(e.target.value)} dir="ltr" />
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">{lang === "ar" ? "الوصف (عربي)" : "Subtitle (Arabic)"}</Label>
-                  <Input value={academySubAr} onChange={(e) => setAcademySubAr(e.target.value)} dir="rtl" />
+              </TabsContent>
+
+              <TabsContent value="style" className="space-y-4 mt-3">
+                {/* Font Sizes */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">{lang === "ar" ? "أحجام الخطوط" : "Font Sizes"}</Label>
+                  
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{lang === "ar" ? "العنوان" : "Title"}</span>
+                      <span>{titleFontSize}%</span>
+                    </div>
+                    <Slider value={[titleFontSize]} onValueChange={([v]) => setTitleFontSize(v)} min={50} max={200} step={5} />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{lang === "ar" ? "اسم الطالب" : "Student Name"}</span>
+                      <span>{nameFontSize}%</span>
+                    </div>
+                    <Slider value={[nameFontSize]} onValueChange={([v]) => setNameFontSize(v)} min={50} max={200} step={5} />
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="flex justify-between text-xs text-muted-foreground">
+                      <span>{lang === "ar" ? "النص الأساسي" : "Body Text"}</span>
+                      <span>{bodyFontSize}%</span>
+                    </div>
+                    <Slider value={[bodyFontSize]} onValueChange={([v]) => setBodyFontSize(v)} min={50} max={200} step={5} />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <Label className="text-xs">{lang === "ar" ? "الوصف (إنجليزي)" : "Subtitle (English)"}</Label>
-                  <Input value={academySubEn} onChange={(e) => setAcademySubEn(e.target.value)} dir="ltr" />
+
+                {/* Colors */}
+                <div className="space-y-2">
+                  <Label className="text-xs font-semibold">{lang === "ar" ? "الألوان" : "Colors"}</Label>
+                  
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <Label className="text-[10px]">{lang === "ar" ? "العنوان عربي" : "Title AR"}</Label>
+                      <div className="flex items-center gap-1">
+                        <input type="color" value={titleColorAr} onChange={e => setTitleColorAr(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0 p-0" />
+                        <Input value={titleColorAr} onChange={e => setTitleColorAr(e.target.value)} className="h-7 text-[10px] font-mono" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px]">{lang === "ar" ? "العنوان إنجليزي" : "Title EN"}</Label>
+                      <div className="flex items-center gap-1">
+                        <input type="color" value={titleColorEn} onChange={e => setTitleColorEn(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0 p-0" />
+                        <Input value={titleColorEn} onChange={e => setTitleColorEn(e.target.value)} className="h-7 text-[10px] font-mono" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px]">{lang === "ar" ? "النص عربي" : "Body AR"}</Label>
+                      <div className="flex items-center gap-1">
+                        <input type="color" value={bodyColorAr} onChange={e => setBodyColorAr(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0 p-0" />
+                        <Input value={bodyColorAr} onChange={e => setBodyColorAr(e.target.value)} className="h-7 text-[10px] font-mono" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px]">{lang === "ar" ? "النص إنجليزي" : "Body EN"}</Label>
+                      <div className="flex items-center gap-1">
+                        <input type="color" value={bodyColorEn} onChange={e => setBodyColorEn(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0 p-0" />
+                        <Input value={bodyColorEn} onChange={e => setBodyColorEn(e.target.value)} className="h-7 text-[10px] font-mono" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px]">{lang === "ar" ? "اسم الطالب" : "Name"}</Label>
+                      <div className="flex items-center gap-1">
+                        <input type="color" value={nameColor} onChange={e => setNameColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0 p-0" />
+                        <Input value={nameColor} onChange={e => setNameColor(e.target.value)} className="h-7 text-[10px] font-mono" />
+                      </div>
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-[10px]">{lang === "ar" ? "الإطار" : "Border"}</Label>
+                      <div className="flex items-center gap-1">
+                        <input type="color" value={borderColor} onChange={e => setBorderColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0 p-0" />
+                        <Input value={borderColor} onChange={e => setBorderColor(e.target.value)} className="h-7 text-[10px] font-mono" />
+                      </div>
+                    </div>
+                    <div className="space-y-1 col-span-2">
+                      <Label className="text-[10px]">{lang === "ar" ? "خلفية الشهادة" : "Background"}</Label>
+                      <div className="flex items-center gap-1">
+                        <input type="color" value={bgColor} onChange={e => setBgColor(e.target.value)} className="w-7 h-7 rounded cursor-pointer border-0 p-0" />
+                        <Input value={bgColor} onChange={e => setBgColor(e.target.value)} className="h-7 text-[10px] font-mono" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </TabsContent>
+
+              <TabsContent value="size" className="space-y-4 mt-3">
+                <div className="space-y-2">
+                  <Label className="text-xs">{lang === "ar" ? "مقاس الشهادة" : "Certificate Size"}</Label>
+                  <Select value={dimensionPreset} onValueChange={handleDimensionChange}>
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {DIMENSION_PRESETS.map(p => (
+                        <SelectItem key={p.id} value={p.id}>{p.label}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {dimensionPreset === "custom" && (
+                  <>
+                    <div className="space-y-1">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>{lang === "ar" ? "العرض (px)" : "Width (px)"}</span>
+                        <span>{certWidth}px</span>
+                      </div>
+                      <Slider value={[certWidth]} onValueChange={([v]) => setCertWidth(v)} min={400} max={1200} step={10} />
+                    </div>
+                    <div className="space-y-1">
+                      <Label className="text-xs">{lang === "ar" ? "نسبة الأبعاد (عرض/ارتفاع)" : "Aspect Ratio (W/H)"}</Label>
+                      <div className="flex gap-2">
+                        {[
+                          { label: "16:9", val: "1.778" },
+                          { label: "A4 ⬌", val: "1.414" },
+                          { label: "4:3", val: "1.333" },
+                          { label: "1:1", val: "1" },
+                          { label: "A4 ⬍", val: "0.707" },
+                        ].map(r => (
+                          <Button
+                            key={r.val}
+                            size="sm"
+                            variant={certAspectRatio === r.val ? "default" : "outline"}
+                            className="text-[10px] px-2 h-7 flex-1"
+                            onClick={() => setCertAspectRatio(r.val)}
+                          >
+                            {r.label}
+                          </Button>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <div className="p-2 rounded-md bg-muted text-xs text-muted-foreground">
+                  {lang === "ar"
+                    ? `الأبعاد الحالية: ${certWidth}px × ${Math.round(certWidth / parseFloat(certAspectRatio))}px`
+                    : `Current: ${certWidth}px × ${Math.round(certWidth / parseFloat(certAspectRatio))}px`}
                 </div>
               </TabsContent>
             </Tabs>
@@ -280,7 +438,7 @@ const CertificatesPage = memo(() => {
             <CardTitle className="text-lg">{lang === "ar" ? "معاينة الشهادة" : "Certificate Preview"}</CardTitle>
           </CardHeader>
           <CardContent>
-            <div ref={previewRef} className="mx-auto" style={{ maxWidth: 780 }}>
+            <div ref={previewRef} className="mx-auto" style={{ maxWidth: certWidth }}>
               <CertificateTemplate
                 academyNameAr={academyNameAr}
                 academyNameEn={academyNameEn}
@@ -297,6 +455,17 @@ const CertificatesPage = memo(() => {
                 certNumber={certNumber}
                 signatureName={signatureName}
                 manualEdit={true}
+                titleFontSize={titleFontSize}
+                bodyFontSize={bodyFontSize}
+                nameFontSize={nameFontSize}
+                titleColorAr={titleColorAr}
+                titleColorEn={titleColorEn}
+                bodyColorAr={bodyColorAr}
+                bodyColorEn={bodyColorEn}
+                nameColor={nameColor}
+                bgColor={bgColor}
+                borderColor={borderColor}
+                aspectRatio={certAspectRatio}
               />
             </div>
           </CardContent>
@@ -322,6 +491,17 @@ interface CertTemplateProps {
   certNumber: string;
   signatureName: string;
   manualEdit: boolean;
+  titleFontSize: number;
+  bodyFontSize: number;
+  nameFontSize: number;
+  titleColorAr: string;
+  titleColorEn: string;
+  bodyColorAr: string;
+  bodyColorEn: string;
+  nameColor: string;
+  bgColor: string;
+  borderColor: string;
+  aspectRatio: string;
 }
 
 const CertificateTemplate = memo(({
@@ -329,10 +509,15 @@ const CertificateTemplate = memo(({
   certTitleAr, certTitleEn, studentName,
   bodyTextAr, bodyTextEn, introAr, introEn,
   certDate, certNumber, signatureName, manualEdit,
+  titleFontSize, bodyFontSize, nameFontSize,
+  titleColorAr, titleColorEn, bodyColorAr, bodyColorEn,
+  nameColor, bgColor, borderColor, aspectRatio,
 }: CertTemplateProps) => {
-  const gold = "#b8860b";
-  const darkGold = "#8B6914";
-  const navy = "#0a2a5e";
+  const navy = titleColorAr;
+  const gold = borderColor;
+  const darkGold = nameColor;
+
+  const sf = (base: number, scale: number) => `${Math.round(base * scale / 100)}px`;
 
   const editable = manualEdit ? {
     contentEditable: true,
@@ -344,11 +529,11 @@ const CertificateTemplate = memo(({
     <div
       style={{
         width: "100%",
-        aspectRatio: "1.414",
+        aspectRatio,
         background: `
-          radial-gradient(ellipse at 20% 20%, rgba(184,134,11,0.04) 0%, transparent 50%),
-          radial-gradient(ellipse at 80% 80%, rgba(184,134,11,0.04) 0%, transparent 50%),
-          linear-gradient(145deg, #fffef5 0%, #fff 40%, #fef9e7 100%)
+          radial-gradient(ellipse at 20% 20%, ${gold}0a 0%, transparent 50%),
+          radial-gradient(ellipse at 80% 80%, ${gold}0a 0%, transparent 50%),
+          linear-gradient(145deg, ${bgColor} 0%, #fff 40%, ${bgColor} 100%)
         `,
         border: `3px solid ${gold}`,
         borderRadius: 12,
@@ -359,24 +544,12 @@ const CertificateTemplate = memo(({
         fontFamily: "'Amiri', serif",
         position: "relative",
         overflow: "hidden",
-        boxShadow: `inset 0 0 0 1.5px #fff, inset 0 0 0 4px rgba(184,134,11,0.15), 0 4px 24px rgba(0,0,0,0.08)`,
+        boxShadow: `inset 0 0 0 1.5px #fff, inset 0 0 0 4px ${gold}26, 0 4px 24px rgba(0,0,0,0.08)`,
       }}
     >
-      {/* Outer decorative border */}
-      <div style={{
-        position: "absolute", inset: 8,
-        border: `1px solid rgba(184,134,11,0.2)`,
-        borderRadius: 8,
-        pointerEvents: "none",
-      }} />
-
-      {/* Inner decorative border */}
-      <div style={{
-        position: "absolute", inset: 14,
-        border: `0.5px solid rgba(184,134,11,0.1)`,
-        borderRadius: 6,
-        pointerEvents: "none",
-      }} />
+      {/* Decorative borders */}
+      <div style={{ position: "absolute", inset: 8, border: `1px solid ${gold}33`, borderRadius: 8, pointerEvents: "none" }} />
+      <div style={{ position: "absolute", inset: 14, border: `0.5px solid ${gold}1a`, borderRadius: 6, pointerEvents: "none" }} />
 
       {/* Corner ornaments */}
       {["top-left", "top-right", "bottom-left", "bottom-right"].map((pos) => {
@@ -393,7 +566,7 @@ const CertificateTemplate = memo(({
         );
       })}
 
-      {/* Header with logo */}
+      {/* Header */}
       <div style={{ display: "flex", alignItems: "center", gap: "clamp(10px, 2vw, 20px)", marginBottom: "clamp(2px, 0.6vw, 8px)" }}>
         <div style={{ textAlign: "center" }}>
           <p {...editable} style={{ fontSize: "clamp(9px, 1.2vw, 13px)", color: navy, letterSpacing: 1.5, fontWeight: 400, textTransform: "uppercase" }}>
@@ -411,7 +584,7 @@ const CertificateTemplate = memo(({
             height: "clamp(48px, 6.5vw, 82px)",
             objectFit: "contain",
             borderRadius: "50%",
-            border: `2px solid rgba(184,134,11,0.2)`,
+            border: `2px solid ${gold}33`,
             padding: 2,
           }}
         />
@@ -425,49 +598,41 @@ const CertificateTemplate = memo(({
         </div>
       </div>
 
-      {/* Decorative line */}
-      <div style={{
-        width: "50%", height: 1,
-        background: `linear-gradient(90deg, transparent, ${gold}, transparent)`,
-        marginBottom: "clamp(6px, 1vw, 12px)",
-      }} />
+      {/* Line */}
+      <div style={{ width: "50%", height: 1, background: `linear-gradient(90deg, transparent, ${gold}, transparent)`, marginBottom: "clamp(6px, 1vw, 12px)" }} />
 
-      {/* Certificate type badge */}
+      {/* Badge */}
       <div style={{ textAlign: "center", marginBottom: "clamp(4px, 0.6vw, 8px)" }}>
         <div style={{
-          background: `linear-gradient(135deg, ${navy}, ${navy}dd)`,
+          background: `linear-gradient(135deg, ${titleColorAr}, ${titleColorAr}dd)`,
           color: "#fff",
           padding: "4px 28px",
           borderRadius: 24,
-          fontSize: "clamp(11px, 1.5vw, 15px)",
+          fontSize: sf(15, titleFontSize),
           fontWeight: 700,
           display: "inline-block",
           letterSpacing: 1,
-          boxShadow: "0 2px 8px rgba(10,42,94,0.2)",
+          boxShadow: `0 2px 8px ${titleColorAr}33`,
         }}>
           <span {...editable}>{certTitleAr}</span>
         </div>
-        <p {...editable} style={{ fontSize: "clamp(8px, 1vw, 11px)", color: navy, marginTop: 3, fontStyle: "italic", fontFamily: "Georgia, serif", letterSpacing: 1 }}>
+        <p {...editable} style={{ fontSize: sf(11, titleFontSize), color: titleColorEn, marginTop: 3, fontStyle: "italic", fontFamily: "Georgia, serif", letterSpacing: 1 }}>
           {certTitleEn}
         </p>
       </div>
 
-      {/* Arabic intro */}
-      <p {...editable} dir="rtl" style={{ fontSize: "clamp(9px, 1.3vw, 13px)", color: "#555", textAlign: "center" }}>
+      {/* Intro */}
+      <p {...editable} dir="rtl" style={{ fontSize: sf(13, bodyFontSize), color: bodyColorAr, textAlign: "center" }}>
         {introAr}
       </p>
-      <p {...editable} style={{ fontSize: "clamp(7px, 0.9vw, 10px)", color: "#888", fontFamily: "Georgia, serif", fontStyle: "italic" }}>
+      <p {...editable} style={{ fontSize: sf(10, bodyFontSize), color: bodyColorEn, fontFamily: "Georgia, serif", fontStyle: "italic" }}>
         {introEn}
       </p>
 
-      {/* Student name */}
-      <div style={{
-        margin: "clamp(4px, 0.8vw, 10px) 0",
-        textAlign: "center",
-        position: "relative",
-      }}>
+      {/* Student Name */}
+      <div style={{ margin: "clamp(4px, 0.8vw, 10px) 0", textAlign: "center", position: "relative" }}>
         <p {...editable} style={{
-          fontSize: "clamp(18px, 3vw, 32px)",
+          fontSize: sf(32, nameFontSize),
           fontWeight: 700,
           color: darkGold,
           paddingBottom: 4,
@@ -479,18 +644,13 @@ const CertificateTemplate = memo(({
         }}>
           {studentName || ".................."}
         </p>
-        <div style={{
-          width: "80%",
-          margin: "0 auto",
-          height: 1,
-          background: `linear-gradient(90deg, transparent 0%, ${gold} 20%, ${gold} 80%, transparent 100%)`,
-        }} />
+        <div style={{ width: "80%", margin: "0 auto", height: 1, background: `linear-gradient(90deg, transparent 0%, ${gold} 20%, ${gold} 80%, transparent 100%)` }} />
       </div>
 
-      {/* Body text - Arabic */}
+      {/* Body AR */}
       <p {...editable} dir="rtl" style={{
-        fontSize: "clamp(8px, 1.1vw, 12px)",
-        color: "#555",
+        fontSize: sf(12, bodyFontSize),
+        color: bodyColorAr,
         textAlign: "center",
         lineHeight: 1.8,
         maxWidth: "80%",
@@ -500,10 +660,10 @@ const CertificateTemplate = memo(({
         {bodyTextAr}
       </p>
 
-      {/* Body text - English */}
+      {/* Body EN */}
       <p {...editable} dir="ltr" style={{
-        fontSize: "clamp(7px, 0.9vw, 10px)",
-        color: "#888",
+        fontSize: sf(10, bodyFontSize),
+        color: bodyColorEn,
         textAlign: "center",
         lineHeight: 1.6,
         maxWidth: "80%",
@@ -514,26 +674,25 @@ const CertificateTemplate = memo(({
         {bodyTextEn}
       </p>
 
-      {/* Spacer */}
       <div style={{ flex: 1 }} />
 
-      {/* Signature & Footer */}
+      {/* Footer */}
       <div style={{
         width: "85%",
         display: "flex",
         justifyContent: "space-between",
         alignItems: "flex-end",
-        fontSize: "clamp(7px, 1vw, 10px)",
+        fontSize: sf(10, bodyFontSize),
         color: "#888",
       }}>
         <div style={{ textAlign: "center" }}>
           <div style={{ width: 90, borderTop: `1px solid ${gold}`, marginBottom: 4, opacity: 0.6 }} />
           <span {...editable}>{signatureName}</span>
         </div>
-        <div style={{ textAlign: "center", fontSize: "clamp(6px, 0.8vw, 9px)" }}>
+        <div style={{ textAlign: "center", fontSize: sf(9, bodyFontSize) }}>
           <p>{certDate.ar}</p>
           <p style={{ fontFamily: "Georgia, serif" }}>{certDate.en}</p>
-          <p style={{ marginTop: 2, color: "#bbb", fontSize: "clamp(5px, 0.7vw, 8px)" }}>{certNumber}</p>
+          <p style={{ marginTop: 2, color: "#bbb", fontSize: sf(8, bodyFontSize) }}>{certNumber}</p>
         </div>
       </div>
     </div>
