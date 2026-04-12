@@ -2,6 +2,7 @@ import { Component, ErrorInfo, ReactNode } from "react";
 import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { isLazyImportError } from "@/lib/lazyWithRetry";
 
 interface Props {
   children: ReactNode;
@@ -28,12 +29,19 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   handleReset = () => {
+    if (this.state.error && isLazyImportError(this.state.error)) {
+      window.location.reload();
+      return;
+    }
+
     this.setState({ hasError: false, error: null });
   };
 
   render() {
     if (this.state.hasError) {
       if (this.props.fallback) return this.props.fallback;
+
+      const shouldReloadPage = this.state.error && isLazyImportError(this.state.error);
 
       return (
         <div className="min-h-[40vh] flex items-center justify-center p-6">
@@ -57,7 +65,7 @@ class ErrorBoundary extends Component<Props, State> {
               )}
               <Button onClick={this.handleReset} className="gap-2">
                 <RefreshCw className="h-4 w-4" />
-                إعادة المحاولة
+                {shouldReloadPage ? "إعادة تحميل الصفحة" : "إعادة المحاولة"}
               </Button>
             </CardContent>
           </Card>
