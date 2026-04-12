@@ -33,7 +33,7 @@ const SessionDetailDialog = ({
   getStudentName,
   getTeacherName,
 }: SessionDetailDialogProps) => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
