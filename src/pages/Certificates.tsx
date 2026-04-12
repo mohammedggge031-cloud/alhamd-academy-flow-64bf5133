@@ -12,8 +12,9 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
-import { Award, Printer, Languages } from "lucide-react";
+import { Award, Printer, Languages, Download, Image, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { toPng } from "html-to-image";
 import academyLogo from "@/assets/academy-logo.jpeg";
 
 const CERT_TEMPLATES = [
@@ -299,6 +300,36 @@ const CertificatesPage = memo(() => {
     setTimeout(() => { printWin.print(); printWin.close(); }, 600);
   }, [selectedRecipient, customRecipientName, toast, lang, certAspectRatio]);
 
+  const handleDownloadImage = useCallback(async () => {
+    if (!selectedRecipient && !customRecipientName) {
+      toast({ title: lang === "ar" ? "اختر المستلم أو اكتب الاسم" : "Select recipient or enter name", variant: "destructive" });
+      return;
+    }
+    const el = previewRef.current;
+    if (!el) return;
+    try {
+      const dataUrl = await toPng(el, { quality: 1, pixelRatio: 3 });
+      const link = document.createElement("a");
+      link.download = `certificate-${selectedRecipientName || "cert"}.png`;
+      link.href = dataUrl;
+      link.click();
+      toast({ title: lang === "ar" ? "تم تحميل الشهادة" : "Certificate downloaded" });
+    } catch {
+      toast({ title: lang === "ar" ? "حدث خطأ" : "Error", variant: "destructive" });
+    }
+  }, [selectedRecipient, customRecipientName, selectedRecipientName, toast, lang]);
+
+  const handleWhatsAppShare = useCallback(async () => {
+    if (!selectedRecipient && !customRecipientName) {
+      toast({ title: lang === "ar" ? "اختر المستلم أو اكتب الاسم" : "Select recipient or enter name", variant: "destructive" });
+      return;
+    }
+    const name = selectedRecipientName || customRecipientName;
+    const msg = `🎓 *شهادة تقدير - أكاديمية الحمد*\n\nالسلام عليكم ورحمة الله وبركاته\n\nتم إعداد شهادة تقدير للأخ/ت: ${name}\n\n${certTitleAr}\n\nبارك الله فيكم 🌟\n\n_أكاديمية الحمد لتحفيظ القرآن الكريم_`;
+    const url = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank", "noopener,noreferrer");
+  }, [selectedRecipient, customRecipientName, selectedRecipientName, certTitleAr, toast, lang]);
+
   if (!queryEnabled || (isAuthReady && role === "teacher")) {
     return (
       <div className="space-y-6 animate-fade-in">
@@ -571,10 +602,18 @@ const CertificatesPage = memo(() => {
               </TabsContent>
             </Tabs>
 
-            <div className="flex gap-2 pt-2">
-              <Button className="flex-1 gap-2" variant="outline" onClick={handlePrint} disabled={!selectedRecipient && !customRecipientName}>
-                <Printer className="h-4 w-4" />
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button className="flex-1 gap-1 text-xs" variant="outline" onClick={handlePrint} disabled={!selectedRecipient && !customRecipientName}>
+                <Printer className="h-3.5 w-3.5" />
                 {lang === "ar" ? "طباعة" : "Print"}
+              </Button>
+              <Button className="flex-1 gap-1 text-xs" variant="outline" onClick={handleDownloadImage} disabled={!selectedRecipient && !customRecipientName}>
+                <Image className="h-3.5 w-3.5" />
+                {lang === "ar" ? "تحميل صورة" : "Download Image"}
+              </Button>
+              <Button className="flex-1 gap-1 text-xs text-[#25D366]" variant="outline" onClick={handleWhatsAppShare} disabled={!selectedRecipient && !customRecipientName}>
+                <MessageCircle className="h-3.5 w-3.5" />
+                {lang === "ar" ? "واتساب" : "WhatsApp"}
               </Button>
             </div>
           </CardContent>
