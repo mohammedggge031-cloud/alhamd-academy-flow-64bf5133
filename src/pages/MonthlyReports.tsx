@@ -412,7 +412,7 @@ const MonthlyReports = () => {
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-2 border-t">
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => openEdit(r)}>
                     <Pencil className="h-3 w-3" /> {t("editReport")}
                   </Button>
@@ -422,6 +422,7 @@ const MonthlyReports = () => {
                   <Button variant="outline" size="sm" className="gap-1 text-xs text-[#25D366]" onClick={() => sendWhatsapp(r)}>
                     <MessageCircle className="h-3 w-3" /> {isAdmin ? t("sendReportWhatsapp") : t("sendViaWhatsapp")}
                   </Button>
+                  <AdminSignatureDisplay enabled={showSignature} className="ml-auto" />
                 </div>
               </CardContent>
             </Card>
