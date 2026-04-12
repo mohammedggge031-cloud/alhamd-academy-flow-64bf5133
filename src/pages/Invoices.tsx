@@ -18,6 +18,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { openWhatsApp, buildInvoiceMessage, buildPaidInvoiceMessage } from "@/utils/whatsappLinks";
+import { AdminSignatureToggle, AdminSignatureDisplay } from "@/components/AdminSignature";
 
 const Invoices = () => {
   const { t } = useLanguage();
@@ -25,6 +26,7 @@ const Invoices = () => {
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [showSignature, setShowSignature] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -189,7 +191,10 @@ const Invoices = () => {
             <Receipt className="h-6 w-6 text-primary" />
             {t("invoicesTitle")}
           </h1>
-          <p className="text-muted-foreground">{invoices.length} {t("invoicesCount")}</p>
+          <div className="flex items-center gap-4">
+            <p className="text-muted-foreground">{invoices.length} {t("invoicesCount")}</p>
+            <AdminSignatureToggle enabled={showSignature} onToggle={setShowSignature} />
+          </div>
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
@@ -404,6 +409,7 @@ const Invoices = () => {
                           <MessageCircle className="h-4 w-4" />
                         </Button>
                       )}
+                      <AdminSignatureDisplay enabled={showSignature} className="ml-2" />
                     </div>
                   </div>
                 );
