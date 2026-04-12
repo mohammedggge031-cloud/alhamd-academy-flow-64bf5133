@@ -209,7 +209,65 @@ const SessionDetailDialog = ({
               </Badge>
             )}
 
-            {/* Admin actions */}
+            {/* Admin: Exception minutes for absent sessions */}
+            {isAdmin && selectedSession.status === "absent_student" && (
+              <div className="space-y-3 pt-2 border-t border-border">
+                <div className="flex items-center justify-between">
+                  <Label className="text-sm font-medium flex items-center gap-1.5">
+                    <DollarSign className="h-4 w-4 text-primary" />
+                    {lang === "ar" ? "دقائق استثنائية للمعلم" : "Exception Minutes for Teacher"}
+                  </Label>
+                  {!showExceptionInput && (
+                    <Button size="sm" variant="outline" className="gap-1 text-xs"
+                      onClick={() => {
+                        setExceptionMinutes(String(selectedSession.exception_minutes || 0));
+                        setShowExceptionInput(true);
+                      }}>
+                      <Plus className="h-3 w-3" />
+                      {lang === "ar" ? "إضافة" : "Add"}
+                    </Button>
+                  )}
+                </div>
+                {selectedSession.exception_minutes > 0 && !showExceptionInput && (
+                  <p className="text-sm text-muted-foreground">
+                    {lang === "ar" ? `تم إضافة ${selectedSession.exception_minutes} دقيقة استثنائية` : `${selectedSession.exception_minutes} exception minutes added`}
+                  </p>
+                )}
+                {showExceptionInput && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      min="0"
+                      max="120"
+                      value={exceptionMinutes}
+                      onChange={(e) => setExceptionMinutes(e.target.value)}
+                      placeholder={lang === "ar" ? "عدد الدقائق" : "Minutes"}
+                      className="w-24"
+                    />
+                    <Button size="sm" className="gap-1"
+                      onClick={async () => {
+                        const mins = parseInt(exceptionMinutes) || 0;
+                        const { error } = await supabase.from("sessions")
+                          .update({ exception_minutes: mins } as any)
+                          .eq("id", selectedSession.id);
+                        if (error) {
+                          toast({ title: t("error"), description: error.message, variant: "destructive" });
+                        } else {
+                          queryClient.invalidateQueries({ queryKey: ["sessions"] });
+                          setShowExceptionInput(false);
+                          toast({ title: lang === "ar" ? "تم حفظ الدقائق الاستثنائية" : "Exception minutes saved" });
+                        }
+                      }}>
+                      {lang === "ar" ? "حفظ" : "Save"}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setShowExceptionInput(false)}>
+                      {lang === "ar" ? "إلغاء" : "Cancel"}
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+
             {isAdmin && selectedSession.status === "upcoming" && (
               <div className="space-y-3 pt-2">
                 <Label className="text-sm font-medium">{t("adminActions")}</Label>
