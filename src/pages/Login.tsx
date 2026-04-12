@@ -8,6 +8,7 @@ import { Lock, Globe, Eye, EyeOff, LogIn, Loader2, HelpCircle } from "lucide-rea
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { markAuthSessionActive } from "@/lib/authSession";
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from "@/components/ui/dialog";
@@ -62,8 +63,8 @@ const Login = () => {
         if (!trimmedEmail || trimmedEmail.length > 255) {
           throw new Error(t("loginInvalidEmail"));
         }
-        const { error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
-        if (error) throw new Error(t("loginInvalidEmail"));
+        const { data, error } = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
+        if (error || !data.session) throw new Error(t("loginInvalidEmail"));
       } else {
         const sanitizedPhone = identifier.replace(/[^0-9+]/g, "");
         if (!sanitizedPhone || sanitizedPhone.length < 8 || sanitizedPhone.length > 20) {
@@ -79,8 +80,7 @@ const Login = () => {
         }
       }
 
-      // Mark session active for persistence policy
-      sessionStorage.setItem("auth_active", "1");
+      markAuthSessionActive();
       attemptsRef.current = 0;
 
       // Small delay to let auth state propagate before navigating

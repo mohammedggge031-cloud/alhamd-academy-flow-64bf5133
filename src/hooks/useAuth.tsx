@@ -1,6 +1,14 @@
 import { createContext, useContext, useEffect, useState, useCallback, useRef, ReactNode } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
+import { queryClient } from "@/lib/queryClient";
+import {
+  clearAuthSessionMarkers,
+  getLastActivityTimestamp,
+  hasActiveAuthSession,
+  markAuthSessionActive,
+  touchAuthSessionActivity,
+} from "@/lib/authSession";
 
 const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours
 const AUTH_INIT_TIMEOUT_MS = 6000;
@@ -58,6 +66,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const version = ++roleVersionRef.current;
     if (!mountedRef.current) return;
 
+    if (nextSession?.user) {
+      markAuthSessionActive();
+    } else {
+      clearAuthSessionMarkers();
+    }
+
     setSession(nextSession);
     setUser(nextSession?.user ?? null);
 
@@ -81,36 +95,36 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
     // 1. Set up auth listener FIRST (Supabase best practice)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, nextSession) => {
+      (event, nextSession) => {
         // For INITIAL_SESSION, let restoreSession handle it to avoid race
         if (event === "INITIAL_SESSION") return;
 
         // SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.
-        await applySession(nextSession);
-        finalizeInit();
+        void applySession(nextSession).finally(finalizeInit);
       }
     );
 
     // 2. Restore session manually
     const restoreSession = async () => {
       try {
-        const isReturning = sessionStorage.getItem("auth_active");
+        const isReturning = hasActiveAuthSession();
 
         if (!isReturning) {
-          // New browser tab — enforce session-based persistence
-          sessionStorage.setItem("auth_active", "1");
-          // Sign out quietly without triggering a full state reset
+          clearAuthSessionMarkers();
           await supabase.auth.signOut();
           await applySession(null);
-          finalizeInit();
           return;
         }
 
         // Returning session (same tab, page refresh)
         const { data: { session: existing } } = await supabase.auth.getSession();
+        if (existing?.user) {
+          markAuthSessionActive();
+        }
         await applySession(existing);
       } catch (err) {
         console.warn("Auth restore failed:", err);
+        clearAuthSessionMarkers();
         await applySession(null);
       } finally {
         finalizeInit();
@@ -129,20 +143,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const signIn = useCallback(async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password });
     if (!error && data.session) {
-      // Mark session active & apply immediately (don't wait for event)
-      sessionStorage.setItem("auth_active", "1");
+      markAuthSessionActive();
       await applySession(data.session);
     }
     return { error };
   }, [applySession]);
 
   const signOut = useCallback(async () => {
-    try {
-      const { queryClient } = await import("@/lib/queryClient");
-      queryClient.clear();
-    } catch {
-      // ignore
-    }
+    clearAuthSessionMarkers();
+    queryClient.clear();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
@@ -155,21 +164,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const resetIdleTimer = useCallback(() => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
     if (!user) return;
-    sessionStorage.setItem("last_activity", Date.now().toString());
+    touchAuthSessionActivity();
     idleTimer.current = setTimeout(() => {
       console.log("Session expired — idle timeout");
-      signOut();
+      void signOut();
     }, IDLE_TIMEOUT_MS);
   }, [user, signOut]);
 
   useEffect(() => {
     if (!user) return;
 
-    const lastActivity = sessionStorage.getItem("last_activity");
+    const lastActivity = getLastActivityTimestamp();
     if (lastActivity) {
-      const elapsed = Date.now() - parseInt(lastActivity, 10);
+      const elapsed = Date.now() - lastActivity;
       if (elapsed >= IDLE_TIMEOUT_MS) {
-        signOut();
+        void signOut();
         return;
       }
     }
