@@ -2,10 +2,11 @@ import { Suspense } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider, useAuth } from "@/hooks/useAuth";
 import { LanguageProvider } from "@/i18n/LanguageContext";
+import { queryClient } from "@/lib/queryClient";
 import AppLayout from "./components/layout/AppLayout";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { Loader2 } from "lucide-react";
@@ -29,20 +30,6 @@ const Login = lazyWithRetry(() => import("./pages/Login"), "login-page");
 const Certificates = lazyWithRetry(() => import("./pages/Certificates"), "certificates-page");
 const Regulations = lazyWithRetry(() => import("./pages/Regulations"), "regulations-page");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "not-found-page");
-
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      staleTime: 5 * 60 * 1000,
-      gcTime: 10 * 60 * 1000,
-      refetchOnWindowFocus: false,
-      retry: 1,
-    },
-  },
-});
-
-// Export queryClient so useAuth can clear it on logout
-export { queryClient };
 
 const PageLoader = () => (
   <div className="min-h-[50vh] flex items-center justify-center">
