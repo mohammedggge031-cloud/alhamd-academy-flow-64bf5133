@@ -234,6 +234,7 @@ const MonthlyReports = () => {
           </h1>
           <p className="text-muted-foreground">{t("monthlyReportsSubtitle")}</p>
           <AdminSignatureToggle enabled={showSignature} onToggle={setShowSignature} />
+        </div>
 
         <Button className="gap-2" onClick={openNew}>
           <Plus className="h-4 w-4" />{t("writeReport")}
