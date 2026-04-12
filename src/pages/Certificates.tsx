@@ -624,8 +624,8 @@ const CertificatesPage = memo(() => {
           <CardHeader className="pb-3">
             <CardTitle className="text-lg">{lang === "ar" ? "معاينة الشهادة" : "Certificate Preview"}</CardTitle>
           </CardHeader>
-          <CardContent>
-            <div ref={previewRef} className="mx-auto" style={{ maxWidth: certWidth }}>
+          <CardContent className="overflow-auto max-h-[80vh]">
+            <div ref={previewRef} className="mx-auto" style={{ width: "100%", maxWidth: certWidth }}>
               <CertificateTemplate
                 academyNameAr={academyNameAr}
                 academyNameEn={academyNameEn}
