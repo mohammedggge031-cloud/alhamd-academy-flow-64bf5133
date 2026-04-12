@@ -129,7 +129,7 @@ const SessionDetailDialog = ({
             {!isAdmin && selectedSession.status === "upcoming" && (
               <div className="space-y-3 pt-2">
                 <Label className="text-sm font-medium">{t("adminActionsLabel")}</Label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-3 gap-2">
                   <Button size="sm" className="gap-1"
                     onClick={async () => {
                       await updateStatus.mutateAsync({ id: selectedSession.id, status: "confirmed" });
@@ -149,6 +149,10 @@ const SessionDetailDialog = ({
                   <Button size="sm" variant="destructive" className="gap-1"
                     onClick={() => handleStatusWithConfirm("absent_student", t("markAbsent"))}>
                     <XCircle className="h-3 w-3" />{t("markAbsent")}
+                  </Button>
+                  <Button size="sm" variant="outline" className="gap-1"
+                    onClick={() => handleStatusWithConfirm("postponed", t("postponeSession"))}>
+                    <Pause className="h-3 w-3" />{t("postponeSession")}
                   </Button>
                 </div>
               </div>
