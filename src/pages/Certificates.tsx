@@ -67,7 +67,6 @@ const CertificatesPage = memo(() => {
 
   const [selectedStudent, setSelectedStudent] = useState("");
   const [template, setTemplate] = useState("appreciation");
-  const [manualEdit, setManualEdit] = useState(false);
 
   const templateConfig = CERT_TEMPLATES.find((t) => t.id === template)!;
 
@@ -194,19 +193,10 @@ const CertificatesPage = memo(() => {
               </Select>
             </div>
 
-            {/* Manual edit toggle */}
-            <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50 border">
-              <div className="flex items-center gap-2">
-                <MousePointerClick className="h-4 w-4 text-primary" />
-                <Label className="text-sm cursor-pointer">{lang === "ar" ? "التعديل اليدوي" : "Manual Edit"}</Label>
-              </div>
-              <Switch checked={manualEdit} onCheckedChange={setManualEdit} />
-            </div>
-            {manualEdit && (
-              <p className="text-xs text-muted-foreground">
-                {lang === "ar" ? "اضغط على أي نص في الشهادة لتعديله مباشرة" : "Click any text on the certificate to edit it directly"}
-              </p>
-            )}
+
+            <p className="text-xs text-muted-foreground">
+              {lang === "ar" ? "اضغط على أي نص في الشهادة لتعديله مباشرة" : "Click any text on the certificate to edit it directly"}
+            </p>
 
             <Tabs defaultValue="text" className="w-full">
               <TabsList className="w-full grid grid-cols-2">
@@ -306,7 +296,7 @@ const CertificatesPage = memo(() => {
                 certDate={certDate}
                 certNumber={certNumber}
                 signatureName={signatureName}
-                manualEdit={manualEdit}
+                manualEdit={true}
               />
             </div>
           </CardContent>
