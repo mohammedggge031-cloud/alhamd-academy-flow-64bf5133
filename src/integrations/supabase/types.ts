@@ -94,6 +94,13 @@ export type Database = {
             foreignKeyName: "approval_requests_teacher_id_fkey"
             columns: ["teacher_id"]
             isOneToOne: false
+            referencedRelation: "teachers_manager_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "approval_requests_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
             referencedRelation: "teachers_self_view"
             referencedColumns: ["id"]
           },
@@ -295,6 +302,13 @@ export type Database = {
             foreignKeyName: "monthly_reports_teacher_id_fkey"
             columns: ["teacher_id"]
             isOneToOne: false
+            referencedRelation: "teachers_manager_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "monthly_reports_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
             referencedRelation: "teachers_self_view"
             referencedColumns: ["id"]
           },
@@ -465,6 +479,13 @@ export type Database = {
             foreignKeyName: "session_reports_teacher_id_fkey"
             columns: ["teacher_id"]
             isOneToOne: false
+            referencedRelation: "teachers_manager_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_reports_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
             referencedRelation: "teachers_self_view"
             referencedColumns: ["id"]
           },
@@ -544,6 +565,13 @@ export type Database = {
             foreignKeyName: "sessions_teacher_id_fkey"
             columns: ["teacher_id"]
             isOneToOne: false
+            referencedRelation: "teachers_manager_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sessions_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
             referencedRelation: "teachers_self_view"
             referencedColumns: ["id"]
           },
@@ -613,6 +641,13 @@ export type Database = {
             columns: ["assigned_teacher_id"]
             isOneToOne: false
             referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "students_assigned_teacher_id_fkey"
+            columns: ["assigned_teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_manager_view"
             referencedColumns: ["id"]
           },
           {
@@ -706,6 +741,13 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_documents_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_manager_view"
             referencedColumns: ["id"]
           },
           {
@@ -886,6 +928,80 @@ export type Database = {
       }
     }
     Views: {
+      teachers_manager_view: {
+        Row: {
+          academic_degree: string | null
+          age: number | null
+          bio: string | null
+          created_at: string | null
+          gender: string | null
+          id: string | null
+          ijazat: string | null
+          is_active: boolean | null
+          profile_completed: boolean | null
+          qualification: string | null
+          rate_currency: string | null
+          rating: number | null
+          show_on_website: boolean | null
+          students_count: number | null
+          subjects: string[] | null
+          updated_at: string | null
+          user_id: string | null
+          website_visible_fields: string[] | null
+          zoom_link: string | null
+        }
+        Insert: {
+          academic_degree?: string | null
+          age?: number | null
+          bio?: string | null
+          created_at?: string | null
+          gender?: string | null
+          id?: string | null
+          ijazat?: string | null
+          is_active?: boolean | null
+          profile_completed?: boolean | null
+          qualification?: string | null
+          rate_currency?: string | null
+          rating?: number | null
+          show_on_website?: boolean | null
+          students_count?: number | null
+          subjects?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+          website_visible_fields?: string[] | null
+          zoom_link?: string | null
+        }
+        Update: {
+          academic_degree?: string | null
+          age?: number | null
+          bio?: string | null
+          created_at?: string | null
+          gender?: string | null
+          id?: string | null
+          ijazat?: string | null
+          is_active?: boolean | null
+          profile_completed?: boolean | null
+          qualification?: string | null
+          rate_currency?: string | null
+          rating?: number | null
+          show_on_website?: boolean | null
+          students_count?: number | null
+          subjects?: string[] | null
+          updated_at?: string | null
+          user_id?: string | null
+          website_visible_fields?: string[] | null
+          zoom_link?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teachers_profile_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       teachers_self_view: {
         Row: {
           age: number | null
