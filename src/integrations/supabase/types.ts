@@ -475,6 +475,7 @@ export type Database = {
           approval_status: string | null
           created_at: string
           duration_minutes: number
+          exception_minutes: number | null
           id: string
           notes: string | null
           original_data: Json | null
@@ -492,6 +493,7 @@ export type Database = {
           approval_status?: string | null
           created_at?: string
           duration_minutes?: number
+          exception_minutes?: number | null
           id?: string
           notes?: string | null
           original_data?: Json | null
@@ -509,6 +511,7 @@ export type Database = {
           approval_status?: string | null
           created_at?: string
           duration_minutes?: number
+          exception_minutes?: number | null
           id?: string
           notes?: string | null
           original_data?: Json | null
