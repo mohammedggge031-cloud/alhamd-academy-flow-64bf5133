@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import type { User, Session } from "@supabase/supabase-js";
 
 const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours
+const AUTH_INIT_TIMEOUT_MS = 6000;
 
 interface AuthContextType {
   user: User | null;
@@ -23,6 +24,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(true);
   const [isAuthReady, setIsAuthReady] = useState(false);
 
+  // Track whether initial session has been resolved
+  const initResolvedRef = useRef(false);
+  const roleVersionRef = useRef(0);
+  const mountedRef = useRef(true);
+
   const fetchRole = async (userId: string): Promise<string | null> => {
     try {
       const { data, error } = await supabase
@@ -30,96 +36,112 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .select("role")
         .eq("user_id", userId)
         .maybeSingle();
-
       if (error) {
-        console.warn("Failed to fetch role, defaulting to null", error);
+        console.warn("Failed to fetch role:", error.message);
         return null;
       }
-
       return data?.role ?? null;
-    } catch (error) {
-      console.warn("Failed to fetch role, defaulting to null", error);
+    } catch {
       return null;
     }
   };
 
+  const finalizeInit = useCallback(() => {
+    if (initResolvedRef.current) return;
+    initResolvedRef.current = true;
+    if (!mountedRef.current) return;
+    setIsAuthReady(true);
+    setLoading(false);
+  }, []);
+
+  const applySession = useCallback(async (nextSession: Session | null) => {
+    const version = ++roleVersionRef.current;
+    if (!mountedRef.current) return;
+
+    setSession(nextSession);
+    setUser(nextSession?.user ?? null);
+
+    if (!nextSession?.user) {
+      setRole(null);
+      return;
+    }
+
+    const nextRole = await fetchRole(nextSession.user.id);
+    // Stale guard: if another applySession ran after us, discard
+    if (!mountedRef.current || version !== roleVersionRef.current) return;
+    setRole(nextRole);
+  }, []);
+
   useEffect(() => {
-    let mounted = true;
-    let roleRequestVersion = 0;
+    mountedRef.current = true;
+    initResolvedRef.current = false;
 
-    const finalizeAuthInit = () => {
-      if (!mounted) return;
-      setIsAuthReady(true);
-      setLoading(false);
-    };
+    // Safety timeout — always become ready eventually
+    const safetyTimer = setTimeout(finalizeInit, AUTH_INIT_TIMEOUT_MS);
 
-    const applyAuthState = async (nextSession: Session | null) => {
-      const currentRoleRequest = ++roleRequestVersion;
+    // 1. Set up auth listener FIRST (Supabase best practice)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, nextSession) => {
+        // For INITIAL_SESSION, let restoreSession handle it to avoid race
+        if (event === "INITIAL_SESSION") return;
 
-      if (!mounted) return;
-      setSession(nextSession);
-      setUser(nextSession?.user ?? null);
-
-      if (!nextSession?.user) {
-        setRole(null);
-        return;
+        // SIGNED_IN, SIGNED_OUT, TOKEN_REFRESHED, etc.
+        await applySession(nextSession);
+        finalizeInit();
       }
+    );
 
-      const nextRole = await fetchRole(nextSession.user.id);
-      if (!mounted || currentRoleRequest !== roleRequestVersion) return;
-      setRole(nextRole);
-    };
-
-    const safetyTimer = setTimeout(() => {
-      finalizeAuthInit();
-    }, 6000);
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, nextSession) => {
-      void applyAuthState(nextSession);
-      finalizeAuthInit();
-    });
-
+    // 2. Restore session manually
     const restoreSession = async () => {
       try {
-        const isReturningSession = sessionStorage.getItem("auth_active");
+        const isReturning = sessionStorage.getItem("auth_active");
 
-        if (!isReturningSession) {
+        if (!isReturning) {
+          // New browser tab — enforce session-based persistence
           sessionStorage.setItem("auth_active", "1");
+          // Sign out quietly without triggering a full state reset
           await supabase.auth.signOut();
-          await applyAuthState(null);
+          await applySession(null);
+          finalizeInit();
           return;
         }
 
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
-        await applyAuthState(existingSession);
-      } catch (error) {
-        console.warn("Auth initialization failed", error);
-        await applyAuthState(null);
+        // Returning session (same tab, page refresh)
+        const { data: { session: existing } } = await supabase.auth.getSession();
+        await applySession(existing);
+      } catch (err) {
+        console.warn("Auth restore failed:", err);
+        await applySession(null);
       } finally {
-        finalizeAuthInit();
+        finalizeInit();
       }
     };
 
-    void restoreSession();
+    restoreSession();
 
     return () => {
-      mounted = false;
+      mountedRef.current = false;
       clearTimeout(safetyTimer);
       subscription.unsubscribe();
     };
-  }, []);
+  }, [applySession, finalizeInit]);
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
+  const signIn = useCallback(async (email: string, password: string) => {
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    if (!error && data.session) {
+      // Mark session active & apply immediately (don't wait for event)
+      sessionStorage.setItem("auth_active", "1");
+      await applySession(data.session);
+    }
     return { error };
-  };
+  }, [applySession]);
 
   const signOut = useCallback(async () => {
     try {
       const { queryClient } = await import("@/App");
       queryClient.clear();
-    } catch (e) {
-      console.warn("Failed to clear query cache:", e);
+    } catch {
+      // ignore
     }
     await supabase.auth.signOut();
     setUser(null);
@@ -127,16 +149,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(null);
   }, []);
 
-  // Idle timeout: sign out after 2 hours of inactivity
+  // ---- Idle timeout ----
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const resetIdleTimer = useCallback(() => {
     if (idleTimer.current) clearTimeout(idleTimer.current);
     if (!user) return;
-    // Save last activity timestamp
     sessionStorage.setItem("last_activity", Date.now().toString());
     idleTimer.current = setTimeout(() => {
-      console.log("Session expired due to inactivity");
+      console.log("Session expired — idle timeout");
       signOut();
     }, IDLE_TIMEOUT_MS);
   }, [user, signOut]);
@@ -144,7 +165,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     if (!user) return;
 
-    // Check if session already expired from last activity
     const lastActivity = sessionStorage.getItem("last_activity");
     if (lastActivity) {
       const elapsed = Date.now() - parseInt(lastActivity, 10);
@@ -154,7 +174,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    const events = ["mousedown", "keydown", "scroll", "touchstart"] as const;
     events.forEach((e) => window.addEventListener(e, resetIdleTimer, { passive: true }));
     resetIdleTimer();
 
