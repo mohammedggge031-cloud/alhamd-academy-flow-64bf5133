@@ -19,6 +19,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { AdminSignatureToggle, AdminSignatureDisplay } from "@/components/AdminSignature";
 
 const emptyForm = {
   student_id: "", report_month: new Date().toISOString().slice(0, 7),
@@ -32,6 +33,7 @@ const MonthlyReports = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ ...emptyForm });
+  const [showSignature, setShowSignature] = useState(false);
   const { role } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -231,6 +233,7 @@ const MonthlyReports = () => {
             {t("monthlyReportsTitle")}
           </h1>
           <p className="text-muted-foreground">{t("monthlyReportsSubtitle")}</p>
+          <AdminSignatureToggle enabled={showSignature} onToggle={setShowSignature} />
         </div>
 
         <Button className="gap-2" onClick={openNew}>
@@ -409,7 +412,7 @@ const MonthlyReports = () => {
                 )}
 
                 {/* Actions */}
-                <div className="flex gap-2 pt-2 border-t">
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
                   <Button variant="outline" size="sm" className="gap-1 text-xs" onClick={() => openEdit(r)}>
                     <Pencil className="h-3 w-3" /> {t("editReport")}
                   </Button>
@@ -419,6 +422,7 @@ const MonthlyReports = () => {
                   <Button variant="outline" size="sm" className="gap-1 text-xs text-[#25D366]" onClick={() => sendWhatsapp(r)}>
                     <MessageCircle className="h-3 w-3" /> {isAdmin ? t("sendReportWhatsapp") : t("sendViaWhatsapp")}
                   </Button>
+                  <AdminSignatureDisplay enabled={showSignature} className="ml-auto" />
                 </div>
               </CardContent>
             </Card>
