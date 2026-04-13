@@ -139,6 +139,78 @@ export type Database = {
         }
         Relationships: []
       }
+      external_sync_config: {
+        Row: {
+          created_at: string
+          enabled: boolean
+          function_url: string
+          id: boolean
+          secret_value: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          enabled?: boolean
+          function_url: string
+          id?: boolean
+          secret_value?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          enabled?: boolean
+          function_url?: string
+          id?: boolean
+          secret_value?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      external_sync_events: {
+        Row: {
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          old_payload: Json | null
+          operation: string
+          payload: Json | null
+          processed_at: string | null
+          record_id: string | null
+          status: string
+          table_name: string
+          updated_at: string
+        }
+        Insert: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          old_payload?: Json | null
+          operation: string
+          payload?: Json | null
+          processed_at?: string | null
+          record_id?: string | null
+          status?: string
+          table_name: string
+          updated_at?: string
+        }
+        Update: {
+          attempts?: number
+          created_at?: string
+          id?: string
+          last_error?: string | null
+          old_payload?: Json | null
+          operation?: string
+          payload?: Json | null
+          processed_at?: string | null
+          record_id?: string | null
+          status?: string
+          table_name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       invoice_students: {
         Row: {
           amount: number
@@ -1056,8 +1128,21 @@ export type Database = {
         Args: { _user_id: string }
         Returns: undefined
       }
+      mark_external_sync_event_result: {
+        Args: { _event_id: string; _last_error?: string; _status: string }
+        Returns: undefined
+      }
       mark_notification_group_read: {
         Args: { _notification_id: string }
+        Returns: undefined
+      }
+      request_external_sync_processing: { Args: never; Returns: undefined }
+      set_external_sync_config: {
+        Args: { _function_url: string; _secret_value: string }
+        Returns: undefined
+      }
+      touch_external_sync_event: {
+        Args: { _event_id: string; _last_error?: string }
         Returns: undefined
       }
     }
