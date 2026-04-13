@@ -132,12 +132,17 @@ serve(async (req) => {
   try {
     // ========= AUTH =========
     const syncSecret = Deno.env.get("SYNC_SECRET");
+    const serviceRoleKeyEnv = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     if (!syncSecret) throw new Error("SYNC_SECRET not configured");
 
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
 
-    if (body.secret_key !== syncSecret) {
+    // Allow auth via secret_key in body OR service_role_key in Authorization header
+    const authHeader = req.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
+    const isAuthorized = body.secret_key === syncSecret || authHeader === serviceRoleKeyEnv;
+
+    if (!isAuthorized) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
