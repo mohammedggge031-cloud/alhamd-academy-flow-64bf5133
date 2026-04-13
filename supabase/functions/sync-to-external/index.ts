@@ -17,13 +17,8 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     
-    const syncSecret = Deno.env.get("SYNC_SECRET");
-    if (!syncSecret) throw new Error("SYNC_SECRET غير محدد");
-    
     const body_raw = await req.text();
     const body_parsed = JSON.parse(body_raw || "{}");
-    const providedKey = body_parsed.secret_key || req.headers.get("x-sync-secret") || "";
-    if (providedKey !== syncSecret) throw new Error("غير مصرح - مفتاح غير صحيح");
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
