@@ -139,39 +139,11 @@ serve(async (req) => {
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
 
-    const authHeader = req.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
-    const apikeyHeader = req.headers.get("apikey") ?? "";
-    
-    console.log("Auth check:", {
-      hasBody: !!bodyRaw,
-      mode: body.mode,
-      hasSecretKey: !!body.secret_key,
-      authHeaderLen: authHeader.length,
-      apikeyHeaderLen: apikeyHeader.length,
-      anonKeyLen: anonKeyEnv.length,
-      serviceKeyLen: serviceRoleKeyEnv.length,
-      syncSecretLen: syncSecret?.length ?? 0,
-    });
-
-    const hasServiceRole = authHeader === serviceRoleKeyEnv || apikeyHeader === serviceRoleKeyEnv;
-    const hasAnonKey = (anonKeyEnv.length > 0) && (authHeader === anonKeyEnv || apikeyHeader === anonKeyEnv);
     const hasSecretKey = body.secret_key === syncSecret;
     
-    // Anon key only allowed for process_queue mode
-    const isAuthorized = hasSecretKey || hasServiceRole || (hasAnonKey && body.mode === "process_queue");
-
-    if (!isAuthorized) {
-      console.log("Auth failed:", { hasSecretKey, hasServiceRole, hasAnonKey });
+    if (!hasSecretKey) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    
-    // Full sync requires stronger auth
-    if (!hasSecretKey && !hasServiceRole && body.mode !== "process_queue") {
-      return new Response(JSON.stringify({ error: "Full sync requires secret_key authentication" }), {
-        status: 403,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
