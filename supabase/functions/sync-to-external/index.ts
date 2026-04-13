@@ -133,21 +133,39 @@ serve(async (req) => {
     // ========= AUTH =========
     const syncSecret = Deno.env.get("SYNC_SECRET");
     const serviceRoleKeyEnv = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const anonKeyEnv = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     if (!syncSecret) throw new Error("SYNC_SECRET not configured");
 
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
 
-    // Auth methods (in priority order):
-    // 1. secret_key in request body (used by pg_net cron triggers)
-    // 2. service_role_key in Authorization header (internal admin calls)
-    // 3. service_role_key in apikey header (Supabase curl tool)
+    // Auth methods:
+    // 1. secret_key in request body (pg_net cron/triggers)
+    // 2. service_role_key in Authorization/apikey header
+    // 3. anon_key + mode=process_queue only (internal Supabase relay for cron)
     const authHeader = req.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
     const apikeyHeader = req.headers.get("apikey") ?? "";
-    const isAuthorized =
-      body.secret_key === syncSecret ||
-      authHeader === serviceRoleKeyEnv ||
-      apikeyHeader === serviceRoleKeyEnv;
+    const hasServiceRole = authHeader === serviceRoleKeyEnv || apikeyHeader === serviceRoleKeyEnv;
+    const hasAnonKey = authHeader === anonKeyEnv || apikeyHeader === anonKeyEnv;
+    const hasSecretKey = body.secret_key === syncSecret;
+    
+    // Anon key only allowed for process_queue mode (lightweight incremental sync)
+    const isAuthorized = hasSecretKey || hasServiceRole || (hasAnonKey && body.mode === "process_queue");
+
+    // Full sync (schema_and_data) requires secret_key or service_role - never anon
+    if (!isAuthorized) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    
+    if (!hasSecretKey && !hasServiceRole && body.mode !== "process_queue") {
+      return new Response(JSON.stringify({ error: "Full sync requires secret_key authentication" }), {
+        status: 403,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     if (!isAuthorized) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
