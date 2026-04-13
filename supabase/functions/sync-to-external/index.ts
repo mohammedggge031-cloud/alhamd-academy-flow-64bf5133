@@ -132,8 +132,6 @@ serve(async (req) => {
   try {
     // ========= AUTH =========
     const syncSecret = Deno.env.get("SYNC_SECRET");
-    const serviceRoleKeyEnv = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const anonKeyEnv = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
     if (!syncSecret) throw new Error("SYNC_SECRET not configured");
 
     const bodyRaw = await req.text();
