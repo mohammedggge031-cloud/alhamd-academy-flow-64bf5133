@@ -138,9 +138,16 @@ serve(async (req) => {
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
 
-    // Allow auth via secret_key in body OR service_role_key in Authorization header
+    // Auth methods (in priority order):
+    // 1. secret_key in request body (used by pg_net cron triggers)
+    // 2. service_role_key in Authorization header (internal admin calls)
+    // 3. service_role_key in apikey header (Supabase curl tool)
     const authHeader = req.headers.get("Authorization")?.replace("Bearer ", "") ?? "";
-    const isAuthorized = body.secret_key === syncSecret || authHeader === serviceRoleKeyEnv;
+    const apikeyHeader = req.headers.get("apikey") ?? "";
+    const isAuthorized =
+      body.secret_key === syncSecret ||
+      authHeader === serviceRoleKeyEnv ||
+      apikeyHeader === serviceRoleKeyEnv;
 
     if (!isAuthorized) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
