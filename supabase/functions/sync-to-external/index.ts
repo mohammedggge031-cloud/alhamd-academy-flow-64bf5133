@@ -13,29 +13,21 @@ serve(async (req) => {
   }
 
   try {
-    // Verify caller is admin
+    // Verify using service role key as secret
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) throw new Error("غير مصرح");
+    const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    
+    const body_raw = await req.text();
+    const body_parsed = JSON.parse(body_raw || "{}");
+    const providedKey = body_parsed.secret_key || req.headers.get("x-secret-key") || "";
+    if (providedKey !== serviceRoleKey) throw new Error("غير مصرح - مفتاح غير صحيح");
 
-    const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const token = authHeader.replace("Bearer ", "");
-    const { data: claimsData, error: claimsError } = await callerClient.auth.getClaims(token);
-    if (claimsError || !claimsData?.claims) throw new Error("غير مصرح");
-
-    const callerId = claimsData.claims.sub as string;
-    const adminClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!);
-    const { data: callerRole } = await adminClient
-      .from("user_roles").select("role").eq("user_id", callerId).eq("role", "admin").maybeSingle();
-    if (!callerRole) throw new Error("المدير فقط يمكنه المزامنة");
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const targetDbUrl = Deno.env.get("TARGET_DATABASE_URL");
     if (!targetDbUrl) throw new Error("TARGET_DATABASE_URL غير محدد");
 
-    const body = await req.json().catch(() => ({}));
-    const mode = body.mode || "schema_and_data";
+    const mode = body_parsed.mode || "schema_and_data";
 
     // Connect to target database
     const pool = new Pool(targetDbUrl, 1, true);
