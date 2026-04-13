@@ -1117,6 +1117,29 @@ export type Database = {
       }
     }
     Functions: {
+      claim_external_sync_events: {
+        Args: { _limit?: number }
+        Returns: {
+          attempts: number
+          created_at: string
+          id: string
+          last_error: string | null
+          old_payload: Json | null
+          operation: string
+          payload: Json | null
+          processed_at: string | null
+          record_id: string | null
+          status: string
+          table_name: string
+          updated_at: string
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "external_sync_events"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
