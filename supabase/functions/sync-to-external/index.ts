@@ -7,18 +7,191 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+const SYNC_TABLES = [
+  "profiles",
+  "user_roles",
+  "teachers",
+  "students",
+  "sessions",
+  "invoices",
+  "invoice_students",
+  "expenses",
+  "session_reports",
+  "monthly_reports",
+  "approval_requests",
+  "notifications",
+  "trial_bookings",
+  "subscription_requests",
+  "teacher_documents",
+  "regulations",
+  "academy_settings",
+] as const;
+
+const FULL_SYNC_TABLES = [...SYNC_TABLES];
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
+function buildUpsertSql(tableName: string, row: Record<string, unknown>) {
+  const cols = Object.keys(row);
+  const vals = cols.map((_, i) => `$${i + 1}`);
+  const updates = cols
+    .filter((col) => col !== "id")
+    .map((col) => `"${col}" = EXCLUDED."${col}"`);
+
+  return {
+    sql: `INSERT INTO public.${tableName} (${cols.map((c) => `"${c}"`).join(",")}) VALUES (${vals.join(",")}) ON CONFLICT (id) DO UPDATE SET ${updates.join(",")}`,
+    values: Object.values(row),
+  };
+}
+
+async function fetchAllRows(adminClient: ReturnType<typeof createClient>, tableName: string) {
+  const rows: Record<string, unknown>[] = [];
+  const pageSize = 1000;
+  let from = 0;
+
+  while (true) {
+    const { data, error } = await adminClient
+      .from(tableName)
+      .select("*")
+      .range(from, from + pageSize - 1);
+
+    if (error) {
+      throw error;
+    }
+
+    if (!data || data.length === 0) {
+      break;
+    }
+
+    rows.push(...(data as Record<string, unknown>[]));
+
+    if (data.length < pageSize) {
+      break;
+    }
+
+    from += pageSize;
+  }
+
+  return rows;
+}
+
+async function processQueuedEvents(
+  adminClient: ReturnType<typeof createClient>,
+  conn: Awaited<ReturnType<Pool["connect"]>>,
+  logs: string[],
+  errors: string[],
+) {
+  const { data, error } = await adminClient
+    .from("external_sync_events")
+    .select("id, table_name, operation, record_id, payload, old_payload, status, attempts, updated_at")
+    .in("status", ["pending", "failed"])
+    .order("created_at", { ascending: true })
+    .limit(50);
+
+  if (error) {
+    throw error;
+  }
+
+  const now = Date.now();
+  const events = (data ?? []).filter((event) => {
+    if (!SYNC_TABLES.includes(event.table_name as (typeof SYNC_TABLES)[number])) {
+      return false;
+    }
+
+    if (event.status === "pending") {
+      return true;
+    }
+
+    const attempts = Number(event.attempts ?? 0);
+    const retryDelayMs = Math.min(Math.max(Math.max(attempts, 1) * 30, 30), 600) * 1000;
+    const updatedAt = event.updated_at ? new Date(event.updated_at).getTime() : 0;
+    return attempts < 20 && updatedAt <= now - retryDelayMs;
+  });
+
+  if (events.length === 0) {
+    logs.push("ℹ️ No queued sync events to process");
+    return 0;
+  }
+
+  let processed = 0;
+
+  for (const event of events) {
+    const { data: claimed, error: claimError } = await adminClient
+      .from("external_sync_events")
+      .update({ status: "processing", updated_at: new Date().toISOString() })
+      .eq("id", event.id)
+      .eq("status", event.status)
+      .select("id")
+      .maybeSingle();
+
+    if (claimError) {
+      errors.push(`queue claim ${event.id}: ${claimError.message}`);
+      continue;
+    }
+
+    if (!claimed) {
+      continue;
+    }
+
+    try {
+      if (event.operation === "delete") {
+        const recordId = event.record_id ?? (isRecord(event.old_payload) ? event.old_payload.id : null);
+
+        if (!recordId) {
+          throw new Error("Missing record id for delete event");
+        }
+
+        await conn.queryObject(`DELETE FROM public.${event.table_name} WHERE id = $1`, [recordId]);
+      } else {
+        if (!isRecord(event.payload)) {
+          throw new Error("Missing payload for sync event");
+        }
+
+        const { sql, values } = buildUpsertSql(event.table_name, event.payload);
+        await conn.queryObject(sql, values);
+      }
+
+      const { error: doneError } = await adminClient.rpc("mark_external_sync_event_result", {
+        _event_id: event.id,
+        _status: "processed",
+        _last_error: null,
+      });
+
+      if (doneError) {
+        throw doneError;
+      }
+
+      processed += 1;
+    } catch (eventError) {
+      const message = eventError instanceof Error ? eventError.message : String(eventError);
+      errors.push(`${event.table_name} ${event.operation}: ${message}`);
+
+      await adminClient.rpc("mark_external_sync_event_result", {
+        _event_id: event.id,
+        _status: "failed",
+        _last_error: message,
+      });
+    }
+  }
+
+  logs.push(`✅ Queue processed: ${processed}/${events.length}`);
+  return processed;
+}
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    // Verify using service role key as secret
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    
+    const functionUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/sync-to-external`;
+
     const body_raw = await req.text();
-    const body_parsed = JSON.parse(body_raw || "{}");
+    const body_parsed = body_raw ? JSON.parse(body_raw) : {};
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
@@ -35,6 +208,25 @@ serve(async (req) => {
     const errors: string[] = [];
 
     try {
+      await adminClient.rpc("set_external_sync_config", {
+        _function_url: functionUrl,
+        _secret_value: "",
+      });
+      logs.push("✅ Continuous sync config refreshed");
+
+      if (mode === "process_queue") {
+        const processed = await processQueuedEvents(adminClient, conn, logs, errors);
+
+        return new Response(JSON.stringify({
+          success: true,
+          processed,
+          logs,
+          errors: errors.length > 0 ? errors : undefined,
+        }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
       // ======= STEP 1: Create enum =======
       try {
         await conn.queryObject(`DO $$ BEGIN CREATE TYPE public.app_role AS ENUM ('admin','teacher','manager'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;`);
@@ -507,30 +699,23 @@ serve(async (req) => {
 
       // ======= STEP 8: Sync data =======
       if (mode === "schema_and_data" || mode === "data_only") {
-        const dataTables = [
-          "regulations", "academy_settings", "students", "sessions",
-          "invoices", "invoice_students", "expenses", "session_reports",
-          "monthly_reports", "approval_requests", "notifications",
-          "trial_bookings", "subscription_requests", "teacher_documents"
-        ];
+        const dataTables = FULL_SYNC_TABLES;
 
         // Read from source (current Lovable Cloud DB via Supabase client)
         for (const tableName of dataTables) {
-          const { data, error } = await adminClient.from(tableName).select("*");
-          if (error || !data || data.length === 0) {
-            logs.push(`ℹ️ ${tableName}: ${error ? error.message : 'no data'}`);
+          const data = await fetchAllRows(adminClient, tableName);
+
+          if (data.length === 0) {
+            logs.push(`ℹ️ ${tableName}: no data`);
             continue;
           }
 
           // Upsert each row
           let synced = 0;
           for (const row of data) {
-            const cols = Object.keys(row);
-            const vals = cols.map((_, i) => `$${i + 1}`);
-            const updates = cols.filter(c => c !== 'id').map(c => `"${c}" = EXCLUDED."${c}"`);
-            const sql = `INSERT INTO public.${tableName} (${cols.map(c => `"${c}"`).join(",")}) VALUES (${vals.join(",")}) ON CONFLICT (id) DO UPDATE SET ${updates.join(",")}`;
             try {
-              await conn.queryObject(sql, Object.values(row));
+              const { sql, values } = buildUpsertSql(tableName, row);
+              await conn.queryObject(sql, values);
               synced++;
             } catch (e) {
               errors.push(`${tableName} row: ${e.message}`);
@@ -538,6 +723,8 @@ serve(async (req) => {
           }
           logs.push(`✅ ${tableName}: ${synced}/${data.length} rows synced`);
         }
+
+        await processQueuedEvents(adminClient, conn, logs, errors);
       }
 
       // ======= STEP 9: Storage bucket =======
