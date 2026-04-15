@@ -121,6 +121,8 @@ const translations = {
   nameWhatsappRequired: { en: "Name and WhatsApp are required", ar: "الاسم ورقم الواتساب مطلوبان" },
   nameRequired: { en: "Name is required", ar: "الاسم مطلوب" },
   whatsappRequired: { en: "WhatsApp number is required", ar: "رقم الواتساب مطلوب" },
+  optional: { en: "optional", ar: "اختياري" },
+  autoGenerateIfEmpty: { en: "Auto-generated if empty", ar: "يُولَّد تلقائياً إذا ترك فارغاً" },
   studentAdded: { en: "Student added successfully", ar: "تم إضافة الطالب بنجاح" },
   whatsappExists: { en: "WhatsApp number already registered", ar: "رقم الواتساب مسجل بالفعل" },
   remaining: { en: "Remaining", ar: "متبقي" },
