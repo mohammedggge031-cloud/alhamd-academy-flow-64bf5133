@@ -171,7 +171,7 @@ serve(async (req) => {
     const mode = body.mode || "schema_and_data";
 
     // ========= CONNECT TO TARGET =========
-    // Parse connection string manually for compatibility
+    console.log("🔗 Connecting to target DB...");
     const dbUrl = new URL(targetDbUrl);
     const conn = new Client({
       hostname: dbUrl.hostname,
@@ -182,6 +182,7 @@ serve(async (req) => {
       tls: { enabled: true, enforce: false },
     });
     await conn.connect();
+    console.log("✅ Connected to target DB");
     const logs: string[] = [];
     const errors: string[] = [];
 
