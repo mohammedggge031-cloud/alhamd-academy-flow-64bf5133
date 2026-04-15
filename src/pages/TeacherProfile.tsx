@@ -257,7 +257,7 @@ const TeacherProfile = () => {
                 {docs.map((doc: any) => (
                   <div key={doc.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
                     {doc.file_url.match(/\.(jpg|jpeg|png|webp)$/i) ? (
-                      <img src={doc.file_url} alt={doc.file_name} className="h-16 w-16 rounded object-cover" />
+                      <img src={doc.file_url} alt={doc.file_name} loading="lazy" className="h-16 w-16 rounded object-cover" />
                     ) : (
                       <FileText className="h-8 w-8 text-muted-foreground" />
                     )}

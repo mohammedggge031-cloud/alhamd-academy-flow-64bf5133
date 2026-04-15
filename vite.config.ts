@@ -46,6 +46,7 @@ export default defineConfig(({ mode }) => {
             'vendor-date': ['date-fns'],
             'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
             'vendor-xlsx': ['xlsx'],
+            'vendor-html2img': ['html-to-image'],
           },
         },
       },

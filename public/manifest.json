@@ -3,16 +3,26 @@
   "short_name": "Alhamd",
   "description": "Alhamd Academy Management System",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
   "background_color": "#0a2a5e",
   "theme_color": "#0a2a5e",
   "orientation": "any",
+  "dir": "auto",
+  "lang": "en",
+  "categories": ["education"],
   "icons": [
     {
       "src": "/favicon.jpeg",
       "sizes": "512x512",
       "type": "image/jpeg",
       "purpose": "any"
+    },
+    {
+      "src": "/favicon.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
     }
   ]
 }
