@@ -114,7 +114,10 @@ async function processQueuedEvents(
       });
       processed++;
     } catch (eventError) {
-      const message = eventError instanceof Error ? eventError.message : String(eventError);
+      const message = eventError instanceof Error 
+        ? eventError.message 
+        : (typeof eventError === 'object' ? JSON.stringify(eventError) : String(eventError));
+      console.error(`❌ Sync error ${event.table_name} ${event.operation}:`, message);
       errors.push(`${event.table_name} ${event.operation}: ${message}`);
       await adminClient.rpc("mark_external_sync_event_result", {
         _event_id: event.id,
