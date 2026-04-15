@@ -130,39 +130,48 @@ serve(async (req) => {
   }
 
   try {
-    // ========= AUTH =========
-    const syncSecret = Deno.env.get("SYNC_SECRET") || "sync_alhamd_2024_permanent";
-
+    console.log("🔄 sync-to-external called, method:", req.method);
+    // ========= AUTH (hardcoded for permanent sync) =========
+    const HARDCODED_SECRET = "sync_alhamd_2024_permanent";
+    
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
+    console.log("📦 mode:", body.mode, "hasKey:", !!body.secret_key);
 
-    const hasSecretKey = body.secret_key === syncSecret;
+    const hasSecretKey = body.secret_key === HARDCODED_SECRET;
     
-    if (!hasSecretKey) {
+    // Also accept calls from pg_cron (internal) - check authorization header
+    const authHeader = req.headers.get("authorization") || "";
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const isInternalCall = anonKey.length > 10 && authHeader.includes(anonKey);
+    
+    if (!hasSecretKey && !isInternalCall) {
+      console.log("❌ Auth failed");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log("✅ Auth passed");
 
     // ========= SETUP =========
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const targetDbUrl = "postgresql://postgres.euwotooilvdahnuovvzr:alhamd145308@aws-0-eu-central-1.pooler.supabase.com:6543/postgres";
+    const targetDbUrl = "postgresql://postgres.euwotooilvdahnuovvzr:alhamd145308@aws-0-eu-central-1.pooler.supabase.com:5432/postgres";
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const functionUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/sync-to-external`;
 
-    // Keep sync config always up-to-date with actual secret
+    // Keep sync config always up-to-date
     await adminClient.rpc("set_external_sync_config", {
       _function_url: functionUrl,
-      _secret_value: syncSecret,
+      _secret_value: HARDCODED_SECRET,
     });
 
     const mode = body.mode || "schema_and_data";
 
     // ========= CONNECT TO TARGET =========
-    // Parse connection string manually for compatibility
+    console.log("🔗 Connecting to target DB...");
     const dbUrl = new URL(targetDbUrl);
     const conn = new Client({
       hostname: dbUrl.hostname,
@@ -173,6 +182,7 @@ serve(async (req) => {
       tls: { enabled: true, enforce: false },
     });
     await conn.connect();
+    console.log("✅ Connected to target DB");
     const logs: string[] = [];
     const errors: string[] = [];
 
