@@ -157,10 +157,10 @@ serve(async (req) => {
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const functionUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/sync-to-external`;
 
-    // Keep sync config always up-to-date with actual secret
+    // Keep sync config always up-to-date
     await adminClient.rpc("set_external_sync_config", {
       _function_url: functionUrl,
-      _secret_value: syncSecret,
+      _secret_value: HARDCODED_SECRET,
     });
 
     const mode = body.mode || "schema_and_data";
