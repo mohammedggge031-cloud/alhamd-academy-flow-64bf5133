@@ -308,6 +308,7 @@ const CertificatesPage = memo(() => {
     const el = previewRef.current;
     if (!el) return;
     try {
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(el, { quality: 1, pixelRatio: 3 });
       const link = document.createElement("a");
       link.download = `certificate-${selectedRecipientName || "cert"}.png`;
