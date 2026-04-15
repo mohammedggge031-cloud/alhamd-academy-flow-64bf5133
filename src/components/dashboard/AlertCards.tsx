@@ -9,14 +9,14 @@ import { useQuery } from "@tanstack/react-query";
 
 const AlertCards = memo(() => {
   const { t } = useLanguage();
-  const { session, isAuthReady } = useAuth();
+  const { session, isAuthReady, role } = useAuth();
   const queryEnabled = isAuthReady && !!session?.user;
 
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: overdueInvoices = [], isLoading: loadingOverdue, isFetching: fetchingOverdue, isError: errorOverdue } = useQuery({
     queryKey: ["dash-overdue", session?.user?.id, today],
-    enabled: queryEnabled,
+    enabled: queryEnabled && role === "admin",
     retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase
@@ -56,30 +56,32 @@ const AlertCards = memo(() => {
 
   return (
     <div className="space-y-6">
-      <Card className="border-none shadow-sm">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <AlertTriangle className="h-5 w-5 text-warning" />
-            {t("dashOverdueInvoices")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          {renderContent(loadingOverdue || fetchingOverdue, errorOverdue, overdueInvoices.length === 0, t("dashNoOverdue"),
-            overdueInvoices.map((inv: any) => {
-              const days = Math.ceil((Date.now() - new Date(inv.due_date).getTime()) / 86400000);
-              return (
-                <div key={inv.id} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
-                  <div>
-                    <p className="text-sm font-medium">{inv.students?.name}</p>
-                    <p className="text-xs text-muted-foreground">{days} {t("dashOverdueDays")}</p>
+      {role === "admin" && (
+        <Card className="border-none shadow-sm">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <AlertTriangle className="h-5 w-5 text-warning" />
+              {t("dashOverdueInvoices")}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            {renderContent(loadingOverdue || fetchingOverdue, errorOverdue, overdueInvoices.length === 0, t("dashNoOverdue"),
+              overdueInvoices.map((inv: any) => {
+                const days = Math.ceil((Date.now() - new Date(inv.due_date).getTime()) / 86400000);
+                return (
+                  <div key={inv.id} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                    <div>
+                      <p className="text-sm font-medium">{inv.students?.name}</p>
+                      <p className="text-xs text-muted-foreground">{days} {t("dashOverdueDays")}</p>
+                    </div>
+                    <span className="text-sm font-bold text-destructive">${inv.total}</span>
                   </div>
-                  <span className="text-sm font-bold text-destructive">${inv.total}</span>
-                </div>
-              );
-            })
-          )}
-        </CardContent>
-      </Card>
+                );
+              })
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       <Card className="border-none shadow-sm">
         <CardHeader className="pb-3">

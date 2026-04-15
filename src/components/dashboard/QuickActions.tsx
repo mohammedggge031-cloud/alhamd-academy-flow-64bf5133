@@ -31,7 +31,7 @@ const QuickActions = memo(() => {
       icon: Receipt,
       onClick: () => navigate("/invoices?action=add"),
       color: "bg-warning/10 text-warning hover:bg-warning/20",
-      roles: ["admin", "manager"],
+      roles: ["admin"],
     },
     {
       label: t("dashViewReports"),
