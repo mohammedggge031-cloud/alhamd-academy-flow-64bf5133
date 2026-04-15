@@ -147,7 +147,7 @@ const Login = () => {
             </Button>
           </div>
           <div className="mx-auto bg-primary rounded-2xl p-3 shadow-lg">
-            <img src={logo} alt="Alhamd Academy" className="h-16 w-16 rounded-xl object-contain" />
+            <img src={logo} alt="Alhamd Academy" className="h-16 w-16 rounded-xl object-contain" fetchPriority="high" />
           </div>
           <div>
             <CardTitle className="text-2xl text-foreground">{t("academyName")}</CardTitle>

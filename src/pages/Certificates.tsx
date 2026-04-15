@@ -14,7 +14,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Award, Printer, Languages, Download, Image, MessageCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { toPng } from "html-to-image";
+// html-to-image is dynamically imported when needed to reduce initial bundle
 import academyLogo from "@/assets/academy-logo.jpeg";
 
 const CERT_TEMPLATES = [
@@ -308,6 +308,7 @@ const CertificatesPage = memo(() => {
     const el = previewRef.current;
     if (!el) return;
     try {
+      const { toPng } = await import("html-to-image");
       const dataUrl = await toPng(el, { quality: 1, pixelRatio: 3 });
       const link = document.createElement("a");
       link.download = `certificate-${selectedRecipientName || "cert"}.png`;

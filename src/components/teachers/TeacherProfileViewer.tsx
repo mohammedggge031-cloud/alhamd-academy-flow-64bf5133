@@ -135,7 +135,7 @@ export const TeacherProfileViewer = ({ teacherId, open, onOpenChange }: Props) =
                       <div key={doc.id} className="flex items-center gap-3 p-3 rounded-lg bg-muted/50">
                         {doc.file_url.match(/\.(jpg|jpeg|png|webp)$/i) ? (
                           <a href={doc.file_url} target="_blank" rel="noopener noreferrer">
-                            <img src={doc.file_url} alt={doc.file_name} className="h-20 w-20 rounded object-cover hover:opacity-80 transition" />
+                            <img src={doc.file_url} alt={doc.file_name} loading="lazy" className="h-20 w-20 rounded object-cover hover:opacity-80 transition" />
                           </a>
                         ) : (
                           <Icon className="h-8 w-8 text-muted-foreground" />
