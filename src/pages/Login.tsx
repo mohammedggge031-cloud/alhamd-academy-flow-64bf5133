@@ -162,7 +162,7 @@ const Login = () => {
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"} placeholder="••••••••" value={password}
-                  onChange={(e) => setPassword(e.target.value)} dir="ltr" required
+                  onChange={(e) => { setPassword(e.target.value); setLoginError(null); }} dir="ltr" required
                   className="pe-10 border-input bg-background focus-visible:ring-primary h-11" autoComplete="current-password"
                 />
                 <button type="button" tabIndex={-1} onClick={() => setShowPassword(!showPassword)}
