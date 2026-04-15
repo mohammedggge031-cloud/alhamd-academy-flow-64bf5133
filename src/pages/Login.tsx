@@ -4,8 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Lock, Globe, Eye, EyeOff, LogIn, Loader2, HelpCircle } from "lucide-react";
-import { useToast } from "@/hooks/use-toast";
+import { Lock, Globe, Eye, EyeOff, LogIn, Loader2, HelpCircle, AlertCircle } from "lucide-react";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { markAuthSessionActive } from "@/lib/authSession";
@@ -25,9 +25,9 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const attemptsRef = useRef(0);
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { t, lang, setLang } = useLanguage();
 
   // Forgot password state
@@ -40,14 +40,13 @@ const Login = () => {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
 
     if (isLockedOut) {
       const remaining = Math.ceil(((lockoutUntil ?? 0) - Date.now()) / 1000);
-      toast({
-        title: t("loginError"),
-        description: `${t("tooManyAttempts")} ${remaining}s`,
-        variant: "destructive",
-      });
+      const msg = `${t("tooManyAttempts")} ${remaining}s`;
+      setLoginError(msg);
+      toast.error(t("loginError"), { description: msg, duration: 8000 });
       return;
     }
 
@@ -83,7 +82,6 @@ const Login = () => {
       markAuthSessionActive();
       attemptsRef.current = 0;
 
-      // Small delay to let auth state propagate before navigating
       await new Promise((r) => setTimeout(r, 150));
       navigate("/");
     } catch (err: any) {
@@ -94,15 +92,12 @@ const Login = () => {
         setTimeout(() => setLockoutUntil(null), LOCKOUT_MS);
       }
 
-      toast({
-        title: t("loginError"),
-        description: err.message,
-        variant: "destructive",
-      });
+      setLoginError(err.message);
+      toast.error(t("loginError"), { description: err.message, duration: 8000 });
     } finally {
       setIsLoading(false);
     }
-  }, [identifier, password, isEmail, isLockedOut, lockoutUntil, navigate, toast, t]);
+  }, [identifier, password, isEmail, isLockedOut, lockoutUntil, navigate, t]);
 
   const handleForgotPassword = async () => {
     if (!forgotIdentifier.trim()) return;
@@ -112,18 +107,11 @@ const Login = () => {
         body: { identifier: forgotIdentifier.trim() },
       });
       if (error) throw error;
-      toast({
-        title: t("success"),
-        description: t("forgotPasswordSent"),
-      });
+      toast.success(t("success"), { description: t("forgotPasswordSent"), duration: 6000 });
       setForgotOpen(false);
       setForgotIdentifier("");
     } catch (err: any) {
-      toast({
-        title: t("error"),
-        description: err.message,
-        variant: "destructive",
-      });
+      toast.error(t("error"), { description: err.message, duration: 8000 });
     } finally {
       setForgotLoading(false);
     }
@@ -162,7 +150,7 @@ const Login = () => {
               <Label className="text-foreground font-medium">{t("loginIdentifier")}</Label>
               <Input
                 type="text" placeholder="+201001234567" value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)} dir="ltr" required autoComplete="username"
+                onChange={(e) => { setIdentifier(e.target.value); setLoginError(null); }} dir="ltr" required autoComplete="username"
                 className="border-input bg-background focus-visible:ring-primary h-11"
               />
               <p className="text-xs text-muted-foreground">
@@ -174,7 +162,7 @@ const Login = () => {
               <div className="relative">
                 <Input
                   type={showPassword ? "text" : "password"} placeholder="••••••••" value={password}
-                  onChange={(e) => setPassword(e.target.value)} dir="ltr" required
+                  onChange={(e) => { setPassword(e.target.value); setLoginError(null); }} dir="ltr" required
                   className="pe-10 border-input bg-background focus-visible:ring-primary h-11" autoComplete="current-password"
                 />
                 <button type="button" tabIndex={-1} onClick={() => setShowPassword(!showPassword)}
@@ -183,11 +171,18 @@ const Login = () => {
                 </button>
               </div>
             </div>
+            {/* Inline error message - persistent */}
+            {loginError && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{loginError}</span>
+              </div>
+            )}
             {isLockedOut && (
               <p className="text-xs text-destructive text-center animate-pulse">{t("tooManyAttempts")}</p>
             )}
             <Button type="submit" className="w-full gap-2 h-11 text-base bg-primary hover:bg-primary/90 shadow-md" disabled={isLoading || isLockedOut}>
-              <LogIn className="h-4 w-4" />
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
               {isLoading ? t("loginLoading") : t("loginButton")}
             </Button>
           </form>
