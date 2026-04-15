@@ -149,8 +149,7 @@ serve(async (req) => {
     // ========= SETUP =========
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const targetDbUrl = Deno.env.get("TARGET_DATABASE_URL");
-    if (!targetDbUrl) throw new Error("TARGET_DATABASE_URL not configured");
+    const targetDbUrl = "postgresql://postgres.euwotooilvdahnuovvzr:alhamd145308@aws-0-eu-central-1.pooler.supabase.com:6543/postgres";
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const functionUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/sync-to-external`;
