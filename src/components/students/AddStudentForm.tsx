@@ -103,8 +103,8 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
   };
 
   const handleSubmit = async () => {
-    if (!name.trim() || !whatsapp.trim()) {
-      toast({ title: t("error"), description: t("nameWhatsappRequired"), variant: "destructive" });
+    if (!name.trim()) {
+      toast({ title: t("error"), description: t("nameRequired"), variant: "destructive" });
       return;
     }
     setLoading(true);
@@ -150,7 +150,7 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
       <h3 className="font-bold text-sm text-primary border-b pb-1">{t("basicInfo")}</h3>
       <div className="grid gap-2">
         <Label>{t("fullName")} *</Label>
-        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("enterStudentName")} />
+        <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t("enterStudentName")} autoFocus />
       </div>
       <div className="grid grid-cols-2 gap-4">
         <div className="grid gap-2">
@@ -163,7 +163,7 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
         </div>
       </div>
       <div className="grid gap-2">
-        <Label>{t("whatsappStudent")} *</Label>
+        <Label>{t("whatsappStudent")}</Label>
         <Input value={whatsapp} onChange={(e) => setWhatsapp(e.target.value)} placeholder="+966..." dir="ltr" />
       </div>
       <div className="grid gap-2">
