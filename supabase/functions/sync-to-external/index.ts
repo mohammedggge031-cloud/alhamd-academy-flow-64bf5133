@@ -164,8 +164,17 @@ serve(async (req) => {
     const mode = body.mode || "schema_and_data";
 
     // ========= CONNECT TO TARGET =========
-    const pool = new Pool(targetDbUrl, 1, true);
-    const conn = await pool.connect();
+    // Parse connection string manually for compatibility
+    const dbUrl = new URL(targetDbUrl);
+    const conn = new Client({
+      hostname: dbUrl.hostname,
+      port: parseInt(dbUrl.port || "5432"),
+      user: decodeURIComponent(dbUrl.username),
+      password: decodeURIComponent(dbUrl.password),
+      database: dbUrl.pathname.replace(/^\//, "") || "postgres",
+      tls: { enabled: true, enforce: false },
+    });
+    await conn.connect();
     const logs: string[] = [];
     const errors: string[] = [];
 
