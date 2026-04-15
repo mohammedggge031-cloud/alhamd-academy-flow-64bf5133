@@ -26,12 +26,12 @@ export default defineConfig(({ mode }) => {
       },
     },
     build: {
+      target: 'es2020',
+      cssCodeSplit: true,
       rollupOptions: {
         output: {
           manualChunks: {
-            // Core React ecosystem
             'vendor-react': ['react', 'react-dom', 'react-router-dom'],
-            // UI framework
             'vendor-ui': [
               '@radix-ui/react-dialog',
               '@radix-ui/react-dropdown-menu',
@@ -40,18 +40,17 @@ export default defineConfig(({ mode }) => {
               '@radix-ui/react-tabs',
               '@radix-ui/react-tooltip',
             ],
-            // Charts (loaded only on dashboard)
             'vendor-charts': ['recharts'],
-            // Data query layer
             'vendor-query': ['@tanstack/react-query'],
-            // Supabase client
             'vendor-supabase': ['@supabase/supabase-js'],
-            // Date utilities
             'vendor-date': ['date-fns'],
+            'vendor-forms': ['react-hook-form', '@hookform/resolvers', 'zod'],
+            'vendor-xlsx': ['xlsx'],
           },
         },
       },
       chunkSizeWarningLimit: 400,
+      minify: 'esbuild',
     },
   };
 });
