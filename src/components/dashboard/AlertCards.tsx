@@ -9,14 +9,14 @@ import { useQuery } from "@tanstack/react-query";
 
 const AlertCards = memo(() => {
   const { t } = useLanguage();
-  const { session, isAuthReady } = useAuth();
+  const { session, isAuthReady, role } = useAuth();
   const queryEnabled = isAuthReady && !!session?.user;
 
   const today = new Date().toISOString().slice(0, 10);
 
   const { data: overdueInvoices = [], isLoading: loadingOverdue, isFetching: fetchingOverdue, isError: errorOverdue } = useQuery({
     queryKey: ["dash-overdue", session?.user?.id, today],
-    enabled: queryEnabled,
+    enabled: queryEnabled && role === "admin",
     retry: 1,
     queryFn: async () => {
       const { data, error } = await supabase
