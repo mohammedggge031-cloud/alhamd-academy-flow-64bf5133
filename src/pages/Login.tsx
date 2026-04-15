@@ -25,9 +25,9 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [lockoutUntil, setLockoutUntil] = useState<number | null>(null);
+  const [loginError, setLoginError] = useState<string | null>(null);
   const attemptsRef = useRef(0);
   const navigate = useNavigate();
-  const { toast } = useToast();
   const { t, lang, setLang } = useLanguage();
 
   // Forgot password state
