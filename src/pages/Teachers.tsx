@@ -111,9 +111,13 @@ const Teachers = () => {
 
   const createTeacher = useMutation({
     mutationFn: async () => {
+      if (!form.name.trim()) throw new Error(t("nameRequired"));
+      if (!form.whatsapp.trim()) throw new Error(t("whatsappRequired"));
+      // Auto-generate password if not provided
+      const password = form.password || (form.whatsapp.replace(/[^0-9]/g, "").slice(-6) + "aa");
       const res = await supabase.functions.invoke("create-teacher", {
         body: {
-          password: form.password, full_name: form.name,
+          password, full_name: form.name,
           whatsapp: form.whatsapp, age: form.age ? Number(form.age) : null,
           hourly_rate: form.rate ? Number(form.rate) : 0,
           rate_currency: form.rateCurrency,
