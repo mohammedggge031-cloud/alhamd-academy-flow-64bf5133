@@ -39,7 +39,7 @@ const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: str
   { to: "/sessions", icon: CalendarDays, labelKey: "navSessions", roles: ["admin", "manager", "teacher"] },
   { to: "/my-students", icon: Users, labelKey: "navMyStudents", roles: ["teacher"] },
   { to: "/my-profile", icon: GraduationCap, labelKey: "navMyProfile", roles: ["teacher"] },
-  { to: "/invoices", icon: Receipt, labelKey: "navInvoices", roles: ["admin", "manager"] },
+  { to: "/invoices", icon: Receipt, labelKey: "navInvoices", roles: ["admin"] },
   { to: "/expenses", icon: DollarSign, labelKey: "navExpenses", roles: ["admin"] },
   { to: "/reports", icon: BarChart3, labelKey: "navReports", roles: ["admin"] },
   { to: "/monthly-reports", icon: BookOpen, labelKey: "navStudentReports", roles: ["admin", "manager", "teacher"] },
