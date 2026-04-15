@@ -171,11 +171,18 @@ const Login = () => {
                 </button>
               </div>
             </div>
+            {/* Inline error message - persistent */}
+            {loginError && (
+              <div className="flex items-center gap-2 p-3 rounded-md bg-destructive/10 border border-destructive/30 text-destructive text-sm">
+                <AlertCircle className="h-4 w-4 shrink-0" />
+                <span>{loginError}</span>
+              </div>
+            )}
             {isLockedOut && (
               <p className="text-xs text-destructive text-center animate-pulse">{t("tooManyAttempts")}</p>
             )}
             <Button type="submit" className="w-full gap-2 h-11 text-base bg-primary hover:bg-primary/90 shadow-md" disabled={isLoading || isLockedOut}>
-              <LogIn className="h-4 w-4" />
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <LogIn className="h-4 w-4" />}
               {isLoading ? t("loginLoading") : t("loginButton")}
             </Button>
           </form>
