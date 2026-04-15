@@ -40,14 +40,13 @@ const Login = () => {
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
+    setLoginError(null);
 
     if (isLockedOut) {
       const remaining = Math.ceil(((lockoutUntil ?? 0) - Date.now()) / 1000);
-      toast({
-        title: t("loginError"),
-        description: `${t("tooManyAttempts")} ${remaining}s`,
-        variant: "destructive",
-      });
+      const msg = `${t("tooManyAttempts")} ${remaining}s`;
+      setLoginError(msg);
+      toast.error(t("loginError"), { description: msg, duration: 8000 });
       return;
     }
 
@@ -83,7 +82,6 @@ const Login = () => {
       markAuthSessionActive();
       attemptsRef.current = 0;
 
-      // Small delay to let auth state propagate before navigating
       await new Promise((r) => setTimeout(r, 150));
       navigate("/");
     } catch (err: any) {
@@ -94,15 +92,12 @@ const Login = () => {
         setTimeout(() => setLockoutUntil(null), LOCKOUT_MS);
       }
 
-      toast({
-        title: t("loginError"),
-        description: err.message,
-        variant: "destructive",
-      });
+      setLoginError(err.message);
+      toast.error(t("loginError"), { description: err.message, duration: 8000 });
     } finally {
       setIsLoading(false);
     }
-  }, [identifier, password, isEmail, isLockedOut, lockoutUntil, navigate, toast, t]);
+  }, [identifier, password, isEmail, isLockedOut, lockoutUntil, navigate, t]);
 
   const handleForgotPassword = async () => {
     if (!forgotIdentifier.trim()) return;
