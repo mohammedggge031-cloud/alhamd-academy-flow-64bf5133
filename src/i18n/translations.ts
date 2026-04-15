@@ -287,6 +287,8 @@ const translations = {
   discount: { en: "Discount", ar: "خصم" },
   dueDateLabel: { en: "Due:", ar: "استحقاق:" },
   mustSelectStudent: { en: "Must select at least one student", ar: "يجب اختيار طالب واحد على الأقل" },
+  mustSelectTeacher: { en: "Must select a teacher", ar: "يجب اختيار معلم" },
+  autoFilledFromStudent: { en: "Auto-filled from student assignment", ar: "تم تعبئته تلقائياً من بيانات الطالب" },
 
   // Expenses
   expensesTitle: { en: "Expenses & Costs", ar: "المصاريف والنفقات" },
