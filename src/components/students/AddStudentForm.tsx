@@ -114,7 +114,7 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
         .from("students")
         .insert([{
           name: name.trim(), age: age ? parseInt(age) : null, country: country.trim() || null,
-          whatsapp: whatsapp.trim(), guardian_whatsapp: guardianWhatsapp.trim() || null,
+          whatsapp: whatsapp.trim() || null, guardian_whatsapp: guardianWhatsapp.trim() || null,
           timezone, assigned_teacher_id: teacherId || null,
           paid_hours: paidHours ? parseFloat(paidHours) : 0,
           remaining_hours: paidHours ? parseFloat(paidHours) : 0,
