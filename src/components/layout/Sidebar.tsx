@@ -149,7 +149,7 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
           </div>
           <div>
             <p className="text-sm font-medium text-sidebar-foreground">{role === "manager" ? t("manager") : role === "teacher" ? t("teacher") : t("admin")}</p>
-            <p className="text-xs text-sidebar-muted">{role}</p>
+            <p className="text-xs text-sidebar-muted">{role === "manager" ? t("manager") : role === "teacher" ? t("teacher") : t("admin")}</p>
           </div>
         </div>
         <div className="flex gap-2">
