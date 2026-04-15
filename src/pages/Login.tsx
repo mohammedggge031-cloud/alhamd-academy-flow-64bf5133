@@ -107,18 +107,11 @@ const Login = () => {
         body: { identifier: forgotIdentifier.trim() },
       });
       if (error) throw error;
-      toast({
-        title: t("success"),
-        description: t("forgotPasswordSent"),
-      });
+      toast.success(t("success"), { description: t("forgotPasswordSent"), duration: 6000 });
       setForgotOpen(false);
       setForgotIdentifier("");
     } catch (err: any) {
-      toast({
-        title: t("error"),
-        description: err.message,
-        variant: "destructive",
-      });
+      toast.error(t("error"), { description: err.message, duration: 8000 });
     } finally {
       setForgotLoading(false);
     }
