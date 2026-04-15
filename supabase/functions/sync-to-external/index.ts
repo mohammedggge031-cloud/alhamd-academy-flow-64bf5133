@@ -130,24 +130,29 @@ serve(async (req) => {
   }
 
   try {
+    console.log("🔄 sync-to-external called, method:", req.method);
     // ========= AUTH (hardcoded for permanent sync) =========
     const HARDCODED_SECRET = "sync_alhamd_2024_permanent";
     
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
+    console.log("📦 mode:", body.mode, "hasKey:", !!body.secret_key);
 
     const hasSecretKey = body.secret_key === HARDCODED_SECRET;
     
     // Also accept calls from pg_cron (internal) - check authorization header
     const authHeader = req.headers.get("authorization") || "";
-    const isInternalCall = authHeader.includes(Deno.env.get("SUPABASE_ANON_KEY") || "___none___");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
+    const isInternalCall = anonKey.length > 10 && authHeader.includes(anonKey);
     
     if (!hasSecretKey && !isInternalCall) {
+      console.log("❌ Auth failed");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+    console.log("✅ Auth passed");
 
     // ========= SETUP =========
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
