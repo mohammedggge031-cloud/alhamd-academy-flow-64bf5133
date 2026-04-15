@@ -44,7 +44,7 @@ const translations = {
   navSettings: { en: "Settings", ar: "الإعدادات" },
   signOut: { en: "Sign Out", ar: "تسجيل الخروج" },
   admin: { en: "Admin", ar: "المدير" },
-  manager: { en: "Manager", ar: "مشرف" },
+  manager: { en: "Supervisor", ar: "مشرف" },
 
   // Login
   loginTitle: { en: "Sign In", ar: "تسجيل الدخول" },
