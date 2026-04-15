@@ -119,6 +119,7 @@ const translations = {
   saveStudent: { en: "Save Student", ar: "حفظ الطالب" },
   saving: { en: "Saving...", ar: "جاري الحفظ..." },
   nameWhatsappRequired: { en: "Name and WhatsApp are required", ar: "الاسم ورقم الواتساب مطلوبان" },
+  nameRequired: { en: "Student name is required", ar: "اسم الطالب مطلوب" },
   studentAdded: { en: "Student added successfully", ar: "تم إضافة الطالب بنجاح" },
   whatsappExists: { en: "WhatsApp number already registered", ar: "رقم الواتساب مسجل بالفعل" },
   remaining: { en: "Remaining", ar: "متبقي" },
