@@ -162,6 +162,7 @@ serve(async (req) => {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const targetServiceRoleKey = Deno.env.get("TARGET_SERVICE_ROLE_KEY");
+    console.log("🔑 TARGET_SERVICE_ROLE_KEY length:", targetServiceRoleKey?.length, "starts:", targetServiceRoleKey?.substring(0, 10));
     
     if (!targetServiceRoleKey) {
       throw new Error("TARGET_SERVICE_ROLE_KEY not configured");
