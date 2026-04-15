@@ -66,7 +66,7 @@ const StatsGrid = memo(() => {
   const stats = [
     { label: t("dashActiveStudents"), value: String(students.data ?? 0), icon: Users, trend: "" },
     { label: t("dashTeachers"), value: String(teachers.data ?? 0), icon: GraduationCap, trend: t("dashActiveLabel") },
-    { label: t("dashDueInvoices"), value: String(invoices.data ?? 0), icon: Receipt, trend: "" },
+    ...(role === "admin" ? [{ label: t("dashDueInvoices"), value: String(invoices.data ?? 0), icon: Receipt, trend: "" }] : []),
     { label: t("dashMonthlyHours"), value: String(hours.data ?? 0), icon: Clock, trend: "" },
   ];
 
