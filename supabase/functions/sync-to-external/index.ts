@@ -8,6 +8,7 @@ const corsHeaders = {
 
 // Target project details (hardcoded for permanent sync)
 const TARGET_URL = "https://euwotooilvdahnuovvzr.supabase.co";
+const TARGET_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1d290b29pbHZkYWhudW92dnpyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mzg4Mjk3OCwiZXhwIjoyMDg5NDU4OTc4fQ.VnBTv230SDxKxvUXw3MtZU_Kmi6Qw7k85vda0X89bjw";
 const HARDCODED_SECRET = "sync_alhamd_2024_permanent";
 
 const SYNC_TABLES = [
