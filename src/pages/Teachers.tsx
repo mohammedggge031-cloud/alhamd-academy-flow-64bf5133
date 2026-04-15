@@ -111,9 +111,13 @@ const Teachers = () => {
 
   const createTeacher = useMutation({
     mutationFn: async () => {
+      if (!form.name.trim()) throw new Error(t("nameRequired"));
+      if (!form.whatsapp.trim()) throw new Error(t("whatsappRequired"));
+      // Auto-generate password if not provided
+      const password = form.password || (form.whatsapp.replace(/[^0-9]/g, "").slice(-6) + "aa");
       const res = await supabase.functions.invoke("create-teacher", {
         body: {
-          password: form.password, full_name: form.name,
+          password, full_name: form.name,
           whatsapp: form.whatsapp, age: form.age ? Number(form.age) : null,
           hourly_rate: form.rate ? Number(form.rate) : 0,
           rate_currency: form.rateCurrency,
@@ -190,8 +194,8 @@ const Teachers = () => {
                   <p className="text-xs text-muted-foreground">{t("phoneIsLoginId")}</p>
                 </div>
                 <div className="grid gap-2">
-                  <Label>{t("password")} *</Label>
-                  <Input type="password" placeholder="••••••••" dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
+                  <Label>{t("password")} <span className="text-xs text-muted-foreground">({t("optional")})</span></Label>
+                  <Input type="password" placeholder={t("autoGenerateIfEmpty")} dir="ltr" value={form.password} onChange={(e) => setForm({ ...form, password: e.target.value })} />
                 </div>
                 <div className="grid grid-cols-3 gap-4">
                   <div className="grid gap-2">

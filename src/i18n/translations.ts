@@ -119,6 +119,10 @@ const translations = {
   saveStudent: { en: "Save Student", ar: "حفظ الطالب" },
   saving: { en: "Saving...", ar: "جاري الحفظ..." },
   nameWhatsappRequired: { en: "Name and WhatsApp are required", ar: "الاسم ورقم الواتساب مطلوبان" },
+  nameRequired: { en: "Name is required", ar: "الاسم مطلوب" },
+  whatsappRequired: { en: "WhatsApp number is required", ar: "رقم الواتساب مطلوب" },
+  optional: { en: "optional", ar: "اختياري" },
+  autoGenerateIfEmpty: { en: "Auto-generated if empty", ar: "يُولَّد تلقائياً إذا ترك فارغاً" },
   studentAdded: { en: "Student added successfully", ar: "تم إضافة الطالب بنجاح" },
   whatsappExists: { en: "WhatsApp number already registered", ar: "رقم الواتساب مسجل بالفعل" },
   remaining: { en: "Remaining", ar: "متبقي" },
@@ -286,6 +290,8 @@ const translations = {
   discount: { en: "Discount", ar: "خصم" },
   dueDateLabel: { en: "Due:", ar: "استحقاق:" },
   mustSelectStudent: { en: "Must select at least one student", ar: "يجب اختيار طالب واحد على الأقل" },
+  mustSelectTeacher: { en: "Must select a teacher", ar: "يجب اختيار معلم" },
+  autoFilledFromStudent: { en: "Auto-filled from student assignment", ar: "تم تعبئته تلقائياً من بيانات الطالب" },
 
   // Expenses
   expensesTitle: { en: "Expenses & Costs", ar: "المصاريف والنفقات" },
