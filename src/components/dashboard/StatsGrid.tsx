@@ -9,7 +9,7 @@ import { useQuery } from "@tanstack/react-query";
 
 const StatsGrid = memo(() => {
   const { t } = useLanguage();
-  const { session, isAuthReady } = useAuth();
+  const { session, isAuthReady, role } = useAuth();
   const queryEnabled = isAuthReady && !!session?.user;
 
   const today = new Date().toISOString().slice(0, 10);
@@ -39,7 +39,7 @@ const StatsGrid = memo(() => {
 
   const invoices = useQuery({
     queryKey: ["dash-due-invoices", session?.user?.id, today],
-    enabled: queryEnabled,
+    enabled: queryEnabled && role === "admin",
     retry: 1,
     queryFn: async () => {
       const { count, error } = await supabase.from("invoices").select("*", { count: "exact", head: true }).eq("status", "pending").lte("due_date", today);
