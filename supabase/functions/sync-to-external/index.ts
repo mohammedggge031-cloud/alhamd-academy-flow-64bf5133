@@ -130,15 +130,19 @@ serve(async (req) => {
   }
 
   try {
-    // ========= AUTH =========
-    const syncSecret = Deno.env.get("SYNC_SECRET") || "sync_alhamd_2024_permanent";
-
+    // ========= AUTH (hardcoded for permanent sync) =========
+    const HARDCODED_SECRET = "sync_alhamd_2024_permanent";
+    
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
 
-    const hasSecretKey = body.secret_key === syncSecret;
+    const hasSecretKey = body.secret_key === HARDCODED_SECRET;
     
-    if (!hasSecretKey) {
+    // Also accept calls from pg_cron (internal) - check authorization header
+    const authHeader = req.headers.get("authorization") || "";
+    const isInternalCall = authHeader.includes(Deno.env.get("SUPABASE_ANON_KEY") || "___none___");
+    
+    if (!hasSecretKey && !isInternalCall) {
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
