@@ -621,8 +621,7 @@ serve(async (req) => {
       } catch (_e) { logs.push("⚠️ Storage bucket skipped"); }
 
     } finally {
-      conn.release();
-      await pool.end();
+      await conn.end();
     }
 
     return new Response(JSON.stringify({
