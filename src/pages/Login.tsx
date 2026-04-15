@@ -150,7 +150,7 @@ const Login = () => {
               <Label className="text-foreground font-medium">{t("loginIdentifier")}</Label>
               <Input
                 type="text" placeholder="+201001234567" value={identifier}
-                onChange={(e) => setIdentifier(e.target.value)} dir="ltr" required autoComplete="username"
+                onChange={(e) => { setIdentifier(e.target.value); setLoginError(null); }} dir="ltr" required autoComplete="username"
                 className="border-input bg-background focus-visible:ring-primary h-11"
               />
               <p className="text-xs text-muted-foreground">
