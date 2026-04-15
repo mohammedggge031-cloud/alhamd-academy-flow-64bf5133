@@ -162,13 +162,7 @@ serve(async (req) => {
     // ========= SETUP =========
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    // Allow override from body for testing, fallback to env
-    const targetServiceRoleKey = body.target_key || Deno.env.get("TARGET_SERVICE_ROLE_KEY");
-    console.log("🔑 TARGET key length:", targetServiceRoleKey?.length, "source:", body.target_key ? "body" : "env");
-    
-    if (!targetServiceRoleKey) {
-      throw new Error("TARGET_SERVICE_ROLE_KEY not configured");
-    }
+    const targetServiceRoleKey = TARGET_SERVICE_KEY;
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const targetClient = createClient(TARGET_URL, targetServiceRoleKey);
