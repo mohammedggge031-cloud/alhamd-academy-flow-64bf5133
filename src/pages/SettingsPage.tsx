@@ -338,6 +338,26 @@ const SettingsPage = () => {
                         ))}
                       </div>
                     </div>
+                    {managerForm.role === "manager" && (
+                      <div className="grid gap-2">
+                        <Label className="flex items-center gap-2">
+                          <FileSpreadsheet className="h-4 w-4 text-primary" />
+                          {lang === "ar" ? "صلاحية سجلات البيانات" : "Data Registries Access"}
+                        </Label>
+                        <div className="flex gap-3">
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" className="rounded border-input" checked={managerForm.sheets_students}
+                              onChange={(e) => setManagerForm({ ...managerForm, sheets_students: e.target.checked })} />
+                            {lang === "ar" ? "سجل الطلاب" : "Students Registry"}
+                          </label>
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" className="rounded border-input" checked={managerForm.sheets_teachers}
+                              onChange={(e) => setManagerForm({ ...managerForm, sheets_teachers: e.target.checked })} />
+                            {lang === "ar" ? "سجل المعلمين" : "Teachers Registry"}
+                          </label>
+                        </div>
+                      </div>
+                    )}
                     <Button className="w-full" onClick={() => addManager.mutate()} disabled={addManager.isPending || !managerForm.name || !managerForm.email || !managerForm.password}>
                       {addManager.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       {t("addAccount")}
