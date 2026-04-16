@@ -337,8 +337,10 @@ const DataSheets = () => {
             </Button>
           </CardContent>
         </Card>
+        )}
 
         {/* Teachers Registry Card */}
+        {canTeachers && (
         <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
@@ -378,6 +380,7 @@ const DataSheets = () => {
             </Button>
           </CardContent>
         </Card>
+        )}
       </div>
 
       <Card className="border-none shadow-sm bg-accent/30">
