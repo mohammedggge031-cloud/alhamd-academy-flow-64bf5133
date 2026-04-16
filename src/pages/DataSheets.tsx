@@ -3,13 +3,36 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
+import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 
 const DataSheets = () => {
   const { t, lang } = useLanguage();
+  const { role, user } = useAuth();
   const [loadingStudents, setLoadingStudents] = useState(false);
   const [loadingTeachers, setLoadingTeachers] = useState(false);
+
+  // For managers, check which sheets they can access
+  const { data: sheetsAccess = [] } = useQuery({
+    queryKey: ["my-sheets-access", user?.id],
+    queryFn: async () => {
+      if (role === "admin") return ["students", "teachers"];
+      const { data } = await supabase.from("academy_settings").select("value").eq("key", "data_sheets_access").maybeSingle();
+      if (data?.value && user?.id) {
+        try {
+          const map = JSON.parse(data.value);
+          return map[user.id] || [];
+        } catch { return []; }
+      }
+      return [];
+    },
+    enabled: !!user?.id,
+  });
+
+  const canStudents = sheetsAccess.includes("students");
+  const canTeachers = sheetsAccess.includes("teachers");
 
   const generateStudentsSheet = async () => {
     setLoadingStudents(true);
@@ -274,6 +297,7 @@ const DataSheets = () => {
 
       <div className="grid gap-6 md:grid-cols-2">
         {/* Students Registry Card */}
+        {canStudents && (
         <Card className="border-none shadow-sm hover:shadow-md transition-shadow">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
