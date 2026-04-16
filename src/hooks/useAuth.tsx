@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq("user_id", userId)
         .maybeSingle();
       if (error) {
-        console.warn("Failed to fetch role:", error.message);
+        // Role fetch failed — silent in production
         return null;
       }
       return data?.role ?? null;
@@ -162,7 +162,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
     touchAuthSessionActivity();
     idleTimer.current = setTimeout(() => {
-      console.log("Session expired — idle timeout");
+      // Idle timeout reached — sign out
       void signOut();
     }, IDLE_TIMEOUT_MS);
   }, [user, signOut]);
