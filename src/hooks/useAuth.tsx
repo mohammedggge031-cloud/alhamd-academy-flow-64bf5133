@@ -147,6 +147,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = useCallback(async () => {
     clearAuthSessionMarkers();
+    // Broadcast logout to other tabs
+    try { localStorage.setItem("logout_broadcast", Date.now().toString()); } catch {}
     queryClient.clear();
     await supabase.auth.signOut();
     setUser(null);
