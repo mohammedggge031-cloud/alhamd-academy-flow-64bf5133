@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Settings, Bell, Globe, Shield, Languages, UserPlus, Trash2, Loader2, Users, Save, KeyRound } from "lucide-react";
+import { Settings, Bell, Globe, Shield, Languages, UserPlus, Trash2, Loader2, Users, Save, KeyRound, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ const SettingsPage = () => {
   const queryClient = useQueryClient();
   const [managerDialog, setManagerDialog] = useState(false);
   const [deleteManagerId, setDeleteManagerId] = useState<string | null>(null);
-  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager" as "manager" | "admin" });
+  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager" as "manager" | "admin", sheets_students: false, sheets_teachers: false });
   const [changePasswordForm, setChangePasswordForm] = useState({ current: "", new: "", confirm: "" });
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [resetPasswordDialog, setResetPasswordDialog] = useState<{ userId: string; name: string } | null>(null);
@@ -144,15 +144,64 @@ const SettingsPage = () => {
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
+
+      // Save sheets access if manager role
+      if (res.data?.user_id && managerForm.role === "manager") {
+        const sheets: string[] = [];
+        if (managerForm.sheets_students) sheets.push("students");
+        if (managerForm.sheets_teachers) sheets.push("teachers");
+        await saveSheetsAccess(res.data.user_id, sheets);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["managers"] });
+      queryClient.invalidateQueries({ queryKey: ["data-sheets-access"] });
       toast({ title: t("success"), description: t("managerAdded") });
       setManagerDialog(false);
-      setManagerForm({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager" });
+      setManagerForm({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager", sheets_students: false, sheets_teachers: false });
     },
     onError: (err: Error) => {
       toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Data sheets access management
+  const { data: sheetsAccessMap = {} } = useQuery({
+    queryKey: ["data-sheets-access"],
+    queryFn: async () => {
+      const { data } = await supabase.from("academy_settings").select("value").eq("key", "data_sheets_access").maybeSingle();
+      if (data?.value) {
+        try { return JSON.parse(data.value); } catch { return {}; }
+      }
+      return {};
+    },
+    enabled: role === "admin",
+  });
+
+  const saveSheetsAccess = async (userId: string, sheets: string[]) => {
+    const current = { ...sheetsAccessMap };
+    if (sheets.length > 0) {
+      current[userId] = sheets;
+    } else {
+      delete current[userId];
+    }
+    await supabase.from("academy_settings").upsert(
+      { key: "data_sheets_access", value: JSON.stringify(current) },
+      { onConflict: "key" }
+    );
+  };
+
+  const toggleSheetsAccess = useMutation({
+    mutationFn: async ({ userId, sheetType }: { userId: string; sheetType: string }) => {
+      const current: Record<string, string[]> = { ...sheetsAccessMap };
+      const userSheets = current[userId] || [];
+      const newSheets = userSheets.includes(sheetType)
+        ? userSheets.filter(s => s !== sheetType)
+        : [...userSheets, sheetType];
+      await saveSheetsAccess(userId, newSheets);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["data-sheets-access"] });
     },
   });
 
