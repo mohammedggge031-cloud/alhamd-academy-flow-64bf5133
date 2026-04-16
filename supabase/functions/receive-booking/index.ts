@@ -7,6 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+/** Strip HTML tags and trim */
+function sanitize(val: string): string {
+  return val.replace(/<[^>]*>/g, "").trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -22,33 +27,30 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
 
-    // Validate required fields
-    const fullName = (body.full_name || body.fullName || "").trim();
-    const phone = (body.phone || "").trim();
+    const fullName = sanitize((body.full_name || body.fullName || "")).slice(0, 200);
+    const phone = sanitize((body.phone || "")).slice(0, 30);
 
-    if (!fullName || fullName.length < 2 || fullName.length > 200) {
+    if (!fullName || fullName.length < 2) {
       return new Response(
         JSON.stringify({ error: "Valid full name is required (2-200 chars)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!phone || phone.length < 6 || phone.length > 30) {
+    if (!phone || phone.length < 6) {
       return new Response(
         JSON.stringify({ error: "Valid phone number is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    // Sanitize optional fields
-    const email = (body.email || "").trim().slice(0, 255) || null;
-    const courseInterest = (body.course_interest || body.courseInterest || "").trim().slice(0, 200) || null;
+    const email = sanitize((body.email || "")).slice(0, 255) || null;
+    const courseInterest = sanitize((body.course_interest || body.courseInterest || "")).slice(0, 200) || null;
     const preferredDate = body.preferred_date || body.preferredDate || null;
-    const preferredTime = (body.preferred_time || body.preferredTime || "").trim().slice(0, 100) || null;
-    const timezone = (body.timezone || "").trim().slice(0, 100) || null;
-    const message = (body.message || "").trim().slice(0, 2000) || null;
+    const preferredTime = sanitize((body.preferred_time || body.preferredTime || "")).slice(0, 100) || null;
+    const timezone = sanitize((body.timezone || "")).slice(0, 100) || null;
+    const message = sanitize((body.message || "")).slice(0, 2000) || null;
 
-    // Email validation if provided
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
         JSON.stringify({ error: "Invalid email format" }),
@@ -60,6 +62,22 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Duplicate check: same phone within 24 hours
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: existing } = await supabase
+      .from("trial_bookings")
+      .select("id")
+      .eq("phone", phone)
+      .gte("created_at", since)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      return new Response(
+        JSON.stringify({ success: true, duplicate: true, message: "Booking already received" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const { data, error } = await supabase.from("trial_bookings").insert({
       full_name: fullName,
@@ -81,8 +99,6 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log("New trial booking received:", data.id);
 
     return new Response(
       JSON.stringify({ success: true, id: data.id, message: "Booking received successfully" }),
