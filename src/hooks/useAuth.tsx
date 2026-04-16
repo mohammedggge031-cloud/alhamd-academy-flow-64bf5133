@@ -156,6 +156,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setRole(null);
   }, []);
 
+  // ---- Cross-tab logout sync ----
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "logout_broadcast" && e.newValue && user) {
+        void signOut();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [user, signOut]);
+
   // ---- Idle timeout ----
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
