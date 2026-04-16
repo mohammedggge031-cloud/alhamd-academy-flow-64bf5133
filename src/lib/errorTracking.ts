@@ -1,34 +1,41 @@
 /**
- * Production Error Tracking
- * 
- * Lightweight error capture for production. Logs structured error data
- * that can be forwarded to any monitoring service (Sentry, LogRocket, etc.)
- * 
- * To connect Sentry: replace reportError() body with Sentry.captureException()
+ * Production Error Tracking via Sentry
  */
+import * as Sentry from "@sentry/react";
 
-interface ErrorReport {
-  message: string;
-  stack?: string;
-  context?: string;
-  timestamp: string;
-  url: string;
-  userAgent: string;
-}
+let sentryInitialized = false;
 
-const ERROR_QUEUE: ErrorReport[] = [];
-const MAX_QUEUE = 50;
+export function initSentry() {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (!dsn || sentryInitialized) return;
 
-function buildReport(error: unknown, context?: string): ErrorReport {
-  const err = error instanceof Error ? error : new Error(String(error));
-  return {
-    message: err.message,
-    stack: err.stack?.slice(0, 1000),
-    context,
-    timestamp: new Date().toISOString(),
-    url: window.location.href,
-    userAgent: navigator.userAgent,
-  };
+  Sentry.init({
+    dsn,
+    environment: import.meta.env.PROD ? "production" : "development",
+    // Only send errors in production
+    enabled: import.meta.env.PROD,
+    // Sample 100% of errors, 10% of transactions
+    sampleRate: 1.0,
+    tracesSampleRate: 0.1,
+    // Scrub sensitive data
+    beforeSend(event) {
+      // Remove user PII
+      if (event.user) {
+        delete event.user.email;
+        delete event.user.ip_address;
+      }
+      return event;
+    },
+    ignoreErrors: [
+      // Browser noise
+      "ResizeObserver loop",
+      "Network request failed",
+      "Load failed",
+      "Failed to fetch dynamically imported module",
+    ],
+  });
+
+  sentryInitialized = true;
 }
 
 export function reportError(error: unknown, context?: string) {
@@ -37,18 +44,8 @@ export function reportError(error: unknown, context?: string) {
     return;
   }
 
-  const report = buildReport(error, context);
-
-  if (ERROR_QUEUE.length < MAX_QUEUE) {
-    ERROR_QUEUE.push(report);
-  }
-
-  // In production, this is where you'd send to Sentry/external service
-  // e.g. Sentry.captureException(error, { extra: { context } });
-}
-
-export function getErrorQueue(): readonly ErrorReport[] {
-  return ERROR_QUEUE;
+  const err = error instanceof Error ? error : new Error(String(error));
+  Sentry.captureException(err, { extra: { context } });
 }
 
 export function initGlobalErrorHandlers() {
