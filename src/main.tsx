@@ -1,9 +1,10 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-import { initGlobalErrorHandlers } from "@/lib/errorTracking";
+import { initSentry, initGlobalErrorHandlers } from "@/lib/errorTracking";
 
-// Initialize global error tracking before anything else
+// Initialize Sentry first, then global error handlers
+initSentry();
 initGlobalErrorHandlers();
 
 // Suppress known React 18 + Radix UI forwardRef warnings (harmless upstream issue)

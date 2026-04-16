@@ -147,12 +147,25 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const signOut = useCallback(async () => {
     clearAuthSessionMarkers();
+    // Broadcast logout to other tabs
+    try { localStorage.setItem("logout_broadcast", Date.now().toString()); } catch {}
     queryClient.clear();
     await supabase.auth.signOut();
     setUser(null);
     setSession(null);
     setRole(null);
   }, []);
+
+  // ---- Cross-tab logout sync ----
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "logout_broadcast" && e.newValue && user) {
+        void signOut();
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [user, signOut]);
 
   // ---- Idle timeout ----
   const idleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
