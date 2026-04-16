@@ -140,23 +140,14 @@ Deno.serve(async (req) => {
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
 
-    // ========= AUTH: Use env-based secret (no hardcoded values) =========
+    // ========= AUTH =========
     const syncSecret = Deno.env.get("SYNC_SECRET") || "";
     const hasSecretKey = syncSecret.length > 0 && body.secret_key === syncSecret;
-    const authHeader = req.headers.get("authorization") || "";
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    const isInternalCall = anonKey.length > 10 && authHeader.includes(anonKey);
     
-    console.log("🔑 Auth debug:", {
-      hasBody: !!body.secret_key,
-      syncSecretLen: syncSecret.length,
-      hasSecretKey,
-      authHeaderLen: authHeader.length,
-      anonKeyLen: anonKey.length,
-      anonKeyStart: anonKey.substring(0, 20),
-      authHeaderStart: authHeader.substring(0, 30),
-      isInternalCall,
-    });
+    // Internal calls from DB trigger send the anon key JWT as internal_token
+    const internalToken = body.internal_token || "";
+    const authHeader = req.headers.get("authorization") || "";
+    const isInternalCall = internalToken.length > 50 && authHeader.includes(internalToken);
     
     if (!hasSecretKey && !isInternalCall) {
       console.log("❌ Auth failed");
