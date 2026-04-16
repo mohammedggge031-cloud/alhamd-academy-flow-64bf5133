@@ -3,6 +3,7 @@ import { AlertTriangle, RefreshCw } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { isLazyImportError } from "@/lib/lazyWithRetry";
+import { reportError } from "@/lib/errorTracking";
 
 interface Props {
   children: ReactNode;
@@ -25,7 +26,7 @@ class ErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error("ErrorBoundary caught:", error, errorInfo);
+    reportError(error, `ErrorBoundary:${errorInfo.componentStack?.slice(0, 200)}`);
   }
 
   handleReset = () => {
