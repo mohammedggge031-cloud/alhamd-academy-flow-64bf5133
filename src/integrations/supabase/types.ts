@@ -145,7 +145,6 @@ export type Database = {
           enabled: boolean
           function_url: string
           id: boolean
-          secret_value: string | null
           updated_at: string
         }
         Insert: {
@@ -153,7 +152,6 @@ export type Database = {
           enabled?: boolean
           function_url: string
           id?: boolean
-          secret_value?: string | null
           updated_at?: string
         }
         Update: {
@@ -161,7 +159,6 @@ export type Database = {
           enabled?: boolean
           function_url?: string
           id?: boolean
-          secret_value?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -1161,7 +1158,7 @@ export type Database = {
       }
       request_external_sync_processing: { Args: never; Returns: undefined }
       set_external_sync_config: {
-        Args: { _auth_token?: string; _function_url: string }
+        Args: { _function_url: string }
         Returns: undefined
       }
       touch_external_sync_event: {
