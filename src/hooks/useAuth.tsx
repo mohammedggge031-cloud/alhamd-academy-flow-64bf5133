@@ -11,7 +11,7 @@ import {
 } from "@/lib/authSession";
 
 const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours
-const AUTH_INIT_TIMEOUT_MS = 6000;
+const AUTH_INIT_TIMEOUT_MS = 2000;
 
 interface AuthContextType {
   user: User | null;
@@ -110,9 +110,11 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const isReturning = hasActiveAuthSession();
 
         if (!isReturning) {
+          // No active session marker — skip network signOut, just clear locally
           clearAuthSessionMarkers();
-          await supabase.auth.signOut();
-          await applySession(null);
+          // Fire-and-forget local cleanup (no await — no network delay)
+          supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+          applySession(null);
           return;
         }
 
@@ -125,7 +127,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       } catch (err) {
         console.warn("Auth restore failed:", err);
         clearAuthSessionMarkers();
-        await applySession(null);
+        applySession(null);
       } finally {
         finalizeInit();
       }
