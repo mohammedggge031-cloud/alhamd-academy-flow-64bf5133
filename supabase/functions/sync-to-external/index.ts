@@ -147,6 +147,17 @@ Deno.serve(async (req) => {
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
     const isInternalCall = anonKey.length > 10 && authHeader.includes(anonKey);
     
+    console.log("🔑 Auth debug:", {
+      hasBody: !!body.secret_key,
+      syncSecretLen: syncSecret.length,
+      hasSecretKey,
+      authHeaderLen: authHeader.length,
+      anonKeyLen: anonKey.length,
+      anonKeyStart: anonKey.substring(0, 20),
+      authHeaderStart: authHeader.substring(0, 30),
+      isInternalCall,
+    });
+    
     if (!hasSecretKey && !isInternalCall) {
       console.log("❌ Auth failed");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
