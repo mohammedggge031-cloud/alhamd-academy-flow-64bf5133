@@ -43,7 +43,7 @@ const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: str
   { to: "/invoices", icon: Receipt, labelKey: "navInvoices", roles: ["admin"] },
   { to: "/expenses", icon: DollarSign, labelKey: "navExpenses", roles: ["admin"] },
   { to: "/reports", icon: BarChart3, labelKey: "navReports", roles: ["admin"] },
-  { to: "/data-sheets", icon: FileSpreadsheet, labelKey: "navDataSheets", roles: ["admin"] },
+  { to: "/data-sheets", icon: FileSpreadsheet, labelKey: "navDataSheets", roles: ["admin", "manager"] },
   { to: "/monthly-reports", icon: BookOpen, labelKey: "navStudentReports", roles: ["admin", "manager", "teacher"] },
   { to: "/certificates", icon: Award, labelKey: "navCertificates", roles: ["admin", "manager"] },
   { to: "/regulations", icon: ScrollText, labelKey: "navRegulations", roles: ["admin", "manager", "teacher"] },
@@ -70,6 +70,24 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
     refetchInterval: 30000,
   });
 
+  // Check manager data sheets access
+  const { data: managerSheetsAccess = [] } = useQuery({
+    queryKey: ["sidebar-sheets-access"],
+    queryFn: async () => {
+      const { data: { user: currentUser } } = await supabase.auth.getUser();
+      if (!currentUser) return [];
+      const { data } = await supabase.from("academy_settings").select("value").eq("key", "data_sheets_access").maybeSingle();
+      if (data?.value) {
+        try {
+          const map = JSON.parse(data.value);
+          return map[currentUser.id] || [];
+        } catch { return []; }
+      }
+      return [];
+    },
+    enabled: role === "manager",
+  });
+
   // Real-time subscriptions for instant badge updates
   useEffect(() => {
     const channel = supabase
@@ -85,7 +103,12 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
     return () => { supabase.removeChannel(channel); };
   }, [qc]);
 
-  const navItems = allNavItems.filter(item => item.roles.includes(role ?? ""));
+  const navItems = allNavItems.filter(item => {
+    if (!item.roles.includes(role ?? "")) return false;
+    // Hide data-sheets from managers who have no access
+    if (item.to === "/data-sheets" && role === "manager" && managerSheetsAccess.length === 0) return false;
+    return true;
+  });
 
   return (
     <aside className="flex h-full flex-col bg-sidebar text-sidebar-foreground">

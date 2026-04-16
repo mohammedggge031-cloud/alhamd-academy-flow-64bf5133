@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { Settings, Bell, Globe, Shield, Languages, UserPlus, Trash2, Loader2, Users, Save, KeyRound } from "lucide-react";
+import { Settings, Bell, Globe, Shield, Languages, UserPlus, Trash2, Loader2, Users, Save, KeyRound, FileSpreadsheet } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -26,7 +26,7 @@ const SettingsPage = () => {
   const queryClient = useQueryClient();
   const [managerDialog, setManagerDialog] = useState(false);
   const [deleteManagerId, setDeleteManagerId] = useState<string | null>(null);
-  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager" as "manager" | "admin" });
+  const [managerForm, setManagerForm] = useState({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager" as "manager" | "admin", sheets_students: false, sheets_teachers: false });
   const [changePasswordForm, setChangePasswordForm] = useState({ current: "", new: "", confirm: "" });
   const [showChangePassword, setShowChangePassword] = useState(false);
   const [resetPasswordDialog, setResetPasswordDialog] = useState<{ userId: string; name: string } | null>(null);
@@ -144,15 +144,64 @@ const SettingsPage = () => {
       });
       if (res.error) throw new Error(res.error.message);
       if (res.data?.error) throw new Error(res.data.error);
+
+      // Save sheets access if manager role
+      if (res.data?.user_id && managerForm.role === "manager") {
+        const sheets: string[] = [];
+        if (managerForm.sheets_students) sheets.push("students");
+        if (managerForm.sheets_teachers) sheets.push("teachers");
+        await saveSheetsAccess(res.data.user_id, sheets);
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["managers"] });
+      queryClient.invalidateQueries({ queryKey: ["data-sheets-access"] });
       toast({ title: t("success"), description: t("managerAdded") });
       setManagerDialog(false);
-      setManagerForm({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager" });
+      setManagerForm({ name: "", email: "", password: "", dot_color: "#3B82F6", role: "manager", sheets_students: false, sheets_teachers: false });
     },
     onError: (err: Error) => {
       toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
+  // Data sheets access management
+  const { data: sheetsAccessMap = {} } = useQuery({
+    queryKey: ["data-sheets-access"],
+    queryFn: async () => {
+      const { data } = await supabase.from("academy_settings").select("value").eq("key", "data_sheets_access").maybeSingle();
+      if (data?.value) {
+        try { return JSON.parse(data.value); } catch { return {}; }
+      }
+      return {};
+    },
+    enabled: role === "admin",
+  });
+
+  const saveSheetsAccess = async (userId: string, sheets: string[]) => {
+    const current = { ...sheetsAccessMap };
+    if (sheets.length > 0) {
+      current[userId] = sheets;
+    } else {
+      delete current[userId];
+    }
+    await supabase.from("academy_settings").upsert(
+      { key: "data_sheets_access", value: JSON.stringify(current) },
+      { onConflict: "key" }
+    );
+  };
+
+  const toggleSheetsAccess = useMutation({
+    mutationFn: async ({ userId, sheetType }: { userId: string; sheetType: string }) => {
+      const current: Record<string, string[]> = { ...sheetsAccessMap };
+      const userSheets = current[userId] || [];
+      const newSheets = userSheets.includes(sheetType)
+        ? userSheets.filter(s => s !== sheetType)
+        : [...userSheets, sheetType];
+      await saveSheetsAccess(userId, newSheets);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["data-sheets-access"] });
     },
   });
 
@@ -289,6 +338,26 @@ const SettingsPage = () => {
                         ))}
                       </div>
                     </div>
+                    {managerForm.role === "manager" && (
+                      <div className="grid gap-2">
+                        <Label className="flex items-center gap-2">
+                          <FileSpreadsheet className="h-4 w-4 text-primary" />
+                          {lang === "ar" ? "صلاحية سجلات البيانات" : "Data Registries Access"}
+                        </Label>
+                        <div className="flex gap-3">
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" className="rounded border-input" checked={managerForm.sheets_students}
+                              onChange={(e) => setManagerForm({ ...managerForm, sheets_students: e.target.checked })} />
+                            {lang === "ar" ? "سجل الطلاب" : "Students Registry"}
+                          </label>
+                          <label className="flex items-center gap-2 text-sm cursor-pointer">
+                            <input type="checkbox" className="rounded border-input" checked={managerForm.sheets_teachers}
+                              onChange={(e) => setManagerForm({ ...managerForm, sheets_teachers: e.target.checked })} />
+                            {lang === "ar" ? "سجل المعلمين" : "Teachers Registry"}
+                          </label>
+                        </div>
+                      </div>
+                    )}
                     <Button className="w-full" onClick={() => addManager.mutate()} disabled={addManager.isPending || !managerForm.name || !managerForm.email || !managerForm.password}>
                       {addManager.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       {t("addAccount")}
@@ -307,45 +376,64 @@ const SettingsPage = () => {
             ) : (
               <div className="space-y-3">
                 {managers.map((m: any) => (
-                  <div key={m.user_id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <span className="h-4 w-4 rounded-full shrink-0 border border-border" style={{ backgroundColor: m.dot_color || "#999" }} />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm">{m.full_name}</p>
-                          {m.is_primary ? (
-                            <Badge variant="default" className="text-[10px] px-1.5 py-0">{t("primaryAdmin")}</Badge>
-                          ) : m.role === "admin" ? (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t("coAdmin")}</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t("manager")}</Badge>
-                          )}
+                  <div key={m.user_id} className="p-3 rounded-lg bg-muted/50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="h-4 w-4 rounded-full shrink-0 border border-border" style={{ backgroundColor: m.dot_color || "#999" }} />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{m.full_name}</p>
+                            {m.is_primary ? (
+                              <Badge variant="default" className="text-[10px] px-1.5 py-0">{t("primaryAdmin")}</Badge>
+                            ) : m.role === "admin" ? (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t("coAdmin")}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t("manager")}</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{m.email}</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">{m.email}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          {dotColorOptions.map((opt) => (
+                            <button key={opt.color} type="button"
+                              className={`h-4 w-4 rounded-full transition-transform ${m.dot_color === opt.color ? "ring-2 ring-offset-1 ring-foreground/30 scale-110" : "opacity-50 hover:opacity-100"}`}
+                              style={{ backgroundColor: opt.color }} onClick={() => updateColor.mutate({ userId: m.user_id, color: opt.color })} title={opt.label} />
+                          ))}
+                        </div>
+                        {user?.email?.toLowerCase() === "info@alhamdacademy.net" && !m.is_primary && (
+                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary"
+                            onClick={() => setResetPasswordDialog({ userId: m.user_id, name: m.full_name })} title={t("resetPassword")}>
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {!m.is_primary && (
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setDeleteManagerId(m.user_id)} disabled={deleteManager.isPending}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        {dotColorOptions.map((opt) => (
-                          <button key={opt.color} type="button"
-                            className={`h-4 w-4 rounded-full transition-transform ${m.dot_color === opt.color ? "ring-2 ring-offset-1 ring-foreground/30 scale-110" : "opacity-50 hover:opacity-100"}`}
-                            style={{ backgroundColor: opt.color }} onClick={() => updateColor.mutate({ userId: m.user_id, color: opt.color })} title={opt.label} />
-                        ))}
+                    {/* Data sheets access toggles for non-primary managers */}
+                    {!m.is_primary && m.role === "manager" && (
+                      <div className="flex items-center gap-3 ps-7 text-xs">
+                        <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground" />
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" className="rounded border-input"
+                            checked={(sheetsAccessMap[m.user_id] || []).includes("students")}
+                            onChange={() => toggleSheetsAccess.mutate({ userId: m.user_id, sheetType: "students" })} />
+                          <span className="text-muted-foreground">{lang === "ar" ? "سجل الطلاب" : "Students"}</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" className="rounded border-input"
+                            checked={(sheetsAccessMap[m.user_id] || []).includes("teachers")}
+                            onChange={() => toggleSheetsAccess.mutate({ userId: m.user_id, sheetType: "teachers" })} />
+                          <span className="text-muted-foreground">{lang === "ar" ? "سجل المعلمين" : "Teachers"}</span>
+                        </label>
                       </div>
-                      {/* Reset password button - only primary admin can reset others */}
-                      {user?.email?.toLowerCase() === "info@alhamdacademy.net" && !m.is_primary && (
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary"
-                          onClick={() => setResetPasswordDialog({ userId: m.user_id, name: m.full_name })} title={t("resetPassword")}>
-                          <KeyRound className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {!m.is_primary && (
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => setDeleteManagerId(m.user_id)} disabled={deleteManager.isPending}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
+                    )}
                   </div>
                 ))}
               </div>
