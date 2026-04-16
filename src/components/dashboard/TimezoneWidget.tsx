@@ -1,4 +1,4 @@
-import { memo, useState, useEffect } from "react";
+import { memo, useState, useEffect, useMemo } from "react";
 import { Globe, ArrowRightLeft, Loader2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useLanguage } from "@/i18n/LanguageContext";
@@ -104,25 +104,31 @@ const TimezoneWidget = memo(() => {
     retry: 1,
   });
 
+  // Stabilize timezone keys to prevent infinite re-render loop
+  const tzKeys = useMemo(
+    () => studentTimezones.map((s) => s.tz).join(","),
+    [studentTimezones]
+  );
+
   useEffect(() => {
     if (!queryEnabled) {
       setCurrentTimes({});
       return;
     }
 
+    const tzList = tzKeys ? tzKeys.split(",") : [];
     const update = () => {
       const times: Record<string, string> = { [EGYPT_TZ]: getCurrentTime(EGYPT_TZ) };
-      for (const { tz } of studentTimezones) {
+      for (const tz of tzList) {
         times[tz] = getCurrentTime(tz);
       }
       setCurrentTimes(times);
     };
 
     update();
-    // Update every 30 seconds instead of every second for better performance
     const interval = setInterval(update, 30_000);
     return () => clearInterval(interval);
-  }, [studentTimezones, queryEnabled]);
+  }, [tzKeys, queryEnabled]);
 
   const egyptTime = currentTimes[EGYPT_TZ] || "--:--";
 
