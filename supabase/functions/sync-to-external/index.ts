@@ -1,4 +1,3 @@
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
@@ -6,10 +5,8 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Target project details (hardcoded for permanent sync)
+// Target project details
 const TARGET_URL = "https://euwotooilvdahnuovvzr.supabase.co";
-const TARGET_SERVICE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1d290b29pbHZkYWhudW92dnpyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mzg4Mjk3OCwiZXhwIjoyMDg5NDU4OTc4fQ.VnBTv230SDxKxvUXw3MtZU_Kmi6Qw7k85vda0X89bjw";
-const HARDCODED_SECRET = "sync_alhamd_2024_permanent";
 
 const SYNC_TABLES = [
   "profiles",
@@ -132,7 +129,7 @@ async function processQueuedEvents(
   return processed;
 }
 
-serve(async (req) => {
+Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
@@ -142,10 +139,10 @@ serve(async (req) => {
     
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
-    console.log("📦 mode:", body.mode, "hasKey:", !!body.secret_key);
 
-    // ========= AUTH =========
-    const hasSecretKey = body.secret_key === HARDCODED_SECRET;
+    // ========= AUTH: Use env-based secret (no hardcoded values) =========
+    const syncSecret = Deno.env.get("SYNC_SECRET") || "";
+    const hasSecretKey = syncSecret.length > 0 && body.secret_key === syncSecret;
     const authHeader = req.headers.get("authorization") || "";
     const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
     const isInternalCall = anonKey.length > 10 && authHeader.includes(anonKey);
@@ -162,7 +159,14 @@ serve(async (req) => {
     // ========= SETUP =========
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const targetServiceRoleKey = TARGET_SERVICE_KEY;
+    const targetServiceRoleKey = Deno.env.get("TARGET_SERVICE_ROLE_KEY") || "";
+
+    if (!targetServiceRoleKey) {
+      return new Response(JSON.stringify({ error: "TARGET_SERVICE_ROLE_KEY not configured" }), {
+        status: 500,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
     const targetClient = createClient(TARGET_URL, targetServiceRoleKey);
@@ -172,7 +176,7 @@ serve(async (req) => {
     // Keep sync config always up-to-date
     await adminClient.rpc("set_external_sync_config", {
       _function_url: functionUrl,
-      _secret_value: HARDCODED_SECRET,
+      _secret_value: syncSecret,
     });
 
     const mode = body.mode || "schema_and_data";
@@ -205,7 +209,6 @@ serve(async (req) => {
             continue;
           }
           
-          // Upsert in batches of 100
           let synced = 0;
           const batchSize = 100;
           for (let i = 0; i < data.length; i += batchSize) {
@@ -226,7 +229,6 @@ serve(async (req) => {
         }
       }
 
-      // Also process any queued events
       await processQueuedEvents(adminClient, targetClient, logs, errors);
     }
 
