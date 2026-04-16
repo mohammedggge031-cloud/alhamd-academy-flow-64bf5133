@@ -376,23 +376,24 @@ const SettingsPage = () => {
             ) : (
               <div className="space-y-3">
                 {managers.map((m: any) => (
-                  <div key={m.user_id} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                    <div className="flex items-center gap-3">
-                      <span className="h-4 w-4 rounded-full shrink-0 border border-border" style={{ backgroundColor: m.dot_color || "#999" }} />
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-medium text-sm">{m.full_name}</p>
-                          {m.is_primary ? (
-                            <Badge variant="default" className="text-[10px] px-1.5 py-0">{t("primaryAdmin")}</Badge>
-                          ) : m.role === "admin" ? (
-                            <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t("coAdmin")}</Badge>
-                          ) : (
-                            <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t("manager")}</Badge>
-                          )}
+                  <div key={m.user_id} className="p-3 rounded-lg bg-muted/50 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <span className="h-4 w-4 rounded-full shrink-0 border border-border" style={{ backgroundColor: m.dot_color || "#999" }} />
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <p className="font-medium text-sm">{m.full_name}</p>
+                            {m.is_primary ? (
+                              <Badge variant="default" className="text-[10px] px-1.5 py-0">{t("primaryAdmin")}</Badge>
+                            ) : m.role === "admin" ? (
+                              <Badge variant="secondary" className="text-[10px] px-1.5 py-0">{t("coAdmin")}</Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-[10px] px-1.5 py-0">{t("manager")}</Badge>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted-foreground">{m.email}</p>
                         </div>
-                        <p className="text-xs text-muted-foreground">{m.email}</p>
                       </div>
-                    </div>
                     <div className="flex items-center gap-2">
                       <div className="flex gap-1">
                         {dotColorOptions.map((opt) => (
