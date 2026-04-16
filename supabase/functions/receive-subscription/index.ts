@@ -7,6 +7,11 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
+/** Strip HTML tags and trim */
+function sanitize(val: string): string {
+  return val.replace(/<[^>]*>/g, "").trim();
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
@@ -22,35 +27,35 @@ Deno.serve(async (req) => {
   try {
     const body = await req.json();
 
-    const fullName = (body.full_name || body.fullName || "").trim();
-    const phone = (body.phone || "").trim();
-    const planName = (body.plan_name || body.planName || "").trim();
+    const fullName = sanitize((body.full_name || body.fullName || "")).slice(0, 200);
+    const phone = sanitize((body.phone || "")).slice(0, 30);
+    const planName = sanitize((body.plan_name || body.planName || "")).slice(0, 200);
 
-    if (!fullName || fullName.length < 2 || fullName.length > 200) {
+    if (!fullName || fullName.length < 2) {
       return new Response(
         JSON.stringify({ error: "Valid full name is required (2-200 chars)" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!phone || phone.length < 6 || phone.length > 30) {
+    if (!phone || phone.length < 6) {
       return new Response(
         JSON.stringify({ error: "Valid phone number is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    if (!planName || planName.length < 1 || planName.length > 200) {
+    if (!planName || planName.length < 1) {
       return new Response(
         JSON.stringify({ error: "Plan name is required" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
-    const email = (body.email || "").trim().slice(0, 255) || null;
-    const planPrice = (body.plan_price || body.planPrice || "").trim().slice(0, 100) || null;
-    const sessionsPerWeek = (body.sessions_per_week || body.sessionsPerWeek || "").trim().slice(0, 100) || null;
-    const message = (body.message || "").trim().slice(0, 2000) || null;
+    const email = sanitize((body.email || "")).slice(0, 255) || null;
+    const planPrice = sanitize((body.plan_price || body.planPrice || "")).slice(0, 100) || null;
+    const sessionsPerWeek = sanitize((body.sessions_per_week || body.sessionsPerWeek || "")).slice(0, 100) || null;
+    const message = sanitize((body.message || "")).slice(0, 2000) || null;
 
     if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
@@ -63,6 +68,23 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_URL")!,
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
+
+    // Duplicate check: same phone + same plan within 24 hours
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: existing } = await supabase
+      .from("subscription_requests")
+      .select("id")
+      .eq("phone", phone)
+      .eq("plan_name", planName)
+      .gte("created_at", since)
+      .limit(1);
+
+    if (existing && existing.length > 0) {
+      return new Response(
+        JSON.stringify({ success: true, duplicate: true, message: "Subscription request already received" }),
+        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     const { data, error } = await supabase.from("subscription_requests").insert({
       full_name: fullName,
@@ -83,8 +105,6 @@ Deno.serve(async (req) => {
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
-
-    console.log("New subscription request received:", data.id);
 
     return new Response(
       JSON.stringify({ success: true, id: data.id, message: "Subscription request received successfully" }),
