@@ -394,28 +394,46 @@ const SettingsPage = () => {
                           <p className="text-xs text-muted-foreground">{m.email}</p>
                         </div>
                       </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex gap-1">
-                        {dotColorOptions.map((opt) => (
-                          <button key={opt.color} type="button"
-                            className={`h-4 w-4 rounded-full transition-transform ${m.dot_color === opt.color ? "ring-2 ring-offset-1 ring-foreground/30 scale-110" : "opacity-50 hover:opacity-100"}`}
-                            style={{ backgroundColor: opt.color }} onClick={() => updateColor.mutate({ userId: m.user_id, color: opt.color })} title={opt.label} />
-                        ))}
+                      <div className="flex items-center gap-2">
+                        <div className="flex gap-1">
+                          {dotColorOptions.map((opt) => (
+                            <button key={opt.color} type="button"
+                              className={`h-4 w-4 rounded-full transition-transform ${m.dot_color === opt.color ? "ring-2 ring-offset-1 ring-foreground/30 scale-110" : "opacity-50 hover:opacity-100"}`}
+                              style={{ backgroundColor: opt.color }} onClick={() => updateColor.mutate({ userId: m.user_id, color: opt.color })} title={opt.label} />
+                          ))}
+                        </div>
+                        {user?.email?.toLowerCase() === "info@alhamdacademy.net" && !m.is_primary && (
+                          <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary"
+                            onClick={() => setResetPasswordDialog({ userId: m.user_id, name: m.full_name })} title={t("resetPassword")}>
+                            <KeyRound className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {!m.is_primary && (
+                          <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => setDeleteManagerId(m.user_id)} disabled={deleteManager.isPending}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
                       </div>
-                      {/* Reset password button - only primary admin can reset others */}
-                      {user?.email?.toLowerCase() === "info@alhamdacademy.net" && !m.is_primary && (
-                        <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-primary"
-                          onClick={() => setResetPasswordDialog({ userId: m.user_id, name: m.full_name })} title={t("resetPassword")}>
-                          <KeyRound className="h-4 w-4" />
-                        </Button>
-                      )}
-                      {!m.is_primary && (
-                        <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                          onClick={() => setDeleteManagerId(m.user_id)} disabled={deleteManager.isPending}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
                     </div>
+                    {/* Data sheets access toggles for non-primary managers */}
+                    {!m.is_primary && m.role === "manager" && (
+                      <div className="flex items-center gap-3 ps-7 text-xs">
+                        <FileSpreadsheet className="h-3.5 w-3.5 text-muted-foreground" />
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" className="rounded border-input"
+                            checked={(sheetsAccessMap[m.user_id] || []).includes("students")}
+                            onChange={() => toggleSheetsAccess.mutate({ userId: m.user_id, sheetType: "students" })} />
+                          <span className="text-muted-foreground">{lang === "ar" ? "سجل الطلاب" : "Students"}</span>
+                        </label>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input type="checkbox" className="rounded border-input"
+                            checked={(sheetsAccessMap[m.user_id] || []).includes("teachers")}
+                            onChange={() => toggleSheetsAccess.mutate({ userId: m.user_id, sheetType: "teachers" })} />
+                          <span className="text-muted-foreground">{lang === "ar" ? "سجل المعلمين" : "Teachers"}</span>
+                        </label>
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
