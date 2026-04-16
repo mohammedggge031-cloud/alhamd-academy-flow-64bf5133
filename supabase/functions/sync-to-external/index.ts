@@ -140,12 +140,14 @@ Deno.serve(async (req) => {
     const bodyRaw = await req.text();
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
 
-    // ========= AUTH: Use env-based secret (no hardcoded values) =========
+    // ========= AUTH =========
     const syncSecret = Deno.env.get("SYNC_SECRET") || "";
     const hasSecretKey = syncSecret.length > 0 && body.secret_key === syncSecret;
+    
+    // Internal calls from DB trigger send the anon key JWT as internal_token
+    const internalToken = body.internal_token || "";
     const authHeader = req.headers.get("authorization") || "";
-    const anonKey = Deno.env.get("SUPABASE_ANON_KEY") || "";
-    const isInternalCall = anonKey.length > 10 && authHeader.includes(anonKey);
+    const isInternalCall = internalToken.length > 50 && authHeader.includes(internalToken);
     
     if (!hasSecretKey && !isInternalCall) {
       console.log("❌ Auth failed");
@@ -173,10 +175,11 @@ Deno.serve(async (req) => {
     
     const functionUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/sync-to-external`;
 
-    // Keep sync config always up-to-date
+    // Keep sync config up-to-date (stores function URL + public anon key for internal trigger auth)
+    const anonKeyForTrigger = Deno.env.get("SUPABASE_ANON_KEY") || "";
     await adminClient.rpc("set_external_sync_config", {
       _function_url: functionUrl,
-      _secret_value: syncSecret,
+      _auth_token: anonKeyForTrigger,
     });
 
     const mode = body.mode || "schema_and_data";

@@ -1161,7 +1161,7 @@ export type Database = {
       }
       request_external_sync_processing: { Args: never; Returns: undefined }
       set_external_sync_config: {
-        Args: { _function_url: string; _secret_value: string }
+        Args: { _auth_token?: string; _function_url: string }
         Returns: undefined
       }
       touch_external_sync_event: {
