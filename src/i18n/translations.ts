@@ -635,6 +635,9 @@ const translations = {
   filterByDate: { en: "Filter by date", ar: "فلتر بالتاريخ" },
   clearFilters: { en: "Clear filters", ar: "مسح الفلتر" },
   duration: { en: "Duration", ar: "المدة" },
+
+  // Data Sheets
+  navDataSheets: { en: "Data Registries", ar: "سجلات البيانات" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

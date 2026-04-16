@@ -29,6 +29,7 @@ const TeacherStudentsPage = lazyWithRetry(() => import("./pages/TeacherStudentsP
 const Login = lazyWithRetry(() => import("./pages/Login"), "login-page");
 const Certificates = lazyWithRetry(() => import("./pages/Certificates"), "certificates-page");
 const Regulations = lazyWithRetry(() => import("./pages/Regulations"), "regulations-page");
+const DataSheets = lazyWithRetry(() => import("./pages/DataSheets"), "data-sheets-page");
 const NotFound = lazyWithRetry(() => import("./pages/NotFound"), "not-found-page");
 
 const PageLoader = () => (
@@ -78,6 +79,7 @@ const App = () => (
                               <Route path="/invoices" element={<RoleGuard allowedRoles={["admin"]}><Invoices /></RoleGuard>} />
                               <Route path="/expenses" element={<RoleGuard allowedRoles={["admin"]}><Expenses /></RoleGuard>} />
                               <Route path="/reports" element={<RoleGuard allowedRoles={["admin"]}><Reports /></RoleGuard>} />
+                              <Route path="/data-sheets" element={<RoleGuard allowedRoles={["admin"]}><DataSheets /></RoleGuard>} />
                               <Route path="/monthly-reports" element={<MonthlyReports />} />
                               <Route path="/my-students" element={<TeacherStudentsPage />} />
                               <Route path="/my-profile" element={<TeacherProfile />} />
