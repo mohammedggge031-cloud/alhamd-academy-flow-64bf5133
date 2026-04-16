@@ -11,7 +11,7 @@ import {
 } from "@/lib/authSession";
 
 const IDLE_TIMEOUT_MS = 2 * 60 * 60 * 1000; // 2 hours
-const AUTH_INIT_TIMEOUT_MS = 2000;
+const AUTH_INIT_TIMEOUT_MS = 1500;
 
 interface AuthContextType {
   user: User | null;
@@ -45,7 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         .eq("user_id", userId)
         .maybeSingle();
       if (error) {
-        console.warn("Failed to fetch role:", error.message);
+        // Role fetch failed — silent in production
         return null;
       }
       return data?.role ?? null;
@@ -104,36 +104,30 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     );
 
-    // 2. Restore session manually
-    const restoreSession = async () => {
-      try {
-        const isReturning = hasActiveAuthSession();
+    // 2. Restore session — fast path for no-session case
+    const isReturning = hasActiveAuthSession();
 
-        if (!isReturning) {
-          // No active session marker — skip network signOut, just clear locally
-          clearAuthSessionMarkers();
-          // Fire-and-forget local cleanup (no await — no network delay)
-          supabase.auth.signOut({ scope: 'local' }).catch(() => {});
-          applySession(null);
-          return;
-        }
-
-        // Returning session (same tab, page refresh)
-        const { data: { session: existing } } = await supabase.auth.getSession();
+    if (!isReturning) {
+      // No active session — resolve immediately, no network
+      clearAuthSessionMarkers();
+      setSession(null);
+      setUser(null);
+      setRole(null);
+      finalizeInit();
+      // Fire-and-forget local cleanup
+      supabase.auth.signOut({ scope: 'local' }).catch(() => {});
+    } else {
+      // Returning session — need network
+      supabase.auth.getSession().then(({ data: { session: existing } }) => {
         if (existing?.user) {
           markAuthSessionActive();
         }
-        await applySession(existing);
-      } catch (err) {
-        console.warn("Auth restore failed:", err);
+        return applySession(existing);
+      }).catch(() => {
         clearAuthSessionMarkers();
         applySession(null);
-      } finally {
-        finalizeInit();
-      }
-    };
-
-    restoreSession();
+      }).finally(finalizeInit);
+    }
 
     return () => {
       mountedRef.current = false;
@@ -168,7 +162,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!user) return;
     touchAuthSessionActivity();
     idleTimer.current = setTimeout(() => {
-      console.log("Session expired — idle timeout");
+      // Idle timeout reached — sign out
       void signOut();
     }, IDLE_TIMEOUT_MS);
   }, [user, signOut]);

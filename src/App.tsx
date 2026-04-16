@@ -26,7 +26,7 @@ const Bookings = lazyWithRetry(() => import("./pages/Bookings"), "bookings-page"
 const TeacherProfile = lazyWithRetry(() => import("./pages/TeacherProfile"), "teacher-profile-page");
 const TeacherDashboardPage = lazyWithRetry(() => import("./pages/TeacherDashboardPage"), "teacher-dashboard-page");
 const TeacherStudentsPage = lazyWithRetry(() => import("./pages/TeacherStudentsPage"), "teacher-students-page");
-const Login = lazyWithRetry(() => import("./pages/Login"), "login-page");
+import Login from "./pages/Login"; // eagerly loaded — critical path
 const Certificates = lazyWithRetry(() => import("./pages/Certificates"), "certificates-page");
 const Regulations = lazyWithRetry(() => import("./pages/Regulations"), "regulations-page");
 const DataSheets = lazyWithRetry(() => import("./pages/DataSheets"), "data-sheets-page");
@@ -58,7 +58,7 @@ const App = () => (
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
+        <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
           <AuthProvider>
             <ErrorBoundary>
               <Suspense fallback={<PageLoader />}>
