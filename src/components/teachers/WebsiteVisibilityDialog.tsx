@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
-import { Globe, Loader2, User, Camera, GraduationCap, Award, BookOpen, FileText, Tags, Users, Info } from "lucide-react";
+import { Globe, Loader2, User, Camera, GraduationCap, Award, BookOpen, FileText, Tags, Users } from "lucide-react";
 
 const VISIBLE_FIELDS = [
   { key: "name", icon: User, labelKey: "fullName" as const },
@@ -17,7 +17,6 @@ const VISIBLE_FIELDS = [
   { key: "academic_degree", icon: Award, labelKey: "academicDegree" as const },
   { key: "ijazat", icon: BookOpen, labelKey: "ijazatLabel" as const },
   { key: "bio", icon: FileText, labelKey: "bioLabel" as const },
-  { key: "about", icon: Info, labelKey: "aboutTeacher" as const },
   { key: "subjects", icon: Tags, labelKey: "subjects" as const },
   { key: "gender", icon: Users, labelKey: "gender" as const },
 ] as const;

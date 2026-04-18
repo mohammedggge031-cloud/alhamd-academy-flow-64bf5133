@@ -497,8 +497,6 @@ const translations = {
   ijazatPlaceholder: { en: "e.g. Ijazah in Hafs from Asim", ar: "مثال: إجازة في حفص عن عاصم" },
   bioLabel: { en: "About Me", ar: "نبذة عني" },
   bioPlaceholder: { en: "Write a brief about yourself, your experience, and teaching style...", ar: "اكتب نبذة مختصرة عنك وعن خبرتك وأسلوبك في التدريس..." },
-  aboutTeacher: { en: "About the Teacher", ar: "عن المعلم" },
-  aboutTeacherPlaceholder: { en: "Additional info about yourself (achievements, hobbies, philosophy...)", ar: "معلومات إضافية عن نفسك (إنجازات، اهتمامات، فلسفة التدريس...)" },
   saveProfile: { en: "Save Profile", ar: "حفظ الملف الشخصي" },
   documentsTitle: { en: "Documents & Certificates", ar: "المستندات والشهادات" },
   profilePhoto: { en: "Profile Photo", ar: "الصورة الشخصية" },
