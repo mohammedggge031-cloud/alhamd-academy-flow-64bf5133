@@ -228,7 +228,7 @@ Deno.serve(async (req) => {
             const batch = data.slice(i, i + batchSize);
             const { error: upsertError } = await targetClient
               .from(tableName)
-              .upsert(batch as any[], { onConflict: "id" });
+              .upsert(batch as any[], { onConflict: conflictKey(tableName) });
             
             if (upsertError) {
               errors.push(`${tableName} batch: ${upsertError.message}`);
