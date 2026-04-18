@@ -61,7 +61,7 @@ const TeacherProfile = () => {
 
   // Update profile info
   const updateProfile = useMutation({
-    mutationFn: async (updates: { bio?: string; academic_degree?: string; ijazat?: string; qualification?: string; zoom_link?: string }) => {
+    mutationFn: async (updates: { bio?: string; about?: string; academic_degree?: string; ijazat?: string; qualification?: string; zoom_link?: string }) => {
       const { error } = await supabase
         .from("teachers")
         .update({ ...updates, profile_completed: true })
@@ -128,11 +128,12 @@ const TeacherProfile = () => {
 
   // Form state
   const [form, setForm] = useState<{
-    bio: string; academic_degree: string; ijazat: string; qualification: string; zoom_link: string;
+    bio: string; about: string; academic_degree: string; ijazat: string; qualification: string; zoom_link: string;
   } | null>(null);
 
   const currentForm = form ?? {
     bio: teacher?.bio ?? "",
+    about: (teacher as any)?.about ?? "",
     academic_degree: teacher?.academic_degree ?? "",
     ijazat: teacher?.ijazat ?? "",
     qualification: teacher?.qualification ?? "",
@@ -212,6 +213,15 @@ const TeacherProfile = () => {
                 value={currentForm.bio}
                 rows={4}
                 onChange={(e) => setForm({ ...currentForm, bio: e.target.value })}
+              />
+            </div>
+            <div>
+              <Label>{t("aboutTeacher")}</Label>
+              <Textarea
+                placeholder={t("aboutTeacherPlaceholder")}
+                value={currentForm.about}
+                rows={4}
+                onChange={(e) => setForm({ ...currentForm, about: e.target.value })}
               />
             </div>
             <div>
