@@ -63,19 +63,21 @@ Deno.serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
     );
 
-    // Duplicate check: same phone within 24 hours
+    // Rate limit: max 3 bookings from same phone within 24 hours
     const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
-    const { data: existing } = await supabase
+    const { count: recentCount } = await supabase
       .from("trial_bookings")
-      .select("id")
+      .select("id", { count: "exact", head: true })
       .eq("phone", phone)
-      .gte("created_at", since)
-      .limit(1);
+      .gte("created_at", since);
 
-    if (existing && existing.length > 0) {
+    if ((recentCount ?? 0) >= 3) {
       return new Response(
-        JSON.stringify({ success: true, duplicate: true, message: "Booking already received" }),
-        { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+        JSON.stringify({
+          error: "Too many bookings. Please try again after 24 hours.",
+          limit_reached: true,
+        }),
+        { status: 429, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
