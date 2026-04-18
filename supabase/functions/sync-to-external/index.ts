@@ -192,7 +192,9 @@ Deno.serve(async (req) => {
       _function_url: functionUrl,
     });
 
-    const mode = body.mode || "schema_and_data";
+    // Allow internal callers to trigger a full sync as well
+    const mode = body.mode || (isInternalCall ? "process_queue" : "schema_and_data");
+    const allowFull = hasSecretKey || (isInternalCall && body.mode === "schema_and_data");
     const logs: string[] = [];
     const errors: string[] = [];
 
