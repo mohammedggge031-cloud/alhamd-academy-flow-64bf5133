@@ -1,19 +1,17 @@
 -- ============================================================
--- Alhamd Academy - Full Database Schema
--- Generated: 2026-03-19
--- This file recreates the ENTIRE public schema from scratch.
--- Run this on a fresh Supabase project AFTER creating the project.
+-- Alhamd Academy - Complete Database Schema
+-- Generated: 2026-04-16
+-- Safe to run on a fresh Supabase project
 -- ============================================================
 
 -- ===================== ENUMS =====================
-CREATE TYPE public.app_role AS ENUM ('admin', 'teacher', 'manager');
+DO $$ BEGIN CREATE TYPE public.app_role AS ENUM ('admin', 'teacher', 'manager'); EXCEPTION WHEN duplicate_object THEN NULL; END $$;
 
 -- ===================== TABLES =====================
 
--- Profiles (auto-created on user signup via trigger)
-CREATE TABLE public.profiles (
+CREATE TABLE IF NOT EXISTS public.profiles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL UNIQUE REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL UNIQUE,
   full_name text NOT NULL,
   whatsapp text,
   dot_color text,
@@ -21,19 +19,17 @@ CREATE TABLE public.profiles (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- User Roles
-CREATE TABLE public.user_roles (
+CREATE TABLE IF NOT EXISTS public.user_roles (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  user_id uuid NOT NULL,
   role app_role NOT NULL,
   created_at timestamptz NOT NULL DEFAULT now(),
   UNIQUE (user_id, role)
 );
 
--- Teachers
-CREATE TABLE public.teachers (
+CREATE TABLE IF NOT EXISTS public.teachers (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL UNIQUE REFERENCES public.profiles(user_id) ON DELETE CASCADE,
+  user_id uuid NOT NULL UNIQUE,
   age integer,
   hourly_rate numeric NOT NULL DEFAULT 0,
   rate_currency text NOT NULL DEFAULT 'USD',
@@ -60,8 +56,7 @@ CREATE TABLE public.teachers (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Students
-CREATE TABLE public.students (
+CREATE TABLE IF NOT EXISTS public.students (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   name text NOT NULL,
   age integer,
@@ -81,8 +76,7 @@ CREATE TABLE public.students (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Sessions
-CREATE TABLE public.sessions (
+CREATE TABLE IF NOT EXISTS public.sessions (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   teacher_id uuid NOT NULL REFERENCES public.teachers(id),
   student_id uuid NOT NULL REFERENCES public.students(id),
@@ -90,6 +84,7 @@ CREATE TABLE public.sessions (
   start_time time,
   duration_minutes integer NOT NULL DEFAULT 60,
   waiting_minutes integer DEFAULT 0,
+  exception_minutes integer DEFAULT 0,
   status text NOT NULL DEFAULT 'upcoming',
   notes text,
   teacher_paid boolean DEFAULT true,
@@ -100,8 +95,7 @@ CREATE TABLE public.sessions (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Approval Requests
-CREATE TABLE public.approval_requests (
+CREATE TABLE IF NOT EXISTS public.approval_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   teacher_id uuid NOT NULL REFERENCES public.teachers(id),
   session_id uuid REFERENCES public.sessions(id),
@@ -114,8 +108,7 @@ CREATE TABLE public.approval_requests (
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Session Reports
-CREATE TABLE public.session_reports (
+CREATE TABLE IF NOT EXISTS public.session_reports (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   session_id uuid NOT NULL UNIQUE REFERENCES public.sessions(id),
   teacher_id uuid NOT NULL REFERENCES public.teachers(id),
@@ -129,125 +122,128 @@ CREATE TABLE public.session_reports (
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Monthly Reports
-CREATE TABLE public.monthly_reports (
+CREATE TABLE IF NOT EXISTS public.monthly_reports (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   teacher_id uuid NOT NULL REFERENCES public.teachers(id) ON DELETE CASCADE,
   student_id uuid NOT NULL REFERENCES public.students(id),
   report_month date NOT NULL,
-  quran_progress text,
-  tajweed_level text,
-  attendance_rating text,
-  behavior_notes text,
-  strengths text,
-  weaknesses text,
-  recommendations text,
-  overall_grade text,
+  quran_progress text, tajweed_level text, attendance_rating text,
+  behavior_notes text, strengths text, weaknesses text,
+  recommendations text, overall_grade text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Invoices
-CREATE TABLE public.invoices (
+CREATE TABLE IF NOT EXISTS public.invoices (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   student_id uuid REFERENCES public.students(id),
-  amount numeric NOT NULL,
-  discount numeric DEFAULT 0,
-  total numeric NOT NULL,
-  hours numeric DEFAULT 0,
-  status text NOT NULL DEFAULT 'pending',
-  due_date date,
-  paid_at timestamptz,
-  notes text,
+  amount numeric NOT NULL, discount numeric DEFAULT 0, total numeric NOT NULL,
+  hours numeric DEFAULT 0, status text NOT NULL DEFAULT 'pending',
+  due_date date, paid_at timestamptz, notes text,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Invoice Students
-CREATE TABLE public.invoice_students (
+CREATE TABLE IF NOT EXISTS public.invoice_students (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   invoice_id uuid NOT NULL REFERENCES public.invoices(id),
   student_id uuid NOT NULL REFERENCES public.students(id),
-  hours numeric NOT NULL DEFAULT 0,
-  amount numeric NOT NULL DEFAULT 0,
+  hours numeric NOT NULL DEFAULT 0, amount numeric NOT NULL DEFAULT 0,
   created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Expenses
-CREATE TABLE public.expenses (
+CREATE TABLE IF NOT EXISTS public.expenses (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  category text NOT NULL,
-  description text NOT NULL,
-  amount numeric NOT NULL DEFAULT 0,
-  expense_month date NOT NULL,
-  created_by uuid,
-  created_at timestamptz NOT NULL DEFAULT now(),
+  category text NOT NULL, description text NOT NULL,
+  amount numeric NOT NULL DEFAULT 0, expense_month date NOT NULL,
+  created_by uuid, created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Teacher Documents
-CREATE TABLE public.teacher_documents (
+CREATE TABLE IF NOT EXISTS public.teacher_documents (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
   teacher_id uuid NOT NULL REFERENCES public.teachers(id) ON DELETE CASCADE,
-  document_type text NOT NULL,
-  file_url text NOT NULL,
-  file_name text NOT NULL,
-  description text,
-  created_at timestamptz NOT NULL DEFAULT now()
+  document_type text NOT NULL, file_url text NOT NULL, file_name text NOT NULL,
+  description text, created_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Trial Bookings
-CREATE TABLE public.trial_bookings (
+CREATE TABLE IF NOT EXISTS public.trial_bookings (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  full_name text NOT NULL,
-  phone text NOT NULL,
-  email text,
-  course_interest text,
-  preferred_date date,
-  preferred_time text,
-  timezone text,
-  message text,
-  status text NOT NULL DEFAULT 'new',
-  admin_notes text,
-  is_read boolean NOT NULL DEFAULT false,
+  full_name text NOT NULL, phone text NOT NULL, email text,
+  course_interest text, preferred_date date, preferred_time text,
+  timezone text, message text, status text NOT NULL DEFAULT 'new',
+  admin_notes text, is_read boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Subscription Requests
-CREATE TABLE public.subscription_requests (
+CREATE TABLE IF NOT EXISTS public.subscription_requests (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  full_name text NOT NULL,
-  phone text NOT NULL,
-  email text,
-  plan_name text NOT NULL,
-  plan_price text,
-  sessions_per_week text,
-  message text,
-  status text NOT NULL DEFAULT 'new',
-  admin_notes text,
-  is_read boolean NOT NULL DEFAULT false,
+  full_name text NOT NULL, phone text NOT NULL, email text,
+  plan_name text NOT NULL, plan_price text, sessions_per_week text,
+  message text, status text NOT NULL DEFAULT 'new',
+  admin_notes text, is_read boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now(),
   updated_at timestamptz NOT NULL DEFAULT now()
 );
 
--- Notifications
-CREATE TABLE public.notifications (
+CREATE TABLE IF NOT EXISTS public.notifications (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  user_id uuid NOT NULL,
-  title text NOT NULL,
-  body text,
-  type text NOT NULL,
-  group_id uuid DEFAULT gen_random_uuid(),
-  metadata jsonb DEFAULT '{}'::jsonb,
-  is_read boolean NOT NULL DEFAULT false,
+  user_id uuid NOT NULL, title text NOT NULL, body text,
+  type text NOT NULL, group_id uuid DEFAULT gen_random_uuid(),
+  metadata jsonb DEFAULT '{}'::jsonb, is_read boolean NOT NULL DEFAULT false,
   created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.academy_settings (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  key text NOT NULL, value text,
+  updated_at timestamptz NOT NULL DEFAULT now(),
+  updated_by uuid
+);
+
+CREATE TABLE IF NOT EXISTS public.regulations (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  section_title text NOT NULL, section_title_en text DEFAULT '',
+  section_order integer NOT NULL DEFAULT 0,
+  items jsonb NOT NULL DEFAULT '[]'::jsonb,
+  items_en jsonb DEFAULT '[]'::jsonb,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.external_sync_config (
+  id boolean PRIMARY KEY DEFAULT true,
+  function_url text NOT NULL, enabled boolean NOT NULL DEFAULT true,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS public.external_sync_events (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  table_name text NOT NULL, operation text NOT NULL,
+  record_id uuid, payload jsonb, old_payload jsonb,
+  status text NOT NULL DEFAULT 'pending', attempts integer NOT NULL DEFAULT 0,
+  last_error text, processed_at timestamptz,
+  created_at timestamptz NOT NULL DEFAULT now(),
+  updated_at timestamptz NOT NULL DEFAULT now()
 );
 
 -- ===================== VIEWS =====================
-CREATE OR REPLACE VIEW public.teachers_self_view AS
+DROP VIEW IF EXISTS public.teachers_self_view;
+CREATE VIEW public.teachers_self_view AS
 SELECT id, user_id, age, qualification, hourly_rate, zoom_link, is_active, created_at
 FROM public.teachers;
+ALTER VIEW public.teachers_self_view SET (security_invoker = on);
+
+DROP VIEW IF EXISTS public.teachers_manager_view;
+CREATE VIEW public.teachers_manager_view AS
+SELECT id, user_id, age, qualification, subjects, zoom_link, bio,
+       academic_degree, ijazat, gender, rating, students_count,
+       is_active, profile_completed, show_on_website,
+       website_visible_fields, rate_currency, created_at, updated_at
+FROM public.teachers;
+ALTER VIEW public.teachers_manager_view SET (security_invoker = on);
 
 -- ===================== FUNCTIONS =====================
 
@@ -276,14 +272,28 @@ BEGIN
     RAISE EXCEPTION 'لا يمكن تأجيل حصة مسجلة غياب أو تسجيل غياب لحصة مؤجلة';
   END IF;
   IF NEW.status = 'absent_student' AND (OLD.status IS DISTINCT FROM NEW.status) THEN
-    NEW.waiting_minutes := 15;
-    NEW.teacher_paid := true;
+    NEW.waiting_minutes := 15; NEW.teacher_paid := true;
   END IF;
   IF NEW.status = 'postponed' AND (OLD.status IS DISTINCT FROM NEW.status) THEN
     NEW.teacher_paid := false;
   END IF;
   IF NEW.status = 'completed' AND OLD.status = 'postponed' THEN
     NEW.teacher_paid := true;
+  END IF;
+  RETURN NEW;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.prevent_teacher_financial_self_edit()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+BEGIN
+  IF NOT has_role(auth.uid(), 'admin') AND NOT has_role(auth.uid(), 'manager') THEN
+    NEW.hourly_rate := OLD.hourly_rate; NEW.bonus_amount := OLD.bonus_amount;
+    NEW.bonus_reason := OLD.bonus_reason; NEW.monthly_salary := OLD.monthly_salary;
+    NEW.monthly_hours := OLD.monthly_hours; NEW.monthly_waiting_minutes := OLD.monthly_waiting_minutes;
+    NEW.monthly_absence_hours := OLD.monthly_absence_hours; NEW.rate_currency := OLD.rate_currency;
+    NEW.students_count := OLD.students_count; NEW.rating := OLD.rating;
+    NEW.show_on_website := OLD.show_on_website; NEW.website_visible_fields := OLD.website_visible_fields;
+    NEW.is_active := OLD.is_active;
   END IF;
   RETURN NEW;
 END; $$;
@@ -312,27 +322,81 @@ BEGIN
   END IF;
 END; $$;
 
--- ===================== TRIGGERS =====================
+CREATE OR REPLACE FUNCTION public.validate_trial_booking_insert()
+RETURNS trigger LANGUAGE plpgsql SET search_path TO 'public' AS $$
+BEGIN NEW.is_read := false; NEW.admin_notes := NULL; NEW.status := 'new'; RETURN NEW; END; $$;
 
--- Auto-create profile on new auth user
-CREATE TRIGGER on_auth_user_created
-  AFTER INSERT ON auth.users
-  FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
+CREATE OR REPLACE FUNCTION public.validate_subscription_request_insert()
+RETURNS trigger LANGUAGE plpgsql SET search_path TO 'public' AS $$
+BEGIN NEW.is_read := false; NEW.admin_notes := NULL; NEW.status := 'new'; RETURN NEW; END; $$;
 
--- Auto-update updated_at timestamps
-CREATE TRIGGER update_profiles_updated_at BEFORE UPDATE ON public.profiles FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_teachers_updated_at BEFORE UPDATE ON public.teachers FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_students_updated_at BEFORE UPDATE ON public.students FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_sessions_updated_at BEFORE UPDATE ON public.sessions FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_invoices_updated_at BEFORE UPDATE ON public.invoices FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_expenses_updated_at BEFORE UPDATE ON public.expenses FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_approval_requests_updated_at BEFORE UPDATE ON public.approval_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_trial_bookings_updated_at BEFORE UPDATE ON public.trial_bookings FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_subscription_requests_updated_at BEFORE UPDATE ON public.subscription_requests FOR EACH ROW EXECUTE FUNCTION update_updated_at();
-CREATE TRIGGER update_monthly_reports_updated_at BEFORE UPDATE ON public.monthly_reports FOR EACH ROW EXECUTE FUNCTION update_updated_at();
+-- Sync functions
+CREATE OR REPLACE FUNCTION public.set_external_sync_config(_function_url text)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+BEGIN
+  INSERT INTO public.external_sync_config (id, function_url, enabled, updated_at)
+  VALUES (true, _function_url, true, now())
+  ON CONFLICT (id) DO UPDATE SET function_url = EXCLUDED.function_url, enabled = true, updated_at = now();
+END; $$;
 
--- Session status change logic
-CREATE TRIGGER handle_session_status BEFORE UPDATE ON public.sessions FOR EACH ROW EXECUTE FUNCTION handle_session_status_change();
+CREATE OR REPLACE FUNCTION public.request_external_sync_processing()
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+DECLARE
+  _function_url text;
+  _anon_key text := current_setting('app.settings.anon_key', true);
+BEGIN
+  SELECT function_url INTO _function_url FROM public.external_sync_config WHERE id = true AND enabled = true;
+  IF _function_url IS NULL THEN RETURN; END IF;
+  PERFORM net.http_post(
+    url := _function_url,
+    headers := jsonb_build_object('Content-Type','application/json','apikey',_anon_key,'Authorization','Bearer '||_anon_key),
+    body := jsonb_build_object('mode','process_queue')
+  );
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.enqueue_external_sync_event()
+RETURNS trigger LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+DECLARE _table_name text := TG_TABLE_NAME; _record_id uuid;
+BEGIN
+  IF TG_OP = 'DELETE' THEN
+    _record_id := OLD.id;
+    INSERT INTO public.external_sync_events (table_name, operation, record_id, old_payload)
+    VALUES (_table_name, lower(TG_OP), _record_id, to_jsonb(OLD));
+  ELSE
+    _record_id := NEW.id;
+    INSERT INTO public.external_sync_events (table_name, operation, record_id, payload, old_payload)
+    VALUES (_table_name, lower(TG_OP), _record_id, to_jsonb(NEW), CASE WHEN TG_OP='UPDATE' THEN to_jsonb(OLD) ELSE NULL END);
+  END IF;
+  PERFORM public.request_external_sync_processing();
+  RETURN COALESCE(NEW, OLD);
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.claim_external_sync_events(_limit integer DEFAULT 50)
+RETURNS SETOF external_sync_events LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+BEGIN
+  RETURN QUERY
+  WITH candidates AS (
+    SELECT e.id FROM public.external_sync_events e
+    WHERE e.status='pending' OR (e.status='failed' AND e.attempts<20 AND e.updated_at<=now()-make_interval(secs=>LEAST(GREATEST(e.attempts,1)*30,600)))
+      OR (e.status='processing' AND e.updated_at<=now()-interval '2 minutes')
+    ORDER BY e.created_at LIMIT GREATEST(_limit,1) FOR UPDATE SKIP LOCKED
+  ), claimed AS (
+    UPDATE public.external_sync_events e SET status='processing', updated_at=now() FROM candidates c WHERE e.id=c.id RETURNING e.*
+  ) SELECT * FROM claimed;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.mark_external_sync_event_result(_event_id uuid, _status text, _last_error text DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+BEGIN
+  UPDATE public.external_sync_events SET status=_status, attempts=attempts+1, last_error=_last_error,
+    processed_at=CASE WHEN _status='processed' THEN now() ELSE processed_at END, updated_at=now() WHERE id=_event_id;
+END; $$;
+
+CREATE OR REPLACE FUNCTION public.touch_external_sync_event(_event_id uuid, _last_error text DEFAULT NULL)
+RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path TO 'public' AS $$
+BEGIN
+  UPDATE public.external_sync_events SET status='pending', attempts=attempts+1, last_error=_last_error, updated_at=now() WHERE id=_event_id;
+END; $$;
 
 -- ===================== ENABLE RLS =====================
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -350,108 +414,17 @@ ALTER TABLE public.teacher_documents ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.trial_bookings ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.subscription_requests ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
-
--- ===================== RLS POLICIES =====================
-
--- profiles
-CREATE POLICY "Admin full access profiles" ON public.profiles FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read profiles" ON public.profiles FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Users can read own profile" ON public.profiles FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can update own profile" ON public.profiles FOR UPDATE TO authenticated USING (user_id = auth.uid());
-
--- user_roles
-CREATE POLICY "Admins can manage roles" ON public.user_roles FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Users can read own role" ON public.user_roles FOR SELECT TO authenticated USING (user_id = auth.uid());
-
--- teachers
-CREATE POLICY "Admin full access teachers" ON public.teachers FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read teachers" ON public.teachers FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager update teachers" ON public.teachers FOR UPDATE USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Teacher can read own basic info" ON public.teachers FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Teacher can update own profile" ON public.teachers FOR UPDATE USING (user_id = auth.uid()) WITH CHECK (user_id = auth.uid());
-
--- students
-CREATE POLICY "Admin full access students" ON public.students FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read students" ON public.students FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager write students" ON public.students FOR INSERT WITH CHECK (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager update students" ON public.students FOR UPDATE USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager delete students" ON public.students FOR DELETE USING (has_role(auth.uid(), 'manager'));
-
--- sessions
-CREATE POLICY "Admin full access sessions" ON public.sessions FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read sessions" ON public.sessions FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager write sessions" ON public.sessions FOR INSERT WITH CHECK (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager update sessions" ON public.sessions FOR UPDATE USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Teacher can view own sessions" ON public.sessions FOR SELECT TO authenticated USING (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()));
-CREATE POLICY "Teacher can update own session status" ON public.sessions FOR UPDATE TO authenticated
-  USING (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()))
-  WITH CHECK (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()) AND status = ANY(ARRAY['confirmed','completed','absent_student']));
-
--- approval_requests
-CREATE POLICY "Admin full access approval_requests" ON public.approval_requests FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read approval_requests" ON public.approval_requests FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager update approval_requests" ON public.approval_requests FOR UPDATE USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Teacher can create approval requests" ON public.approval_requests FOR INSERT TO authenticated WITH CHECK (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()));
-CREATE POLICY "Teacher can view own requests" ON public.approval_requests FOR SELECT TO authenticated USING (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()));
-
--- session_reports
-CREATE POLICY "Admin full access session_reports" ON public.session_reports FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read session_reports" ON public.session_reports FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager create session_reports" ON public.session_reports FOR INSERT TO authenticated WITH CHECK (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager update session_reports" ON public.session_reports FOR UPDATE TO authenticated USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Teacher can create own reports" ON public.session_reports FOR INSERT TO authenticated WITH CHECK (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()));
-CREATE POLICY "Teacher can view own reports" ON public.session_reports FOR SELECT TO authenticated USING (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()));
-
--- monthly_reports
-CREATE POLICY "Admin full access monthly_reports" ON public.monthly_reports FOR ALL USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read monthly_reports" ON public.monthly_reports FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager create monthly_reports" ON public.monthly_reports FOR INSERT TO authenticated WITH CHECK (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager update monthly_reports" ON public.monthly_reports FOR UPDATE TO authenticated USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Teacher can create own reports" ON public.monthly_reports FOR INSERT WITH CHECK (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()));
-CREATE POLICY "Teacher can update own reports" ON public.monthly_reports FOR UPDATE USING (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()));
-CREATE POLICY "Teacher can view own reports" ON public.monthly_reports FOR SELECT USING (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()));
-
--- invoices
-CREATE POLICY "Admin full access invoices" ON public.invoices FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read invoices" ON public.invoices FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager write invoices" ON public.invoices FOR INSERT WITH CHECK (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager update invoices" ON public.invoices FOR UPDATE USING (has_role(auth.uid(), 'manager'));
-
--- invoice_students
-CREATE POLICY "Admin full access invoice_students" ON public.invoice_students FOR ALL USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read invoice_students" ON public.invoice_students FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager write invoice_students" ON public.invoice_students FOR INSERT WITH CHECK (has_role(auth.uid(), 'manager'));
-
--- expenses
-CREATE POLICY "Admin full access expenses" ON public.expenses FOR ALL USING (has_role(auth.uid(), 'admin'));
-
--- teacher_documents
-CREATE POLICY "Admin full access teacher_documents" ON public.teacher_documents FOR ALL USING (has_role(auth.uid(), 'admin')) WITH CHECK (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Manager read teacher_documents" ON public.teacher_documents FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Teacher manage own documents" ON public.teacher_documents FOR ALL USING (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid())) WITH CHECK (teacher_id IN (SELECT id FROM teachers WHERE user_id = auth.uid()));
-
--- trial_bookings
-CREATE POLICY "Admin full access trial_bookings" ON public.trial_bookings FOR ALL USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Anyone can insert trial_bookings" ON public.trial_bookings FOR INSERT WITH CHECK (true);
-CREATE POLICY "Manager read trial_bookings" ON public.trial_bookings FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager update trial_bookings" ON public.trial_bookings FOR UPDATE USING (has_role(auth.uid(), 'manager'));
-
--- subscription_requests
-CREATE POLICY "Admin full access subscription_requests" ON public.subscription_requests FOR ALL USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Anyone can insert subscription_requests" ON public.subscription_requests FOR INSERT WITH CHECK (true);
-CREATE POLICY "Manager read subscription_requests" ON public.subscription_requests FOR SELECT USING (has_role(auth.uid(), 'manager'));
-CREATE POLICY "Manager update subscription_requests" ON public.subscription_requests FOR UPDATE USING (has_role(auth.uid(), 'manager'));
-
--- notifications
-CREATE POLICY "Admin full access notifications" ON public.notifications FOR ALL TO authenticated USING (has_role(auth.uid(), 'admin'));
-CREATE POLICY "Admin manager insert notifications" ON public.notifications FOR INSERT TO authenticated WITH CHECK (has_role(auth.uid(), 'admin') OR has_role(auth.uid(), 'manager'));
-CREATE POLICY "Users can read own notifications" ON public.notifications FOR SELECT TO authenticated USING (user_id = auth.uid());
-CREATE POLICY "Users can update own notifications" ON public.notifications FOR UPDATE TO authenticated USING (user_id = auth.uid());
+ALTER TABLE public.academy_settings ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.regulations ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.external_sync_config ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.external_sync_events ENABLE ROW LEVEL SECURITY;
 
 -- ===================== STORAGE =====================
--- Create the teacher-files bucket (public)
-INSERT INTO storage.buckets (id, name, public) VALUES ('teacher-files', 'teacher-files', true)
+INSERT INTO storage.buckets (id, name, public) VALUES ('teacher-files', 'teacher-files', false)
 ON CONFLICT (id) DO NOTHING;
 
--- ===================== REALTIME (optional) =====================
--- ALTER PUBLICATION supabase_realtime ADD TABLE public.notifications;
+-- ============================================================
+-- NOTE: RLS policies are NOT included here to avoid duplicates.
+-- They are already applied via migrations. See supabase/migrations/
+-- for the complete policy definitions.
+-- ============================================================

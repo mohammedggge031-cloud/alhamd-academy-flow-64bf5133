@@ -61,7 +61,7 @@ serve(async (req) => {
 
       const assignRole = targetRole === "admin" ? "admin" : "manager";
 
-      // Create user (handle_new_user trigger creates profile)
+      // Create user
       const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
         email: email.trim().toLowerCase(),
         password,
@@ -72,39 +72,12 @@ serve(async (req) => {
 
       const userId = newUser.user.id;
 
-      // Rollback wrapper: if subsequent steps fail, delete the auth user
-      try {
-        // Defensive: ensure profile exists
-        const { data: existingProf } = await adminClient
-          .from("profiles")
-          .select("id")
-          .eq("user_id", userId)
-          .maybeSingle();
-        if (!existingProf) {
-          const { error: profErr } = await adminClient
-            .from("profiles")
-            .insert({ user_id: userId, full_name: full_name.trim() });
-          if (profErr) throw new Error(`فشل إنشاء الملف الشخصي: ${profErr.message}`);
-        }
+      // Assign role
+      await adminClient.from("user_roles").insert({ user_id: userId, role: assignRole });
 
-        // Assign role
-        const { error: roleErr } = await adminClient
-          .from("user_roles")
-          .insert({ user_id: userId, role: assignRole });
-        if (roleErr) throw new Error(`فشل تعيين الدور: ${roleErr.message}`);
-
-        // Set dot_color if provided
-        if (dot_color) {
-          const { error: colorErr } = await adminClient
-            .from("profiles")
-            .update({ dot_color })
-            .eq("user_id", userId);
-          if (colorErr) throw new Error(`فشل تعيين اللون: ${colorErr.message}`);
-        }
-      } catch (innerErr) {
-        // Rollback: delete the auth user
-        try { await adminClient.auth.admin.deleteUser(userId); } catch (_) {}
-        throw innerErr;
+      // Set dot_color if provided
+      if (dot_color) {
+        await adminClient.from("profiles").update({ dot_color }).eq("user_id", userId);
       }
 
       return new Response(JSON.stringify({ success: true, user_id: userId }), {
