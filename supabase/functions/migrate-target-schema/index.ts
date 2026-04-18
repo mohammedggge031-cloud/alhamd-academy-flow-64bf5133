@@ -54,7 +54,15 @@ Deno.serve(async (req) => {
       }), { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } });
     }
 
-    const client = new Client(dbUrl);
+    const url = new URL(dbUrl);
+    const client = new Client({
+      user: decodeURIComponent(url.username),
+      password: decodeURIComponent(url.password),
+      database: (url.pathname.slice(1) || "postgres"),
+      hostname: url.hostname,
+      port: Number(url.port || 5432),
+      tls: { enabled: true, enforce: false },
+    });
     await client.connect();
 
     const results: Array<Record<string, unknown>> = [];
