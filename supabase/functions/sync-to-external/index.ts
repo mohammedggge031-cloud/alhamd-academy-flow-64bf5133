@@ -47,6 +47,18 @@ async function fetchAllRows(client: ReturnType<typeof createClient>, tableName: 
   return rows;
 }
 
+// Some tables have unique constraints other than id that conflict on upsert.
+// Map them so we upsert by the natural key.
+const CONFLICT_KEYS: Record<string, string> = {
+  profiles: "user_id",
+  user_roles: "user_id,role",
+  academy_settings: "key",
+};
+
+function conflictKey(tableName: string): string {
+  return CONFLICT_KEYS[tableName] ?? "id";
+}
+
 async function upsertToTarget(
   targetClient: ReturnType<typeof createClient>,
   tableName: string,
@@ -54,7 +66,7 @@ async function upsertToTarget(
 ) {
   const { error } = await targetClient
     .from(tableName)
-    .upsert(row as any, { onConflict: "id" });
+    .upsert(row as any, { onConflict: conflictKey(tableName) });
   if (error) throw error;
 }
 
@@ -216,7 +228,7 @@ Deno.serve(async (req) => {
             const batch = data.slice(i, i + batchSize);
             const { error: upsertError } = await targetClient
               .from(tableName)
-              .upsert(batch as any[], { onConflict: "id" });
+              .upsert(batch as any[], { onConflict: conflictKey(tableName) });
             
             if (upsertError) {
               errors.push(`${tableName} batch: ${upsertError.message}`);
