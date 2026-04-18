@@ -17,9 +17,3 @@ verify_jwt = false
 
 [functions.bootstrap-sync]
 verify_jwt = false
-
-[functions.sync-auth-users]
-verify_jwt = false
-
-[functions.migrate-target-schema]
-verify_jwt = false

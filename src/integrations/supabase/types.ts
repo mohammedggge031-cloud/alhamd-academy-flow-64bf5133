@@ -830,7 +830,6 @@ export type Database = {
       }
       teachers: {
         Row: {
-          about: string | null
           academic_degree: string | null
           age: number | null
           bio: string | null
@@ -859,7 +858,6 @@ export type Database = {
           zoom_link: string | null
         }
         Insert: {
-          about?: string | null
           academic_degree?: string | null
           age?: number | null
           bio?: string | null
@@ -888,7 +886,6 @@ export type Database = {
           zoom_link?: string | null
         }
         Update: {
-          about?: string | null
           academic_degree?: string | null
           age?: number | null
           bio?: string | null
