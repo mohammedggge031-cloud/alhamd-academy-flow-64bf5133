@@ -11,6 +11,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
+  let createdUserId: string | null = null;
+  let adminClient: ReturnType<typeof createClient> | null = null;
+
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
@@ -25,7 +28,7 @@ serve(async (req) => {
     const { data: { user: caller } } = await callerClient.auth.getUser();
     if (!caller) throw new Error("غير مصرح");
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
+    adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     // Check admin role
     const { data: roleData } = await adminClient
@@ -77,7 +80,7 @@ serve(async (req) => {
       ? email.trim().toLowerCase()
       : `teacher_${sanitizedPhone.replace(/[^0-9]/g, "")}@alhamdacademy.net`;
 
-    // Create user
+    // Step 1: Create auth user (handle_new_user trigger creates profile automatically)
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
       email: finalEmail,
       password,
@@ -86,18 +89,38 @@ serve(async (req) => {
     });
 
     if (createError) throw createError;
+    createdUserId = newUser.user.id;
 
-    const userId = newUser.user.id;
+    // Step 2: Verify profile was created by trigger; create manually if missing (defensive)
+    const { data: existingProf } = await adminClient
+      .from("profiles")
+      .select("id")
+      .eq("user_id", createdUserId)
+      .maybeSingle();
 
-    // Update profile whatsapp
-    await adminClient.from("profiles").update({ whatsapp: sanitizedPhone }).eq("user_id", userId);
+    if (!existingProf) {
+      const { error: profileError } = await adminClient
+        .from("profiles")
+        .insert({ user_id: createdUserId, full_name: full_name.trim(), whatsapp: sanitizedPhone });
+      if (profileError) throw new Error(`فشل إنشاء الملف الشخصي: ${profileError.message}`);
+    } else {
+      // Update whatsapp on existing profile
+      const { error: updateProfileError } = await adminClient
+        .from("profiles")
+        .update({ whatsapp: sanitizedPhone })
+        .eq("user_id", createdUserId);
+      if (updateProfileError) throw new Error(`فشل تحديث الملف الشخصي: ${updateProfileError.message}`);
+    }
 
-    // Assign teacher role
-    await adminClient.from("user_roles").insert({ user_id: userId, role: "teacher" });
+    // Step 3: Assign teacher role
+    const { error: roleError } = await adminClient
+      .from("user_roles")
+      .insert({ user_id: createdUserId, role: "teacher" });
+    if (roleError) throw new Error(`فشل تعيين دور المعلم: ${roleError.message}`);
 
-    // Create teacher record
-    await adminClient.from("teachers").insert({
-      user_id: userId,
+    // Step 4: Create teacher record
+    const { error: teacherError } = await adminClient.from("teachers").insert({
+      user_id: createdUserId,
       age: age || null,
       hourly_rate: hourly_rate || 0,
       rate_currency: rate_currency === "EGP" ? "EGP" : "USD",
@@ -105,11 +128,23 @@ serve(async (req) => {
       subjects: subjects || [],
       gender: gender === "female" ? "female" : "male",
     });
+    if (teacherError) throw new Error(`فشل إنشاء سجل المعلم: ${teacherError.message}`);
 
-    return new Response(JSON.stringify({ success: true, user_id: userId }), {
+    // Success — clear rollback marker
+    createdUserId = null;
+
+    return new Response(JSON.stringify({ success: true, user_id: newUser.user.id }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
+    // ROLLBACK: if we created an auth user but failed afterwards, delete it
+    if (createdUserId && adminClient) {
+      try {
+        await adminClient.auth.admin.deleteUser(createdUserId);
+      } catch (rollbackErr) {
+        console.error("Rollback failed for user:", createdUserId, rollbackErr);
+      }
+    }
     return new Response(JSON.stringify({ error: error.message }), {
       status: 400,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
