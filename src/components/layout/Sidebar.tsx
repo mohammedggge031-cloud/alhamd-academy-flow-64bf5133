@@ -52,9 +52,11 @@ const allNavItems: { to: string; icon: any; labelKey: TranslationKey; roles: str
 
 export const Sidebar = ({ onClose }: SidebarProps) => {
   const location = useLocation();
-  const { signOut, role } = useAuth();
+  const { signOut, role, user } = useAuth();
   const { t, lang, setLang } = useLanguage();
   const qc = useQueryClient();
+  // While role is still being fetched after login, treat user as authenticated-but-pending
+  const roleLoading = !!user && role === null;
 
   const { data: unreadCounts = { bookings: 0 } } = useQuery({
     queryKey: ["sidebar-unread"],
