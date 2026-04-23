@@ -197,11 +197,10 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
             <SelectItem value="ar">{t("langArabic")}</SelectItem>
             <SelectItem value="en">{t("langEnglish")}</SelectItem>
             <SelectItem value="fr">{t("langFrench")}</SelectItem>
-            <SelectItem value="ur">{t("langUrdu")}</SelectItem>
-            <SelectItem value="tr">{t("langTurkish")}</SelectItem>
-            <SelectItem value="id">{t("langIndonesian")}</SelectItem>
-            <SelectItem value="ms">{t("langMalay")}</SelectItem>
-            <SelectItem value="other">{t("langOther")}</SelectItem>
+            <SelectItem value="de">{t("langGerman")}</SelectItem>
+            <SelectItem value="es">{t("langSpanish")}</SelectItem>
+            <SelectItem value="it">{t("langItalian")}</SelectItem>
+            <SelectItem value="ru">{t("langRussian")}</SelectItem>
           </SelectContent>
         </Select>
       </div>
