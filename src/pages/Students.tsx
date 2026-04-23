@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { Users, Plus, Search } from "lucide-react";
@@ -23,6 +24,16 @@ const Students = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [transferStudent, setTransferStudent] = useState<any>(null);
   const { t } = useLanguage();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Open dialog automatically when ?action=add is present
+  useEffect(() => {
+    if (searchParams.get("action") === "add") {
+      setDialogOpen(true);
+      searchParams.delete("action");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
 
   const { data: students = [], isLoading, refetch } = useQuery({
     queryKey: ["students-full"],
