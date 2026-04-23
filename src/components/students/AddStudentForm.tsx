@@ -75,6 +75,7 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
   const [whatsapp, setWhatsapp] = useState("");
   const [guardianWhatsapp, setGuardianWhatsapp] = useState("");
   const [timezone, setTimezone] = useState("Africa/Cairo");
+  const [communicationLanguage, setCommunicationLanguage] = useState("ar");
   const [teacherId, setTeacherId] = useState("");
   const [paidHours, setPaidHours] = useState("");
   const [packagePrice, setPackagePrice] = useState("");
@@ -118,7 +119,8 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
         .insert([{
           name: name.trim(), age: age ? parseInt(age) : null, country: country.trim() || null,
           whatsapp: whatsapp.trim() || null, guardian_whatsapp: guardianWhatsapp.trim() || null,
-          timezone, assigned_teacher_id: teacherId || null,
+          timezone, communication_language: communicationLanguage,
+          assigned_teacher_id: teacherId || null,
           paid_hours: paidHours ? parseFloat(paidHours) : 0,
           remaining_hours: paidHours ? parseFloat(paidHours) : 0,
           session_duration_minutes: parseInt(sessionDuration),
@@ -186,6 +188,22 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
         {tzOffset && timezone !== "Africa/Cairo" && (
           <p className="text-xs text-muted-foreground">{tzOffset} {t("timezoneOffset")}</p>
         )}
+      </div>
+      <div className="grid gap-2">
+        <Label>{t("communicationLanguage")}</Label>
+        <Select value={communicationLanguage} onValueChange={setCommunicationLanguage}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ar">{t("langArabic")}</SelectItem>
+            <SelectItem value="en">{t("langEnglish")}</SelectItem>
+            <SelectItem value="fr">{t("langFrench")}</SelectItem>
+            <SelectItem value="ur">{t("langUrdu")}</SelectItem>
+            <SelectItem value="tr">{t("langTurkish")}</SelectItem>
+            <SelectItem value="id">{t("langIndonesian")}</SelectItem>
+            <SelectItem value="ms">{t("langMalay")}</SelectItem>
+            <SelectItem value="other">{t("langOther")}</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
 
       {isAdmin && (

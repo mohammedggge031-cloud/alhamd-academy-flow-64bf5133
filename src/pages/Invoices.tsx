@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2, MessageCircle, Check, X } from "lucide-react";
+import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2, MessageCircle, Check, X, Search, Users } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { Card, CardContent } from "@/components/ui/card";
@@ -41,6 +41,7 @@ const Invoices = () => {
   const queryClient = useQueryClient();
 
   const [selectedStudents, setSelectedStudents] = useState<string[]>([]);
+  const [studentSearch, setStudentSearch] = useState("");
   const [amount, setAmount] = useState("");
   const [hours, setHours] = useState("");
   const [discount, setDiscount] = useState("0");
@@ -135,7 +136,7 @@ const Invoices = () => {
       queryClient.invalidateQueries({ queryKey: ["invoices"] });
       queryClient.invalidateQueries({ queryKey: ["dash-due-invoices"] });
       queryClient.invalidateQueries({ queryKey: ["dash-overdue"] });
-      setDialogOpen(false); setSelectedStudents([]); setAmount(""); setHours(""); setDiscount("0"); setDueDate("");
+      setDialogOpen(false); setSelectedStudents([]); setStudentSearch(""); setAmount(""); setHours(""); setDiscount("0"); setDueDate("");
       toast({ title: t("invoiceCreated") });
     },
     onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
@@ -216,14 +217,81 @@ const Invoices = () => {
             </DialogHeader>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label>{t("selectStudents")}</Label>
-                <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-[40px]">
-                  {allStudents.map((s: any) => (
-                    <Badge key={s.id} variant={selectedStudents.includes(s.id) ? "default" : "outline"}
-                      className="cursor-pointer select-none" onClick={() => toggleStudent(s.id)}>
-                      {s.name}
-                    </Badge>
-                  ))}
+                <div className="flex items-center justify-between">
+                  <Label className="flex items-center gap-1.5">
+                    <Users className="h-3.5 w-3.5 text-primary" />
+                    {t("selectStudents")}
+                  </Label>
+                  {selectedStudents.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedStudents([])}
+                      className="text-xs text-muted-foreground hover:text-destructive transition-colors"
+                    >
+                      {t("clearSelection")} ({selectedStudents.length})
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                  <Input
+                    value={studentSearch}
+                    onChange={(e) => setStudentSearch(e.target.value)}
+                    placeholder={t("searchStudent")}
+                    className="pl-9 h-9"
+                  />
+                </div>
+                {selectedStudents.length > 0 && (
+                  <div className="flex flex-wrap gap-1.5 p-2 rounded-md bg-primary/5 border border-primary/20">
+                    {selectedStudents.map((sid) => {
+                      const s = allStudents.find((x: any) => x.id === sid);
+                      if (!s) return null;
+                      return (
+                        <Badge key={sid} variant="default" className="gap-1 pr-1">
+                          {s.name}
+                          <button
+                            type="button"
+                            onClick={() => toggleStudent(sid)}
+                            className="ml-0.5 rounded-full hover:bg-primary-foreground/20 p-0.5"
+                            aria-label="Remove"
+                          >
+                            <X className="h-3 w-3" />
+                          </button>
+                        </Badge>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="max-h-44 overflow-y-auto rounded-md border bg-card">
+                  {(() => {
+                    const filteredList = allStudents.filter((s: any) =>
+                      !studentSearch || s.name.toLowerCase().includes(studentSearch.toLowerCase())
+                    );
+                    if (filteredList.length === 0) {
+                      return <p className="text-xs text-center text-muted-foreground py-6">{t("noStudentsFound")}</p>;
+                    }
+                    return (
+                      <ul className="divide-y">
+                        {filteredList.map((s: any) => {
+                          const checked = selectedStudents.includes(s.id);
+                          return (
+                            <li key={s.id}>
+                              <button
+                                type="button"
+                                onClick={() => toggleStudent(s.id)}
+                                className={`w-full flex items-center gap-2 px-3 py-2 text-sm text-left hover:bg-accent/50 transition-colors ${checked ? "bg-primary/10" : ""}`}
+                              >
+                                <span className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${checked ? "bg-primary border-primary" : "border-input"}`}>
+                                  {checked && <Check className="h-3 w-3 text-primary-foreground" />}
+                                </span>
+                                <span className="flex-1">{s.name}</span>
+                              </button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    );
+                  })()}
                 </div>
                 {selectedStudents.length > 1 && (
                   <p className="text-xs text-muted-foreground">{t("mergedInvoice")} {selectedStudents.length} {t("studentsLabel2")}</p>
