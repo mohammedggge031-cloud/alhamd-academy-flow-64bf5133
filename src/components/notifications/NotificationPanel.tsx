@@ -126,13 +126,13 @@ const NotificationPanel = () => {
     password_reset_request: "🔑",
   };
   const categoryLabels: Record<NotificationCategory, string> = {
-    all: "الكل",
-    reminders_6h: "تذكير ٦س",
-    reminders_5m: "تنبيه ٥د",
-    homework: "واجبات",
-    reports: "تقارير",
-    invoices: "فواتير",
-    alerts: "تنبيهات",
+    all: t("notifTabAll"),
+    reminders_6h: t("notifTabReminders6h"),
+    reminders_5m: t("notifTabReminders5m"),
+    homework: t("notifTabHomework"),
+    reports: t("notifTabReports"),
+    invoices: t("notifTabInvoices"),
+    alerts: t("notifTabAlerts"),
   };
 
   const visibleCategories: NotificationCategory[] = ["all", "reminders_6h", "reminders_5m", "homework", "reports", "invoices", "alerts"];
