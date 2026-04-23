@@ -192,7 +192,7 @@ const Sessions = () => {
                     <Button size="sm" variant="outline" className="gap-1 text-xs text-[#25D366]"
                       onClick={() => {
                         const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
-                        const msg = buildHomeworkMessage(r.students?.name ?? "", r.homework);
+                        const msg = buildHomeworkMessage(r.students?.name ?? "", r.homework, lang);
                         if (phone) {
                           const cleanPhone = phone.replace(/[^0-9]/g, "");
                           window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");

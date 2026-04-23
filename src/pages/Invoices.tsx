@@ -386,7 +386,7 @@ const Invoices = () => {
                                 toast({ title: t("error"), description: "لا يوجد رقم واتساب", variant: "destructive" });
                                 return;
                               }
-                              openWhatsApp(phone, buildInvoiceMessage(studentName, invoice.total, invoice.hours, invoice.due_date));
+                              openWhatsApp(phone, buildInvoiceMessage(studentName, invoice.total, invoice.hours, invoice.due_date, lang));
                             }}>
                             <MessageCircle className="h-4 w-4" />
                           </Button>
@@ -403,8 +403,9 @@ const Invoices = () => {
                               toast({ title: t("error"), description: "لا يوجد رقم واتساب", variant: "destructive" });
                               return;
                             }
-                            const paidDate = invoice.paid_at ? new Date(invoice.paid_at).toLocaleDateString("ar-EG") : new Date().toLocaleDateString("ar-EG");
-                            openWhatsApp(phone, buildPaidInvoiceMessage(studentName, invoice.total, invoice.hours, paidDate));
+                            const localeTag = lang === "ar" ? "ar-EG" : "en-US";
+                            const paidDate = invoice.paid_at ? new Date(invoice.paid_at).toLocaleDateString(localeTag) : new Date().toLocaleDateString(localeTag);
+                            openWhatsApp(phone, buildPaidInvoiceMessage(studentName, invoice.total, invoice.hours, paidDate, lang));
                           }}>
                           <MessageCircle className="h-4 w-4" />
                         </Button>
