@@ -20,7 +20,7 @@ interface SessionReportDialogProps {
 }
 
 const SessionReportDialog = forwardRef<HTMLDivElement, SessionReportDialogProps>(({ session, onClose, getStudentName, levelLabels }, _ref) => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [report, setReport] = useState({ student_level: "", session_notes: "", homework: "", admin_alert: false, admin_alert_reason: "" });
@@ -130,7 +130,7 @@ const SessionReportDialog = forwardRef<HTMLDivElement, SessionReportDialogProps>
               {report.homework && (
                 <Button className="w-full gap-2 bg-[#25D366] hover:bg-[#25D366]/90 text-white"
                   onClick={() => {
-                    const homeworkMsg = buildHomeworkMessage(getStudentName(session), report.homework);
+                    const homeworkMsg = buildHomeworkMessage(getStudentName(session), report.homework, lang);
                     const url = `https://wa.me/?text=${encodeURIComponent(homeworkMsg)}`;
                     window.open(url, "_blank", "noopener,noreferrer");
                     handleClose();

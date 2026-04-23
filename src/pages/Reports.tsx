@@ -54,6 +54,9 @@ const Reports = () => {
   ];
 
   const exportData = async (type: string, format: "csv" | "xlsx" = "csv") => {
+    const isAr = lang === "ar";
+    const L = (ar: string, en: string) => (isAr ? ar : en);
+
     let rows: Record<string, any>[] = [];
     let headers: string[] = [];
     let filename = "";
@@ -63,10 +66,17 @@ const Reports = () => {
         .from("sessions")
         .select("session_date, status, duration_minutes, students:student_id(name), teachers:teacher_id(user_id, profiles:user_id(full_name))")
         .gte("session_date", monthStart).lte("session_date", monthEnd).order("session_date");
-      headers = ["التاريخ", "الطالب", "المعلم", "الحالة", "المدة (دقيقة)"];
+      const H = {
+        date: L("التاريخ", "Date"),
+        student: L("الطالب", "Student"),
+        teacher: L("المعلم", "Teacher"),
+        status: L("الحالة", "Status"),
+        duration: L("المدة (دقيقة)", "Duration (min)"),
+      };
+      headers = [H.date, H.student, H.teacher, H.status, H.duration];
       rows = (data ?? []).map((s: any) => ({
-        "التاريخ": s.session_date, "الطالب": s.students?.name, "المعلم": s.teachers?.profiles?.full_name,
-        "الحالة": s.status, "المدة (دقيقة)": s.duration_minutes,
+        [H.date]: s.session_date, [H.student]: s.students?.name, [H.teacher]: s.teachers?.profiles?.full_name,
+        [H.status]: s.status, [H.duration]: s.duration_minutes,
       }));
       filename = "attendance_report";
     } else if (type === "performance") {
@@ -74,10 +84,18 @@ const Reports = () => {
         .from("teachers")
         .select("monthly_hours, monthly_absence_hours, monthly_waiting_minutes, monthly_salary, hourly_rate, profiles:user_id(full_name)")
         .eq("is_active", true);
-      headers = ["المعلم", "الساعات", "ساعات الغياب", "دقائق الانتظار", "ريت الساعة", "الراتب"];
+      const H = {
+        teacher: L("المعلم", "Teacher"),
+        hours: L("الساعات", "Hours"),
+        absHours: L("ساعات الغياب", "Absence Hours"),
+        waitMin: L("دقائق الانتظار", "Waiting Minutes"),
+        rate: L("ريت الساعة", "Hourly Rate"),
+        salary: L("الراتب", "Salary"),
+      };
+      headers = [H.teacher, H.hours, H.absHours, H.waitMin, H.rate, H.salary];
       rows = (data ?? []).map((t: any) => ({
-        "المعلم": t.profiles?.full_name, "الساعات": t.monthly_hours, "ساعات الغياب": t.monthly_absence_hours,
-        "دقائق الانتظار": t.monthly_waiting_minutes, "ريت الساعة": t.hourly_rate, "الراتب": t.monthly_salary,
+        [H.teacher]: t.profiles?.full_name, [H.hours]: t.monthly_hours, [H.absHours]: t.monthly_absence_hours,
+        [H.waitMin]: t.monthly_waiting_minutes, [H.rate]: t.hourly_rate, [H.salary]: t.monthly_salary,
       }));
       filename = "teacher_performance";
     } else if (type === "students") {
@@ -85,39 +103,66 @@ const Reports = () => {
         .from("students")
         .select("name, age, country, remaining_hours, paid_hours, attended_hours, absence_hours, whatsapp, guardian_whatsapp, is_active")
         .order("name");
-      headers = ["الاسم", "السن", "الدولة", "المتبقي", "المدفوع", "المحضور", "الغياب", "واتساب الطالب", "واتساب ولي الأمر", "نشط"];
+      const H = {
+        name: L("الاسم", "Name"),
+        age: L("السن", "Age"),
+        country: L("الدولة", "Country"),
+        remaining: L("المتبقي", "Remaining"),
+        paid: L("المدفوع", "Paid"),
+        attended: L("المحضور", "Attended"),
+        absence: L("الغياب", "Absence"),
+        wa: L("واتساب الطالب", "Student WhatsApp"),
+        gwa: L("واتساب ولي الأمر", "Guardian WhatsApp"),
+        active: L("نشط", "Active"),
+      };
+      headers = [H.name, H.age, H.country, H.remaining, H.paid, H.attended, H.absence, H.wa, H.gwa, H.active];
       rows = (data ?? []).map((s: any) => ({
-        "الاسم": s.name, "السن": s.age, "الدولة": s.country, "المتبقي": s.remaining_hours,
-        "المدفوع": s.paid_hours, "المحضور": s.attended_hours, "الغياب": s.absence_hours,
-        "واتساب الطالب": s.whatsapp, "واتساب ولي الأمر": s.guardian_whatsapp, "نشط": s.is_active ? "نعم" : "لا",
+        [H.name]: s.name, [H.age]: s.age, [H.country]: s.country, [H.remaining]: s.remaining_hours,
+        [H.paid]: s.paid_hours, [H.attended]: s.attended_hours, [H.absence]: s.absence_hours,
+        [H.wa]: s.whatsapp, [H.gwa]: s.guardian_whatsapp, [H.active]: s.is_active ? L("نعم", "Yes") : L("لا", "No"),
       }));
       filename = "students_data";
     } else if (type === "invoices") {
       const { data } = await supabase
         .from("invoices").select("*, students:student_id(name)")
         .gte("created_at", monthStart).order("created_at");
-      headers = ["الطالب", "المبلغ", "الخصم", "الإجمالي", "الحالة", "تاريخ الاستحقاق"];
+      const H = {
+        student: L("الطالب", "Student"),
+        amount: L("المبلغ", "Amount"),
+        discount: L("الخصم", "Discount"),
+        total: L("الإجمالي", "Total"),
+        status: L("الحالة", "Status"),
+        due: L("تاريخ الاستحقاق", "Due Date"),
+      };
+      headers = [H.student, H.amount, H.discount, H.total, H.status, H.due];
       rows = (data ?? []).map((inv: any) => ({
-        "الطالب": inv.students?.name, "المبلغ": inv.amount, "الخصم": inv.discount,
-        "الإجمالي": inv.total, "الحالة": inv.status, "تاريخ الاستحقاق": inv.due_date,
+        [H.student]: inv.students?.name, [H.amount]: inv.amount, [H.discount]: inv.discount,
+        [H.total]: inv.total, [H.status]: inv.status, [H.due]: inv.due_date,
       }));
       filename = "invoices_report";
     } else if (type === "low_balance") {
       const { data } = await supabase
         .from("students").select("name, remaining_hours, paid_hours, attended_hours")
         .eq("is_active", true).lte("remaining_hours", 2).order("remaining_hours");
-      headers = ["الطالب", "المتبقي", "المدفوع", "المحضور"];
+      const H = {
+        student: L("الطالب", "Student"),
+        remaining: L("المتبقي", "Remaining"),
+        paid: L("المدفوع", "Paid"),
+        attended: L("المحضور", "Attended"),
+      };
+      headers = [H.student, H.remaining, H.paid, H.attended];
       rows = (data ?? []).map((s: any) => ({
-        "الطالب": s.name, "المتبقي": s.remaining_hours, "المدفوع": s.paid_hours, "المحضور": s.attended_hours,
+        [H.student]: s.name, [H.remaining]: s.remaining_hours, [H.paid]: s.paid_hours, [H.attended]: s.attended_hours,
       }));
       filename = "low_balance_students";
     } else if (type === "pnl") {
-      headers = ["البند", "المبلغ"];
+      const H = { item: L("البند", "Item"), amount: L("المبلغ", "Amount") };
+      headers = [H.item, H.amount];
       rows = [
-        { "البند": "إجمالي الدخل", "المبلغ": totalIncome },
-        { "البند": "رواتب المعلمين", "المبلغ": totalTeacherSalaries },
-        { "البند": "المصاريف والإعلانات", "المبلغ": totalExpenses },
-        { "البند": "صافي الربح", "المبلغ": netProfit },
+        { [H.item]: L("إجمالي الدخل", "Total Income"), [H.amount]: totalIncome },
+        { [H.item]: L("رواتب المعلمين", "Teacher Salaries"), [H.amount]: totalTeacherSalaries },
+        { [H.item]: L("المصاريف والإعلانات", "Expenses & Ads"), [H.amount]: totalExpenses },
+        { [H.item]: L("صافي الربح", "Net Profit"), [H.amount]: netProfit },
       ];
       filename = "profit_loss";
     }
