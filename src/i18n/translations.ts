@@ -402,7 +402,7 @@ const translations = {
   searchStudent: { en: "Search student...", ar: "ابحث عن طالب..." },
   selectedStudents: { en: "Selected", ar: "المحدد" },
   clearSelection: { en: "Clear", ar: "مسح" },
-  selectAll: { en: "Select all", ar: "تحديد الكل" },
+  selectAllStudents: { en: "Select all", ar: "تحديد الكل" },
   noStudentsFound: { en: "No students found", ar: "لا يوجد طلاب" },
 
   // Currencies
