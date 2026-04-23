@@ -117,10 +117,17 @@ async function processQueuedEvents(
         : (typeof eventError === 'object' ? JSON.stringify(eventError) : String(eventError));
       console.error(`❌ Sync error ${event.table_name} ${event.operation}:`, message);
       errors.push(`${event.table_name} ${event.operation}: ${message}`);
+
+      // Auto-skip terminal FK violations on auth-dependent tables — retrying never helps
+      // because the auth.users row doesn't exist on the target project.
+      const isTerminalFkError =
+        message.includes("violates foreign key constraint") &&
+        (message.includes("\"users\"") || message.includes("auth.users"));
+
       await adminClient.rpc("mark_external_sync_event_result", {
         _event_id: event.id,
-        _status: "failed",
-        _last_error: message,
+        _status: isTerminalFkError ? "processed" : "failed",
+        _last_error: isTerminalFkError ? `auto-skipped (FK): ${message}` : message,
       });
     }
   }
