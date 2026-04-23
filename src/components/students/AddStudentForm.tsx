@@ -189,6 +189,22 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
           <p className="text-xs text-muted-foreground">{tzOffset} {t("timezoneOffset")}</p>
         )}
       </div>
+      <div className="grid gap-2">
+        <Label>{t("communicationLanguage")}</Label>
+        <Select value={communicationLanguage} onValueChange={setCommunicationLanguage}>
+          <SelectTrigger><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ar">{t("langArabic")}</SelectItem>
+            <SelectItem value="en">{t("langEnglish")}</SelectItem>
+            <SelectItem value="fr">{t("langFrench")}</SelectItem>
+            <SelectItem value="ur">{t("langUrdu")}</SelectItem>
+            <SelectItem value="tr">{t("langTurkish")}</SelectItem>
+            <SelectItem value="id">{t("langIndonesian")}</SelectItem>
+            <SelectItem value="ms">{t("langMalay")}</SelectItem>
+            <SelectItem value="other">{t("langOther")}</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
 
       {isAdmin && (
         <>
