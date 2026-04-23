@@ -19,7 +19,7 @@ import ApprovalRequestDialog from "@/components/sessions/ApprovalRequestDialog";
 import PendingApprovalsSection from "@/components/sessions/PendingApprovalsSection";
 
 const Sessions = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const { role } = useAuth();
   const isAdmin = role === "admin" || role === "manager";
 

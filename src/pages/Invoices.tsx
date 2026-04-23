@@ -21,7 +21,7 @@ import { openWhatsApp, buildInvoiceMessage, buildPaidInvoiceMessage } from "@/ut
 import { AdminSignatureToggle, AdminSignatureDisplay } from "@/components/AdminSignature";
 
 const Invoices = () => {
-  const { t } = useLanguage();
+  const { t, lang } = useLanguage();
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
