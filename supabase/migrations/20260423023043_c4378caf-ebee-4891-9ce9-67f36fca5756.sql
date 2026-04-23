@@ -1,0 +1,1 @@
+UPDATE public.external_sync_events SET status='pending', attempts=0, last_error=NULL, updated_at=now() WHERE id='103205a7-0f8e-4ae9-a3a2-aacd8a693b46';
