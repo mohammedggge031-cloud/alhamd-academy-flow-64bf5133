@@ -198,7 +198,7 @@ const translations = {
   saveSession: { en: "Save Session", ar: "حفظ الحصة" },
   sessionAdded: { en: "Session added", ar: "تم إضافة الحصة" },
   sessionDetails: { en: "Session Details", ar: "تفاصيل الحصة" },
-  statusUpdated: { en: "Session status updated", ar: "تم تحديث حالة الحصة" },
+  statusUpdated: { en: "Status updated successfully", ar: "تم تحديث الحالة بنجاح" },
   allStatuses: { en: "All Statuses", ar: "جميع الحالات" },
 
   // Session statuses

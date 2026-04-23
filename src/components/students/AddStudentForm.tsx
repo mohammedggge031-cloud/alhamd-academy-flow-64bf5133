@@ -8,6 +8,7 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 
 interface Teacher { id: string; name: string; }
 interface ScheduleEntry { day: string; time: string; }
@@ -64,6 +65,8 @@ const convertTimeToEgypt = (time: string, fromTz: string): string => {
 
 const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
   const { t } = useLanguage();
+  const { role } = useAuth();
+  const isAdmin = role === "admin";
   const [loading, setLoading] = useState(false);
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [name, setName] = useState("");
@@ -129,7 +132,7 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
         setLoading(false);
         return;
       }
-      if (packagePrice && parseFloat(packagePrice) > 0 && student) {
+      if (isAdmin && packagePrice && parseFloat(packagePrice) > 0 && student) {
         const dueDate = new Date();
         dueDate.setMonth(dueDate.getMonth() + 1);
         await supabase.from("invoices").insert({
@@ -185,21 +188,25 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
         )}
       </div>
 
-      <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">{t("financialInfo")}</h3>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="grid gap-2">
-          <Label>{t("paidHours")}</Label>
-          <Input type="number" value={paidHours} onChange={(e) => setPaidHours(e.target.value)} placeholder="0" />
-        </div>
-        <div className="grid gap-2">
-          <Label>{t("packagePrice")}</Label>
-          <Input type="number" value={packagePrice} onChange={(e) => setPackagePrice(e.target.value)} placeholder="0" />
-        </div>
-      </div>
-      <div className="grid gap-2">
-        <Label>{t("paymentDate")}</Label>
-        <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} dir="ltr" />
-      </div>
+      {isAdmin && (
+        <>
+          <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">{t("financialInfo")}</h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="grid gap-2">
+              <Label>{t("paidHours")}</Label>
+              <Input type="number" value={paidHours} onChange={(e) => setPaidHours(e.target.value)} placeholder="0" />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("packagePrice")}</Label>
+              <Input type="number" value={packagePrice} onChange={(e) => setPackagePrice(e.target.value)} placeholder="0" />
+            </div>
+          </div>
+          <div className="grid gap-2">
+            <Label>{t("paymentDate")}</Label>
+            <Input type="date" value={paymentDate} onChange={(e) => setPaymentDate(e.target.value)} dir="ltr" />
+          </div>
+        </>
+      )}
 
       <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">{t("studyInfo")}</h3>
       <div className="grid gap-2">
