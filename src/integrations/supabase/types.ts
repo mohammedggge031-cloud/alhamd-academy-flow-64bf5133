@@ -652,6 +652,7 @@ export type Database = {
           age: number | null
           assigned_teacher_id: string | null
           attended_hours: number | null
+          communication_language: string | null
           country: string | null
           created_at: string
           guardian_whatsapp: string | null
@@ -671,6 +672,7 @@ export type Database = {
           age?: number | null
           assigned_teacher_id?: string | null
           attended_hours?: number | null
+          communication_language?: string | null
           country?: string | null
           created_at?: string
           guardian_whatsapp?: string | null
@@ -690,6 +692,7 @@ export type Database = {
           age?: number | null
           assigned_teacher_id?: string | null
           attended_hours?: number | null
+          communication_language?: string | null
           country?: string | null
           created_at?: string
           guardian_whatsapp?: string | null
