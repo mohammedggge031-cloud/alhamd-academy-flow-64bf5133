@@ -75,6 +75,7 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
   const [whatsapp, setWhatsapp] = useState("");
   const [guardianWhatsapp, setGuardianWhatsapp] = useState("");
   const [timezone, setTimezone] = useState("Africa/Cairo");
+  const [communicationLanguage, setCommunicationLanguage] = useState("ar");
   const [teacherId, setTeacherId] = useState("");
   const [paidHours, setPaidHours] = useState("");
   const [packagePrice, setPackagePrice] = useState("");
@@ -118,7 +119,8 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
         .insert([{
           name: name.trim(), age: age ? parseInt(age) : null, country: country.trim() || null,
           whatsapp: whatsapp.trim() || null, guardian_whatsapp: guardianWhatsapp.trim() || null,
-          timezone, assigned_teacher_id: teacherId || null,
+          timezone, communication_language: communicationLanguage,
+          assigned_teacher_id: teacherId || null,
           paid_hours: paidHours ? parseFloat(paidHours) : 0,
           remaining_hours: paidHours ? parseFloat(paidHours) : 0,
           session_duration_minutes: parseInt(sessionDuration),
