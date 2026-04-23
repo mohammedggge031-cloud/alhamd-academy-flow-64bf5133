@@ -46,8 +46,11 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 };
 
 const RoleGuard = ({ children, allowedRoles }: { children: React.ReactNode; allowedRoles: string[] }) => {
-  const { role, isAuthReady } = useAuth();
+  const { role, user, isAuthReady } = useAuth();
   if (!isAuthReady) return <PageLoader />;
+  // If we have a user but the role hasn't loaded yet, keep waiting
+  // (prevents redirect-to-/ race when auth init timer fires before role fetch resolves)
+  if (user && role === null) return <PageLoader />;
   if (!role || !allowedRoles.includes(role)) return <Navigate to="/" replace />;
   return <>{children}</>;
 };
