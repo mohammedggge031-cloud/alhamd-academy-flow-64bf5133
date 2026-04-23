@@ -60,6 +60,7 @@ const Teachers = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isAdmin = role === "admin" || role === "manager";
+  const isStrictAdmin = role === "admin";
   const { t } = useLanguage();
 
   const updateGender = useMutation({
@@ -218,42 +219,46 @@ const Teachers = () => {
                   <Input placeholder={t("qualificationPlaceholder")} value={form.qualification} onChange={(e) => setForm({ ...form, qualification: e.target.value })} />
                 </div>
 
-                <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">{t("adminOnly")}</h3>
-                <div className="grid gap-2">
-                  <Label>{t("subjects")}</Label>
-                  <div className="flex flex-wrap gap-2">
-                    {SUBJECT_VALUES.map((subject, idx) => (
-                      <Badge
-                        key={subject}
-                        variant={form.subjects.includes(subject) ? "default" : "outline"}
-                        className="cursor-pointer select-none"
-                        onClick={() => toggleSubject(subject)}
-                      >
-                        {t(SUBJECT_KEYS[idx])}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-4">
-                  <div className="grid gap-2">
-                    <Label>{t("hourlyRate")}</Label>
-                    <Input type="number" placeholder="0" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>{t("currency")}</Label>
-                    <Select value={form.rateCurrency} onValueChange={(v) => setForm({ ...form, rateCurrency: v })}>
-                      <SelectTrigger><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="USD">$ USD</SelectItem>
-                        <SelectItem value="EGP">ج.م EGP</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="grid gap-2">
-                    <Label>{t("internalRating")}</Label>
-                    <Input type="number" min="1" max="5" step="0.1" placeholder="0" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
-                  </div>
-                </div>
+                {isStrictAdmin && (
+                  <>
+                    <h3 className="font-bold text-sm text-primary border-b pb-1 mt-2">{t("adminOnly")}</h3>
+                    <div className="grid gap-2">
+                      <Label>{t("subjects")}</Label>
+                      <div className="flex flex-wrap gap-2">
+                        {SUBJECT_VALUES.map((subject, idx) => (
+                          <Badge
+                            key={subject}
+                            variant={form.subjects.includes(subject) ? "default" : "outline"}
+                            className="cursor-pointer select-none"
+                            onClick={() => toggleSubject(subject)}
+                          >
+                            {t(SUBJECT_KEYS[idx])}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-3 gap-4">
+                      <div className="grid gap-2">
+                        <Label>{t("hourlyRate")}</Label>
+                        <Input type="number" placeholder="0" value={form.rate} onChange={(e) => setForm({ ...form, rate: e.target.value })} />
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>{t("currency")}</Label>
+                        <Select value={form.rateCurrency} onValueChange={(v) => setForm({ ...form, rateCurrency: v })}>
+                          <SelectTrigger><SelectValue /></SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="USD">$ USD</SelectItem>
+                            <SelectItem value="EGP">ج.م EGP</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      <div className="grid gap-2">
+                        <Label>{t("internalRating")}</Label>
+                        <Input type="number" min="1" max="5" step="0.1" placeholder="0" value={form.rating} onChange={(e) => setForm({ ...form, rating: e.target.value })} />
+                      </div>
+                    </div>
+                  </>
+                )}
 
                 <Button onClick={() => createTeacher.mutate()} disabled={createTeacher.isPending}>
                   {createTeacher.isPending ? <Loader2 className="h-4 w-4 animate-spin ml-2" /> : null}
