@@ -177,7 +177,7 @@ const Regulations = () => {
       <div className="bg-gradient-to-br from-[hsl(var(--primary))] to-[hsl(var(--primary)/0.85)] rounded-2xl p-6 md:p-8 text-white shadow-lg">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-4">
-            <img src={logo} alt="Alhamd Academy" className="h-16 w-16 rounded-xl border-2 border-white/30 object-contain bg-white/10 p-1" />
+            <img src={logo} alt="Alhamd Academy" width="64" height="64" className="h-16 w-16 rounded-xl object-contain bg-white p-1 shadow-md" loading="eager" decoding="async" />
             <div>
               <h1 className="text-2xl md:text-3xl font-bold">
                 {isAr ? "اللائحة التنظيمية" : "Academy Regulations"}

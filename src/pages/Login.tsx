@@ -134,8 +134,8 @@ const Login = () => {
               {lang === "en" ? "العربية" : "English"}
             </Button>
           </div>
-          <div className="mx-auto bg-primary rounded-2xl p-3 shadow-lg">
-            <img src={logo} alt="Alhamd Academy" className="h-16 w-16 rounded-xl object-contain" />
+          <div className="mx-auto bg-white rounded-2xl p-2 shadow-lg ring-1 ring-primary/10">
+            <img src={logo} alt="Alhamd Academy" width="80" height="80" className="h-20 w-20 rounded-xl object-contain" loading="eager" decoding="async" />
           </div>
           <div>
             <CardTitle className="text-2xl text-foreground">{t("academyName")}</CardTitle>
