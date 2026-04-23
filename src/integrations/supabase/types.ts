@@ -1162,6 +1162,10 @@ export type Database = {
         Args: { _notification_id: string }
         Returns: undefined
       }
+      recalc_teacher_monthly_stats: {
+        Args: { _teacher_id: string }
+        Returns: undefined
+      }
       request_external_sync_processing: { Args: never; Returns: undefined }
       set_external_sync_config: {
         Args: { _function_url: string }
