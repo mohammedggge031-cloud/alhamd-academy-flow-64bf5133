@@ -3,7 +3,6 @@ import { Navigate } from "react-router-dom";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import { useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import StatsGrid from "@/components/dashboard/StatsGrid";
 import TodaySessions from "@/components/dashboard/TodaySessions";
 import AlertCards from "@/components/dashboard/AlertCards";
@@ -32,19 +31,12 @@ const Dashboard = () => {
   const { role } = useAuth();
   const queryClient = useQueryClient();
 
-  // Realtime: auto-refresh dashboard when any relevant table changes
+  // Refresh on focus / route entry (Realtime disabled for PII per project policy)
   useEffect(() => {
-    const channel = supabase
-      .channel("dashboard-realtime")
-      .on("postgres_changes", { event: "*", schema: "public", table: "students" }, () => invalidateDashboardQueries(queryClient))
-      .on("postgres_changes", { event: "*", schema: "public", table: "teachers" }, () => invalidateDashboardQueries(queryClient))
-      .on("postgres_changes", { event: "*", schema: "public", table: "sessions" }, () => invalidateDashboardQueries(queryClient))
-      .on("postgres_changes", { event: "*", schema: "public", table: "invoices" }, () => invalidateDashboardQueries(queryClient))
-      .on("postgres_changes", { event: "*", schema: "public", table: "trial_bookings" }, () => invalidateDashboardQueries(queryClient))
-      .on("postgres_changes", { event: "*", schema: "public", table: "subscription_requests" }, () => invalidateDashboardQueries(queryClient))
-      .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    invalidateDashboardQueries(queryClient);
+    const onFocus = () => invalidateDashboardQueries(queryClient);
+    window.addEventListener("focus", onFocus);
+    return () => window.removeEventListener("focus", onFocus);
   }, [queryClient]);
 
   if (role === "teacher") {
