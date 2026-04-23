@@ -117,7 +117,7 @@ export const Sidebar = ({ onClose }: SidebarProps) => {
       {/* Header */}
       <div className="flex items-center justify-between border-b border-sidebar-border px-5 py-5">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Alhamd Academy" className="h-10 w-10 rounded-lg object-contain" />
+          <img src={logo} alt="Alhamd Academy" width="40" height="40" className="h-10 w-10 rounded-lg object-contain bg-white p-0.5 shadow-sm" loading="eager" decoding="async" />
           <div>
             <h2 className="text-base font-bold text-sidebar-foreground">{t("academyName")}</h2>
             <p className="text-xs text-sidebar-muted">{t("academySubtitle")}</p>
