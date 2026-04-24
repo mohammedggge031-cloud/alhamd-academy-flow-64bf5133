@@ -85,6 +85,28 @@ const AddStudentForm = ({ onSuccess, onCancel }: AddStudentFormProps) => {
 
   const tzOffset = useMemo(() => getTimezoneOffset(timezone), [timezone]);
 
+  // Auto-detect communication language based on country
+  useEffect(() => {
+    if (!country.trim()) return;
+    const c = country.trim().toLowerCase();
+    const map: { match: string[]; lang: string }[] = [
+      { match: ["france", "فرنسا", "french", "français"], lang: "fr" },
+      { match: ["germany", "ألمانيا", "german", "deutsch"], lang: "de" },
+      { match: ["spain", "إسبانيا", "اسبانيا", "spanish", "español"], lang: "es" },
+      { match: ["italy", "إيطاليا", "ايطاليا", "italian", "italiano"], lang: "it" },
+      { match: ["russia", "روسيا", "russian"], lang: "ru" },
+      { match: ["uk", "england", "بريطانيا", "usa", "america", "أمريكا", "امريكا", "canada", "كندا", "australia", "أستراليا"], lang: "en" },
+    ];
+    for (const entry of map) {
+      if (entry.match.some((m) => c.includes(m))) {
+        setCommunicationLanguage(entry.lang);
+        return;
+      }
+    }
+    // Default Arabic for Arab countries / unknown
+    setCommunicationLanguage("ar");
+  }, [country]);
+
   useEffect(() => {
     const fetchTeachers = async () => {
       const { data } = await supabase
