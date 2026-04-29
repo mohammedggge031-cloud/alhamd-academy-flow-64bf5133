@@ -12,7 +12,9 @@ export default defineConfig(({ mode }) => {
   const externalPublishableKey = env.VITE_EXTERNAL_SUPABASE_PUBLISHABLE_KEY || "";
   const envSupabaseUrl = env.VITE_SUPABASE_URL || "";
   const envPublishableKey = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || "";
-  const shouldUseExternalSupabase = !envSupabaseUrl || envSupabaseUrl === legacySupabaseUrl;
+  const hasExternalPublishableKey = externalPublishableKey.length > 0;
+  const shouldUseExternalSupabase =
+    envSupabaseUrl === externalSupabaseUrl || ((!envSupabaseUrl || envSupabaseUrl === legacySupabaseUrl) && hasExternalPublishableKey);
   const supabaseUrl = shouldUseExternalSupabase ? externalSupabaseUrl : envSupabaseUrl;
   const publishableKey = shouldUseExternalSupabase ? externalPublishableKey : envPublishableKey;
   const projectId = shouldUseExternalSupabase
