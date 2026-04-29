@@ -7,15 +7,14 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const legacySupabaseUrl = "https://xoymllyfwvbnbxsbbinu.supabase.co";
-  const externalSupabaseUrl = "https://euwotooilvdahnuovvzr.supabase.co";
-  const externalProjectId = "euwotooilvdahnuovvzr";
-  const externalPublishableKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImV1d290b29pbHZkYWhudW92dnpyIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3Mzg4Mjk3OCwiZXhwIjoyMDg5NDU4OTc4fQ.VnBTv230SDxKxvUXw3MtZU_Kmi6Qw7k85vda0X89bjw";
+  const externalSupabaseUrl = env.VITE_EXTERNAL_SUPABASE_URL || "https://euwotooilvdahnuovvzr.supabase.co";
+  const externalProjectId = env.VITE_EXTERNAL_SUPABASE_PROJECT_ID || "euwotooilvdahnuovvzr";
+  const externalPublishableKey = env.VITE_EXTERNAL_SUPABASE_PUBLISHABLE_KEY || "";
   const envSupabaseUrl = env.VITE_SUPABASE_URL || "";
+  const envPublishableKey = env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || "";
   const shouldUseExternalSupabase = !envSupabaseUrl || envSupabaseUrl === legacySupabaseUrl;
   const supabaseUrl = shouldUseExternalSupabase ? externalSupabaseUrl : envSupabaseUrl;
-  const publishableKey = shouldUseExternalSupabase
-    ? externalPublishableKey
-    : env.VITE_SUPABASE_PUBLISHABLE_KEY || env.VITE_SUPABASE_ANON_KEY || externalPublishableKey;
+  const publishableKey = shouldUseExternalSupabase ? externalPublishableKey : envPublishableKey;
   const projectId = shouldUseExternalSupabase
     ? externalProjectId
     : env.VITE_SUPABASE_PROJECT_ID || externalProjectId;
