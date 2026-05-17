@@ -26,6 +26,9 @@ const Students = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [transferStudent, setTransferStudent] = useState<any>(null);
+  const [editStudent, setEditStudent] = useState<any>(null);
+  const [deleteStudent, setDeleteStudent] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
 
