@@ -1,4 +1,4 @@
-import { Phone, MapPin, Clock, ArrowRightLeft } from "lucide-react";
+import { Phone, MapPin, Clock, ArrowRightLeft, Pencil, Trash2 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -23,9 +23,11 @@ interface StudentCardProps {
   teacherName: string;
   invoiceStatus: string | null;
   onTransfer: () => void;
+  onEdit: () => void;
+  onDelete: () => void;
 }
 
-const StudentCard = ({ student, teacherName, invoiceStatus, onTransfer }: StudentCardProps) => {
+const StudentCard = ({ student, teacherName, invoiceStatus, onTransfer, onEdit, onDelete }: StudentCardProps) => {
   const { t } = useLanguage();
   const remaining = student.remaining_hours ?? 0;
   const attended = student.attended_hours ?? 0;
