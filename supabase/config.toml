@@ -17,3 +17,6 @@ verify_jwt = false
 
 [functions.bootstrap-sync]
 verify_jwt = false
+
+[functions.auto-create-daily-sessions]
+verify_jwt = false
