@@ -15,8 +15,11 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import AddStudentForm from "@/components/students/AddStudentForm";
+import EditStudentForm from "@/components/students/EditStudentForm";
 import StudentCard from "@/components/students/StudentCard";
 import TransferStudentDialog from "@/components/students/TransferStudentDialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const Students = () => {
