@@ -120,10 +120,20 @@ const StudentCard = ({ student, teacherName, invoiceStatus, onTransfer, onEdit, 
           </p>
         )}
 
-        <Button variant="ghost" size="sm" className="w-full gap-2 text-xs" onClick={onTransfer}>
-          <ArrowRightLeft className="h-3 w-3" />
-          {t("transferTeacher")}
-        </Button>
+        <div className="flex gap-1">
+          <Button variant="ghost" size="sm" className="flex-1 gap-1 text-xs" onClick={onTransfer}>
+            <ArrowRightLeft className="h-3 w-3" />
+            {t("transferTeacher")}
+          </Button>
+          <Button variant="ghost" size="sm" className="gap-1 text-xs" onClick={onEdit}>
+            <Pencil className="h-3 w-3" />
+            {t("edit")}
+          </Button>
+          <Button variant="ghost" size="sm" className="gap-1 text-xs text-destructive hover:text-destructive" onClick={onDelete}>
+            <Trash2 className="h-3 w-3" />
+            {t("delete")}
+          </Button>
+        </div>
       </CardContent>
     </Card>
   );
