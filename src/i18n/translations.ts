@@ -660,6 +660,14 @@ const translations = {
 
   // Data Sheets
   navDataSheets: { en: "Data Registries", ar: "سجلات البيانات" },
+
+  // Student edit/delete
+  editStudent: { en: "Edit Student", ar: "تعديل الطالب" },
+  deleteStudent: { en: "Delete Student", ar: "حذف الطالب" },
+  confirmDeleteStudent: { en: "Are you sure you want to delete this student? This will deactivate the student account.", ar: "هل أنت متأكد من حذف هذا الطالب؟ سيتم تعطيل حساب الطالب." },
+  studentUpdated: { en: "Student updated successfully", ar: "تم تحديث بيانات الطالب بنجاح" },
+  studentDeleted: { en: "Student deleted successfully", ar: "تم حذف الطالب بنجاح" },
+  saveChanges: { en: "Save Changes", ar: "حفظ التغييرات" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

@@ -15,14 +15,20 @@ import {
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import AddStudentForm from "@/components/students/AddStudentForm";
+import EditStudentForm from "@/components/students/EditStudentForm";
 import StudentCard from "@/components/students/StudentCard";
 import TransferStudentDialog from "@/components/students/TransferStudentDialog";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { toast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 
 const Students = () => {
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [transferStudent, setTransferStudent] = useState<any>(null);
+  const [editStudent, setEditStudent] = useState<any>(null);
+  const [deleteStudent, setDeleteStudent] = useState<any>(null);
+  const [deleting, setDeleting] = useState(false);
   const { t } = useLanguage();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -142,6 +148,8 @@ const Students = () => {
                 teacherName={getTeacherName(student)}
                 invoiceStatus={(invoiceStatuses as Record<string, string>)[student.id] || null}
                 onTransfer={() => setTransferStudent(student)}
+                onEdit={() => setEditStudent(student)}
+                onDelete={() => setDeleteStudent(student)}
               />
             ))}
           </div>
@@ -160,6 +168,48 @@ const Students = () => {
           onSuccess={() => refetch()}
         />
       )}
+
+      <Dialog open={!!editStudent} onOpenChange={(open) => !open && setEditStudent(null)}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>{t("editStudent")}</DialogTitle>
+          </DialogHeader>
+          {editStudent && (
+            <EditStudentForm
+              student={editStudent}
+              onSuccess={() => { setEditStudent(null); refetch(); }}
+              onCancel={() => setEditStudent(null)}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteStudent}
+        onOpenChange={(open) => !open && !deleting && setDeleteStudent(null)}
+        title={t("deleteStudent")}
+        description={t("confirmDeleteStudent")}
+        variant="destructive"
+        confirmLabel={t("delete")}
+        cancelLabel={t("cancel")}
+        isPending={deleting}
+        onConfirm={async () => {
+          if (!deleteStudent) return;
+          setDeleting(true);
+          const { error } = await supabase
+            .from("students")
+            .update({ is_active: false })
+            .eq("id", deleteStudent.id);
+          setDeleting(false);
+          if (error) {
+            toast({ title: t("error"), description: error.message, variant: "destructive" });
+          } else {
+            toast({ title: t("success"), description: t("studentDeleted") });
+            setDeleteStudent(null);
+            refetch();
+          }
+        }}
+      />
     </div>
   );
 };
