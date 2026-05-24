@@ -527,6 +527,32 @@ const Teachers = () => {
                       <Globe className="h-3.5 w-3.5" />
                       {teacher.show_on_website && <span className="text-xs">{t("websiteVisible")}</span>}
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        setEditTeacher(teacher);
+                        setEditName(teacher.profiles?.full_name ?? "");
+                        setEditWhatsapp(teacher.profiles?.whatsapp ?? "");
+                        setEditQualification(teacher.qualification ?? "");
+                        setEditRate(String(teacher.hourly_rate ?? ""));
+                      }}
+                      title={t("editTeacher")}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    {isStrictAdmin && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTeacherRow(teacher)}
+                        title={t("deleteTeacher")}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>
