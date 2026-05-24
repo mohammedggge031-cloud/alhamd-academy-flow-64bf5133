@@ -188,22 +188,26 @@ const Sessions = () => {
                       <span className="font-medium text-foreground">{t("homeworkLabel")} </span>{r.homework}
                     </div>
                   )}
-                  {/* WhatsApp send button for admin/manager */}
-                  {isAdmin && r.homework && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" className="gap-1 text-xs"
+                      onClick={() => {
+                        const sess = r.sessions ? { ...r.sessions, id: r.session_id, student_id: r.student_id, teacher_id: r.teacher_id, students: r.students } : null;
+                        setEditingReport({ session: sess, report: r });
+                      }}>
+                      {t("editReport")}
+                    </Button>
                     <Button size="sm" variant="outline" className="gap-1 text-xs text-[#25D366]"
                       onClick={() => {
-                        const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
-                        const msg = buildHomeworkMessage(r.students?.name ?? "", r.homework, lang);
-                        if (phone) {
-                          const cleanPhone = phone.replace(/[^0-9]/g, "");
-                          window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
-                        } else {
-                          window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
-                        }
+                        const phone = (r.students?.guardian_whatsapp || r.students?.whatsapp || "").replace(/[^0-9]/g, "");
+                        const levelLabel = levelLabels[r.student_level]?.label ?? r.student_level;
+                        const msg = (require("@/utils/whatsappLinks") as typeof import("@/utils/whatsappLinks"))
+                          .buildSessionReportMessage(r.students?.name ?? "", levelLabel, r.session_notes ?? "", r.homework ?? "", r.sessions?.session_date ?? "", lang);
+                        const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                        window.open(url, "_blank", "noopener,noreferrer");
                       }}>
-                      <MessageCircle className="h-3 w-3" /> {t("sendReportToGuardian")}
+                      <MessageCircle className="h-3 w-3" /> {t("sendReportViaWhatsapp")}
                     </Button>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
