@@ -638,9 +638,22 @@ const Teachers = () => {
               <Input value={editQualification} onChange={(e) => setEditQualification(e.target.value)} />
             </div>
             {isStrictAdmin && (
-              <div className="grid gap-2">
-                <Label>{t("hourlyRate")}</Label>
-                <Input type="number" value={editRate} onChange={(e) => setEditRate(e.target.value)} />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-2">
+                  <Label>{t("hourlyRate")}</Label>
+                  <Input type="number" dir="ltr" value={editRate} onChange={(e) => setEditRate(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t("currency")}</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={editCurrency}
+                    onChange={(e) => setEditCurrency(e.target.value)}
+                  >
+                    <option value="USD">$ USD</option>
+                    <option value="EGP">ج.م EGP</option>
+                  </select>
+                </div>
               </div>
             )}
             <Button className="w-full" onClick={() => updateTeacher.mutate()} disabled={updateTeacher.isPending}>
