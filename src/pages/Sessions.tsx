@@ -50,6 +50,7 @@ const Sessions = () => {
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
   const [approvalDialog, setApprovalDialog] = useState<{ type: string; sessionId: string } | null>(null);
   const [reportDialog, setReportDialog] = useState<any | null>(null);
+  const [editingReport, setEditingReport] = useState<any | null>(null);
   const [showMyReports, setShowMyReports] = useState(false);
 
   const { data: sessions = [], isLoading } = useQuery({
