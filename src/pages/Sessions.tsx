@@ -98,7 +98,7 @@ const Sessions = () => {
           </h1>
           <p className="text-muted-foreground">{sessions.length} {t("sessionsCount")}</p>
         </div>
-        {isAdmin && <AddSessionDialog />}
+        {isAdmin ? <AddSessionDialog /> : <AddSessionDialog teacherMode />}
       </div>
 
       {!isAdmin && <TeacherSchedule />}
