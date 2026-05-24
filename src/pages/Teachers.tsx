@@ -59,6 +59,7 @@ const Teachers = () => {
   const [editWhatsapp, setEditWhatsapp] = useState("");
   const [editQualification, setEditQualification] = useState("");
   const [editRate, setEditRate] = useState("");
+  const [editCurrency, setEditCurrency] = useState("USD");
   const [form, setForm] = useState({
     name: "", password: "", age: "", rate: "", rateCurrency: "USD",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
