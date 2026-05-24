@@ -614,6 +614,48 @@ const Teachers = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit teacher dialog */}
+      <Dialog open={!!editTeacher} onOpenChange={(open) => !open && setEditTeacher(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("editTeacher")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label>{t("fullName")}</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("whatsapp")}</Label>
+              <Input dir="ltr" value={editWhatsapp} onChange={(e) => setEditWhatsapp(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("qualification")}</Label>
+              <Input value={editQualification} onChange={(e) => setEditQualification(e.target.value)} />
+            </div>
+            {isStrictAdmin && (
+              <div className="grid gap-2">
+                <Label>{t("hourlyRate")}</Label>
+                <Input type="number" value={editRate} onChange={(e) => setEditRate(e.target.value)} />
+              </div>
+            )}
+            <Button className="w-full" onClick={() => updateTeacher.mutate()} disabled={updateTeacher.isPending}>
+              {updateTeacher.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              {t("saveChanges")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTeacherRow}
+        onOpenChange={(open) => !open && setDeleteTeacherRow(null)}
+        title={t("deleteTeacher")}
+        description={t("confirmDeleteTeacher")}
+        onConfirm={async () => { await deleteTeacherMut.mutateAsync(); }}
+        isPending={deleteTeacherMut.isPending}
+      />
     </div>
   );
 };
