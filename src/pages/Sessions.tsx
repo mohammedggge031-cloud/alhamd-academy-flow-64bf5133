@@ -237,10 +237,11 @@ const Sessions = () => {
                 const needsReport = !isAdmin && session.status === "completed" && !reportedSessionIds.has(session.id);
                 const studentRemaining = Number(session.students?.remaining_hours) || 0;
                 const isUnpaid = studentRemaining <= 0 && (session.status === "upcoming" || session.status === "confirmed");
+                const isLowBalance = !isUnpaid && studentRemaining > 0 && studentRemaining <= 2 && (session.status === "upcoming" || session.status === "confirmed");
                 return (
                   <div
                     key={session.id}
-                    className={`flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer ${statusBorderColors[session.status] ?? ""} ${needsReport ? "bg-destructive/5" : ""} ${isUnpaid ? "bg-warning/5" : ""}`}
+                    className={`flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer ${statusBorderColors[session.status] ?? ""} ${needsReport ? "bg-destructive/5" : ""} ${isUnpaid ? "bg-destructive/10 border-r-4 border-r-destructive" : ""} ${isLowBalance ? "bg-destructive/5 border-r-4 border-r-destructive" : ""}`}
                     onClick={() => setSelectedSession(session)}
                   >
                     <div className="flex items-center gap-4">
@@ -256,8 +257,13 @@ const Sessions = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {isUnpaid && (
-                        <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30">
+                        <Badge variant="secondary" className="text-[10px] bg-destructive/20 text-destructive border border-destructive/30">
                           <DollarSign className="h-3 w-3 ml-1" />{t("unpaid")}
+                        </Badge>
+                      )}
+                      {isLowBalance && (
+                        <Badge variant="secondary" className="text-[10px] bg-destructive/10 text-destructive border border-destructive/30">
+                          {t("lowBalanceWarning")} ({studentRemaining}h)
                         </Badge>
                       )}
                       {needsReport && (
@@ -299,6 +305,14 @@ const Sessions = () => {
       <SessionReportDialog
         session={reportDialog}
         onClose={() => setReportDialog(null)}
+        getStudentName={getStudentName}
+        levelLabels={levelLabels}
+      />
+
+      <SessionReportDialog
+        session={editingReport?.session ?? null}
+        existingReport={editingReport?.report ?? null}
+        onClose={() => setEditingReport(null)}
         getStudentName={getStudentName}
         levelLabels={levelLabels}
       />
