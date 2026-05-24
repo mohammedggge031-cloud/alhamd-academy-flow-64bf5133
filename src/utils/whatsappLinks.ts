@@ -34,6 +34,30 @@ export function buildHomeworkMessage(
   return `📚 *واجب أكاديمية الحمد*\n\n${GREETING}\n\n👤 الطالب: ${studentName}\n\n📝 الواجب:\n${homework}\n\nبالتوفيق! 🌟`;
 }
 
+export function buildSessionReportMessage(
+  studentName: string,
+  level: string,
+  notes: string,
+  homework: string,
+  sessionDate: string,
+  lang: MsgLang = "ar"
+): string {
+  if (lang === "en") {
+    let m = `📋 *Session Report — Alhamd Academy*\n\n${GREETING}\n\n👤 Student: ${studentName}\n📅 Date: ${sessionDate}\n`;
+    if (level) m += `📊 Level: ${level}\n`;
+    if (notes) m += `\n📝 Notes:\n${notes}\n`;
+    if (homework) m += `\n📚 Homework:\n${homework}\n`;
+    m += `\n${footer("en")}`;
+    return m;
+  }
+  let m = `📋 *تقرير الحصة - أكاديمية الحمد*\n\n${GREETING}\n\n👤 الطالب: ${studentName}\n📅 التاريخ: ${sessionDate}\n`;
+  if (level) m += `📊 المستوى: ${level}\n`;
+  if (notes) m += `\n📝 ملاحظات الحصة:\n${notes}\n`;
+  if (homework) m += `\n📚 الواجب:\n${homework}\n`;
+  m += `\n${footer("ar")}`;
+  return m;
+}
+
 export function buildSessionReminderMessage(
   recipientType: "student" | "teacher",
   studentName: string,
