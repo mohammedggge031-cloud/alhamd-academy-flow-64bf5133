@@ -105,6 +105,52 @@ const Teachers = () => {
     },
   });
 
+  const updateTeacher = useMutation({
+    mutationFn: async () => {
+      if (!editTeacher) return;
+      const profilePatch: { full_name?: string; whatsapp?: string } = {};
+      if (editName.trim()) profilePatch.full_name = editName.trim();
+      if (editWhatsapp.trim()) profilePatch.whatsapp = editWhatsapp.trim();
+      if (Object.keys(profilePatch).length) {
+        const { error: pErr } = await supabase
+          .from("profiles").update(profilePatch).eq("user_id", editTeacher.user_id);
+        if (pErr) throw pErr;
+      }
+      const teacherPatch: { qualification?: string; hourly_rate?: number } = {
+        qualification: editQualification,
+      };
+      if (isStrictAdmin && editRate !== "") teacherPatch.hourly_rate = Number(editRate);
+      const { error: tErr } = await supabase
+        .from("teachers").update(teacherPatch).eq("id", editTeacher.id);
+      if (tErr) throw tErr;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      setEditTeacher(null);
+      toast({ title: t("teacherUpdated") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteTeacherMut = useMutation({
+    mutationFn: async () => {
+      if (!deleteTeacherRow) return;
+      const { error } = await supabase
+        .from("teachers").update({ is_active: false }).eq("id", deleteTeacherRow.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      setDeleteTeacherRow(null);
+      toast({ title: t("teacherDeleted") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ["teachers"],
     queryFn: async () => {
@@ -481,6 +527,32 @@ const Teachers = () => {
                       <Globe className="h-3.5 w-3.5" />
                       {teacher.show_on_website && <span className="text-xs">{t("websiteVisible")}</span>}
                     </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="gap-2"
+                      onClick={() => {
+                        setEditTeacher(teacher);
+                        setEditName(teacher.profiles?.full_name ?? "");
+                        setEditWhatsapp(teacher.profiles?.whatsapp ?? "");
+                        setEditQualification(teacher.qualification ?? "");
+                        setEditRate(String(teacher.hourly_rate ?? ""));
+                      }}
+                      title={t("editTeacher")}
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </Button>
+                    {isStrictAdmin && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="gap-2 text-destructive hover:text-destructive"
+                        onClick={() => setDeleteTeacherRow(teacher)}
+                        title={t("deleteTeacher")}
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -542,6 +614,48 @@ const Teachers = () => {
           </div>
         </DialogContent>
       </Dialog>
+
+      {/* Edit teacher dialog */}
+      <Dialog open={!!editTeacher} onOpenChange={(open) => !open && setEditTeacher(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("editTeacher")}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="grid gap-2">
+              <Label>{t("fullName")}</Label>
+              <Input value={editName} onChange={(e) => setEditName(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("whatsapp")}</Label>
+              <Input dir="ltr" value={editWhatsapp} onChange={(e) => setEditWhatsapp(e.target.value)} />
+            </div>
+            <div className="grid gap-2">
+              <Label>{t("qualification")}</Label>
+              <Input value={editQualification} onChange={(e) => setEditQualification(e.target.value)} />
+            </div>
+            {isStrictAdmin && (
+              <div className="grid gap-2">
+                <Label>{t("hourlyRate")}</Label>
+                <Input type="number" value={editRate} onChange={(e) => setEditRate(e.target.value)} />
+              </div>
+            )}
+            <Button className="w-full" onClick={() => updateTeacher.mutate()} disabled={updateTeacher.isPending}>
+              {updateTeacher.isPending && <Loader2 className="h-4 w-4 animate-spin ml-2" />}
+              {t("saveChanges")}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={!!deleteTeacherRow}
+        onOpenChange={(open) => !open && setDeleteTeacherRow(null)}
+        title={t("deleteTeacher")}
+        description={t("confirmDeleteTeacher")}
+        onConfirm={async () => { await deleteTeacherMut.mutateAsync(); }}
+        isPending={deleteTeacherMut.isPending}
+      />
     </div>
   );
 };
