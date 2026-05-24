@@ -105,6 +105,52 @@ const Teachers = () => {
     },
   });
 
+  const updateTeacher = useMutation({
+    mutationFn: async () => {
+      if (!editTeacher) return;
+      const profilePatch: { full_name?: string; whatsapp?: string } = {};
+      if (editName.trim()) profilePatch.full_name = editName.trim();
+      if (editWhatsapp.trim()) profilePatch.whatsapp = editWhatsapp.trim();
+      if (Object.keys(profilePatch).length) {
+        const { error: pErr } = await supabase
+          .from("profiles").update(profilePatch).eq("user_id", editTeacher.user_id);
+        if (pErr) throw pErr;
+      }
+      const teacherPatch: { qualification?: string; hourly_rate?: number } = {
+        qualification: editQualification,
+      };
+      if (isStrictAdmin && editRate !== "") teacherPatch.hourly_rate = Number(editRate);
+      const { error: tErr } = await supabase
+        .from("teachers").update(teacherPatch).eq("id", editTeacher.id);
+      if (tErr) throw tErr;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      setEditTeacher(null);
+      toast({ title: t("teacherUpdated") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
+  const deleteTeacherMut = useMutation({
+    mutationFn: async () => {
+      if (!deleteTeacherRow) return;
+      const { error } = await supabase
+        .from("teachers").update({ is_active: false }).eq("id", deleteTeacherRow.id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["teachers"] });
+      setDeleteTeacherRow(null);
+      toast({ title: t("teacherDeleted") });
+    },
+    onError: (err: Error) => {
+      toast({ title: t("error"), description: err.message, variant: "destructive" });
+    },
+  });
+
   const { data: teachers = [], isLoading } = useQuery({
     queryKey: ["teachers"],
     queryFn: async () => {
