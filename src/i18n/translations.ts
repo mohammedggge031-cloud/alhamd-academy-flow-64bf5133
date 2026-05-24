@@ -668,6 +668,14 @@ const translations = {
   studentUpdated: { en: "Student updated successfully", ar: "تم تحديث بيانات الطالب بنجاح" },
   studentDeleted: { en: "Student deleted successfully", ar: "تم حذف الطالب بنجاح" },
   saveChanges: { en: "Save Changes", ar: "حفظ التغييرات" },
+
+  // Teacher edit/delete + report sharing
+  editTeacher: { en: "Edit Teacher", ar: "تعديل المعلم" },
+  deleteTeacher: { en: "Delete Teacher", ar: "حذف المعلم" },
+  confirmDeleteTeacher: { en: "Are you sure? This will deactivate the teacher account.", ar: "هل أنت متأكد؟ سيتم تعطيل حساب المعلم." },
+  teacherUpdated: { en: "Teacher updated successfully", ar: "تم تحديث بيانات المعلم بنجاح" },
+  teacherDeleted: { en: "Teacher deleted successfully", ar: "تم حذف المعلم بنجاح" },
+  sendReportViaWhatsapp: { en: "Send report via WhatsApp", ar: "إرسال التقرير عبر واتساب" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;

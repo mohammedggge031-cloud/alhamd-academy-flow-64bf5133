@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { buildHomeworkMessage } from "@/utils/whatsappLinks";
+import { buildHomeworkMessage, buildSessionReportMessage } from "@/utils/whatsappLinks";
 import TeacherSchedule from "@/components/teachers/TeacherSchedule";
 import AddSessionDialog from "@/components/sessions/AddSessionDialog";
 import SessionDetailDialog from "@/components/sessions/SessionDetailDialog";
@@ -50,6 +50,7 @@ const Sessions = () => {
   const [selectedSession, setSelectedSession] = useState<any | null>(null);
   const [approvalDialog, setApprovalDialog] = useState<{ type: string; sessionId: string } | null>(null);
   const [reportDialog, setReportDialog] = useState<any | null>(null);
+  const [editingReport, setEditingReport] = useState<any | null>(null);
   const [showMyReports, setShowMyReports] = useState(false);
 
   const { data: sessions = [], isLoading } = useQuery({
@@ -97,7 +98,7 @@ const Sessions = () => {
           </h1>
           <p className="text-muted-foreground">{sessions.length} {t("sessionsCount")}</p>
         </div>
-        {isAdmin && <AddSessionDialog />}
+        {isAdmin ? <AddSessionDialog /> : <AddSessionDialog teacherMode />}
       </div>
 
       {!isAdmin && <TeacherSchedule />}
@@ -187,22 +188,25 @@ const Sessions = () => {
                       <span className="font-medium text-foreground">{t("homeworkLabel")} </span>{r.homework}
                     </div>
                   )}
-                  {/* WhatsApp send button for admin/manager */}
-                  {isAdmin && r.homework && (
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <Button size="sm" variant="outline" className="gap-1 text-xs"
+                      onClick={() => {
+                        const sess = r.sessions ? { ...r.sessions, id: r.session_id, student_id: r.student_id, teacher_id: r.teacher_id, students: r.students } : null;
+                        setEditingReport({ session: sess, report: r });
+                      }}>
+                      {t("editReport")}
+                    </Button>
                     <Button size="sm" variant="outline" className="gap-1 text-xs text-[#25D366]"
                       onClick={() => {
-                        const phone = r.students?.guardian_whatsapp || r.students?.whatsapp || "";
-                        const msg = buildHomeworkMessage(r.students?.name ?? "", r.homework, lang);
-                        if (phone) {
-                          const cleanPhone = phone.replace(/[^0-9]/g, "");
-                          window.open(`https://wa.me/${cleanPhone}?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
-                        } else {
-                          window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, "_blank", "noopener,noreferrer");
-                        }
+                        const phone = (r.students?.guardian_whatsapp || r.students?.whatsapp || "").replace(/[^0-9]/g, "");
+                        const levelLabel = levelLabels[r.student_level]?.label ?? r.student_level;
+                        const msg = buildSessionReportMessage(r.students?.name ?? "", levelLabel, r.session_notes ?? "", r.homework ?? "", r.sessions?.session_date ?? "", lang);
+                        const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
+                        window.open(url, "_blank", "noopener,noreferrer");
                       }}>
-                      <MessageCircle className="h-3 w-3" /> {t("sendReportToGuardian")}
+                      <MessageCircle className="h-3 w-3" /> {t("sendReportViaWhatsapp")}
                     </Button>
-                  )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -233,10 +237,11 @@ const Sessions = () => {
                 const needsReport = !isAdmin && session.status === "completed" && !reportedSessionIds.has(session.id);
                 const studentRemaining = Number(session.students?.remaining_hours) || 0;
                 const isUnpaid = studentRemaining <= 0 && (session.status === "upcoming" || session.status === "confirmed");
+                const isLowBalance = !isUnpaid && studentRemaining > 0 && studentRemaining <= 2 && (session.status === "upcoming" || session.status === "confirmed");
                 return (
                   <div
                     key={session.id}
-                    className={`flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer ${statusBorderColors[session.status] ?? ""} ${needsReport ? "bg-destructive/5" : ""} ${isUnpaid ? "bg-warning/5" : ""}`}
+                    className={`flex items-center justify-between p-4 hover:bg-muted/30 transition-colors cursor-pointer ${statusBorderColors[session.status] ?? ""} ${needsReport ? "bg-destructive/5" : ""} ${isUnpaid ? "bg-destructive/10 border-r-4 border-r-destructive" : ""} ${isLowBalance ? "bg-destructive/5 border-r-4 border-r-destructive" : ""}`}
                     onClick={() => setSelectedSession(session)}
                   >
                     <div className="flex items-center gap-4">
@@ -252,8 +257,13 @@ const Sessions = () => {
                     </div>
                     <div className="flex items-center gap-2">
                       {isUnpaid && (
-                        <Badge variant="secondary" className="text-[10px] bg-warning/20 text-warning border border-warning/30">
+                        <Badge variant="secondary" className="text-[10px] bg-destructive/20 text-destructive border border-destructive/30">
                           <DollarSign className="h-3 w-3 ml-1" />{t("unpaid")}
+                        </Badge>
+                      )}
+                      {isLowBalance && (
+                        <Badge variant="secondary" className="text-[10px] bg-destructive/10 text-destructive border border-destructive/30">
+                          {t("lowBalanceWarning")} ({studentRemaining}h)
                         </Badge>
                       )}
                       {needsReport && (
@@ -295,6 +305,14 @@ const Sessions = () => {
       <SessionReportDialog
         session={reportDialog}
         onClose={() => setReportDialog(null)}
+        getStudentName={getStudentName}
+        levelLabels={levelLabels}
+      />
+
+      <SessionReportDialog
+        session={editingReport?.session ?? null}
+        existingReport={editingReport?.report ?? null}
+        onClose={() => setEditingReport(null)}
         getStudentName={getStudentName}
         levelLabels={levelLabels}
       />

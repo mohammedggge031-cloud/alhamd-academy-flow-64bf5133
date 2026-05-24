@@ -52,7 +52,6 @@ const SessionDetailDialog = ({
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["dash-today-sessions"] });
       queryClient.invalidateQueries({ queryKey: ["dash-monthly-hours"] });
-      onClose();
       toast({ title: t("statusUpdated") });
     },
     onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
@@ -88,10 +87,21 @@ const SessionDetailDialog = ({
     setConfirmAction({ status, label });
   };
 
-  const executeStatusChange = () => {
+  const executeStatusChange = async () => {
     if (!selectedSession || !confirmAction) return;
-    updateStatus.mutate({ id: selectedSession.id, status: confirmAction.status });
-    setConfirmAction(null);
+    const status = confirmAction.status;
+    const sessionSnapshot = selectedSession;
+    try {
+      await updateStatus.mutateAsync({ id: sessionSnapshot.id, status });
+      setConfirmAction(null);
+      // Teacher completing a session → auto-open the report dialog
+      if (!isAdmin && status === "completed") {
+        onOpenReport(sessionSnapshot);
+      }
+      onClose();
+    } catch {
+      setConfirmAction(null);
+    }
   };
 
   if (!selectedSession) return null;

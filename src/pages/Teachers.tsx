@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe, DollarSign, KeyRound } from "lucide-react";
+import { GraduationCap, Plus, Search, Phone, Star, Loader2, Eye, Filter, CheckCircle, XCircle, Globe, DollarSign, KeyRound, Pencil, Trash2 } from "lucide-react";
+import ConfirmDialog from "@/components/ConfirmDialog";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -52,6 +53,12 @@ const Teachers = () => {
   const [genderFilter, setGenderFilter] = useState<string>("all");
   const [resetPasswordTeacher, setResetPasswordTeacher] = useState<{ userId: string; name: string } | null>(null);
   const [resetPasswordValue, setResetPasswordValue] = useState("");
+  const [deleteTeacherRow, setDeleteTeacherRow] = useState<TeacherRow | null>(null);
+  const [editTeacher, setEditTeacher] = useState<TeacherRow | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editWhatsapp, setEditWhatsapp] = useState("");
+  const [editQualification, setEditQualification] = useState("");
+  const [editRate, setEditRate] = useState("");
   const [form, setForm] = useState({
     name: "", password: "", age: "", rate: "", rateCurrency: "USD",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
