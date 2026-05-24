@@ -10,10 +10,16 @@ import { supabase } from "@/integrations/supabase/client";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
+import { useAuth } from "@/hooks/useAuth";
 
-const AddSessionDialog = () => {
+interface AddSessionDialogProps {
+  teacherMode?: boolean;
+}
+
+const AddSessionDialog = ({ teacherMode = false }: AddSessionDialogProps) => {
   const { t } = useLanguage();
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
   const [open, setOpen] = useState(false);
   const [searchParams, setSearchParams] = useSearchParams();
@@ -30,8 +36,25 @@ const AddSessionDialog = () => {
     start_time: "", duration_minutes: "60",
   });
 
+  // Fetch current teacher record (only when teacherMode)
+  const { data: myTeacher } = useQuery({
+    queryKey: ["my-teacher-record", user?.id],
+    enabled: teacherMode && !!user?.id,
+    queryFn: async () => {
+      const { data } = await supabase.from("teachers").select("id").eq("user_id", user!.id).maybeSingle();
+      return data;
+    },
+  });
+
+  useEffect(() => {
+    if (teacherMode && myTeacher?.id && !form.teacher_id) {
+      setForm((p) => ({ ...p, teacher_id: myTeacher.id }));
+    }
+  }, [teacherMode, myTeacher, form.teacher_id]);
+
   const { data: teachers = [] } = useQuery({
     queryKey: ["teachers-list"],
+    enabled: !teacherMode,
     queryFn: async () => {
       const { data } = await supabase.from("teachers").select("id, user_id, profiles:user_id(full_name)");
       return data ?? [];
@@ -39,14 +62,18 @@ const AddSessionDialog = () => {
   });
 
   const { data: students = [] } = useQuery({
-    queryKey: ["students-list-with-teacher"],
+    queryKey: ["students-list-with-teacher", teacherMode ? myTeacher?.id : "all"],
+    enabled: !teacherMode || !!myTeacher?.id,
     queryFn: async () => {
-      const { data } = await supabase.from("students").select("id, name, assigned_teacher_id, session_duration_minutes");
+      let q = supabase.from("students").select("id, name, assigned_teacher_id, session_duration_minutes").eq("is_active", true);
+      if (teacherMode && myTeacher?.id) {
+        q = q.eq("assigned_teacher_id", myTeacher.id);
+      }
+      const { data } = await q;
       return data ?? [];
     },
   });
 
-  // Auto-fill teacher and duration when student is selected
   useEffect(() => {
     if (form.student_id) {
       const student = students.find((s: any) => s.id === form.student_id);
@@ -81,8 +108,14 @@ const AddSessionDialog = () => {
       queryClient.invalidateQueries({ queryKey: ["sessions"] });
       queryClient.invalidateQueries({ queryKey: ["dash-today-sessions"] });
       queryClient.invalidateQueries({ queryKey: ["dash-monthly-hours"] });
+      queryClient.invalidateQueries({ queryKey: ["students-full"] });
       setOpen(false);
-      setForm({ student_id: "", teacher_id: "", session_date: new Date().toISOString().split("T")[0], start_time: "", duration_minutes: "60" });
+      setForm({
+        student_id: "",
+        teacher_id: teacherMode && myTeacher?.id ? myTeacher.id : "",
+        session_date: new Date().toISOString().split("T")[0],
+        start_time: "", duration_minutes: "60",
+      });
       toast({ title: t("sessionAdded") });
     },
     onError: (err: Error) => toast({ title: t("error"), description: err.message, variant: "destructive" }),
@@ -107,20 +140,22 @@ const AddSessionDialog = () => {
               </SelectContent>
             </Select>
           </div>
-          <div className="grid gap-2">
-            <Label>{t("teacher")} *</Label>
-            <Select value={form.teacher_id} onValueChange={(v) => setForm({ ...form, teacher_id: v })}>
-              <SelectTrigger><SelectValue placeholder={t("selectTeacher")} /></SelectTrigger>
-              <SelectContent>
-                {teachers.map((tc: any) => (
-                  <SelectItem key={tc.id} value={tc.id}>{tc.profiles?.full_name}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            {form.student_id && form.teacher_id && (
-              <p className="text-xs text-muted-foreground">✓ {t("autoFilledFromStudent")}</p>
-            )}
-          </div>
+          {!teacherMode && (
+            <div className="grid gap-2">
+              <Label>{t("teacher")} *</Label>
+              <Select value={form.teacher_id} onValueChange={(v) => setForm({ ...form, teacher_id: v })}>
+                <SelectTrigger><SelectValue placeholder={t("selectTeacher")} /></SelectTrigger>
+                <SelectContent>
+                  {teachers.map((tc: any) => (
+                    <SelectItem key={tc.id} value={tc.id}>{tc.profiles?.full_name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {form.student_id && form.teacher_id && (
+                <p className="text-xs text-muted-foreground">✓ {t("autoFilledFromStudent")}</p>
+              )}
+            </div>
+          )}
           <div className="grid grid-cols-2 gap-4">
             <div className="grid gap-2">
               <Label>{t("date")}</Label>
