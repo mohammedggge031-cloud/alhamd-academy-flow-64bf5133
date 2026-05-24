@@ -117,10 +117,11 @@ const Teachers = () => {
           .from("profiles").update(profilePatch).eq("user_id", editTeacher.user_id);
         if (pErr) throw pErr;
       }
-      const teacherPatch: { qualification?: string; hourly_rate?: number } = {
+      const teacherPatch: { qualification?: string; hourly_rate?: number; rate_currency?: string } = {
         qualification: editQualification,
       };
       if (isStrictAdmin && editRate !== "") teacherPatch.hourly_rate = Number(editRate);
+      if (isStrictAdmin) teacherPatch.rate_currency = editCurrency;
       const { error: tErr } = await supabase
         .from("teachers").update(teacherPatch).eq("id", editTeacher.id);
       if (tErr) throw tErr;
