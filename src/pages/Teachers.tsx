@@ -59,6 +59,7 @@ const Teachers = () => {
   const [editWhatsapp, setEditWhatsapp] = useState("");
   const [editQualification, setEditQualification] = useState("");
   const [editRate, setEditRate] = useState("");
+  const [editCurrency, setEditCurrency] = useState("USD");
   const [form, setForm] = useState({
     name: "", password: "", age: "", rate: "", rateCurrency: "USD",
     whatsapp: "", qualification: "", subjects: [] as string[], rating: "", gender: "male",
@@ -116,10 +117,11 @@ const Teachers = () => {
           .from("profiles").update(profilePatch).eq("user_id", editTeacher.user_id);
         if (pErr) throw pErr;
       }
-      const teacherPatch: { qualification?: string; hourly_rate?: number } = {
+      const teacherPatch: { qualification?: string; hourly_rate?: number; rate_currency?: string } = {
         qualification: editQualification,
       };
       if (isStrictAdmin && editRate !== "") teacherPatch.hourly_rate = Number(editRate);
+      if (isStrictAdmin) teacherPatch.rate_currency = editCurrency;
       const { error: tErr } = await supabase
         .from("teachers").update(teacherPatch).eq("id", editTeacher.id);
       if (tErr) throw tErr;
@@ -537,6 +539,7 @@ const Teachers = () => {
                         setEditWhatsapp(teacher.profiles?.whatsapp ?? "");
                         setEditQualification(teacher.qualification ?? "");
                         setEditRate(String(teacher.hourly_rate ?? ""));
+                        setEditCurrency((teacher as any).rate_currency ?? "USD");
                       }}
                       title={t("editTeacher")}
                     >
@@ -635,9 +638,22 @@ const Teachers = () => {
               <Input value={editQualification} onChange={(e) => setEditQualification(e.target.value)} />
             </div>
             {isStrictAdmin && (
-              <div className="grid gap-2">
-                <Label>{t("hourlyRate")}</Label>
-                <Input type="number" value={editRate} onChange={(e) => setEditRate(e.target.value)} />
+              <div className="grid grid-cols-2 gap-2">
+                <div className="grid gap-2">
+                  <Label>{t("hourlyRate")}</Label>
+                  <Input type="number" dir="ltr" value={editRate} onChange={(e) => setEditRate(e.target.value)} />
+                </div>
+                <div className="grid gap-2">
+                  <Label>{t("currency")}</Label>
+                  <select
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={editCurrency}
+                    onChange={(e) => setEditCurrency(e.target.value)}
+                  >
+                    <option value="USD">$ USD</option>
+                    <option value="EGP">ج.م EGP</option>
+                  </select>
+                </div>
               </div>
             )}
             <Button className="w-full" onClick={() => updateTeacher.mutate()} disabled={updateTeacher.isPending}>
