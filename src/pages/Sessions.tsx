@@ -10,7 +10,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/i18n/LanguageContext";
-import { buildHomeworkMessage } from "@/utils/whatsappLinks";
+import { buildHomeworkMessage, buildSessionReportMessage } from "@/utils/whatsappLinks";
 import TeacherSchedule from "@/components/teachers/TeacherSchedule";
 import AddSessionDialog from "@/components/sessions/AddSessionDialog";
 import SessionDetailDialog from "@/components/sessions/SessionDetailDialog";
@@ -200,8 +200,7 @@ const Sessions = () => {
                       onClick={() => {
                         const phone = (r.students?.guardian_whatsapp || r.students?.whatsapp || "").replace(/[^0-9]/g, "");
                         const levelLabel = levelLabels[r.student_level]?.label ?? r.student_level;
-                        const msg = (require("@/utils/whatsappLinks") as typeof import("@/utils/whatsappLinks"))
-                          .buildSessionReportMessage(r.students?.name ?? "", levelLabel, r.session_notes ?? "", r.homework ?? "", r.sessions?.session_date ?? "", lang);
+                        const msg = buildSessionReportMessage(r.students?.name ?? "", levelLabel, r.session_notes ?? "", r.homework ?? "", r.sessions?.session_date ?? "", lang);
                         const url = phone ? `https://wa.me/${phone}?text=${encodeURIComponent(msg)}` : `https://wa.me/?text=${encodeURIComponent(msg)}`;
                         window.open(url, "_blank", "noopener,noreferrer");
                       }}>
