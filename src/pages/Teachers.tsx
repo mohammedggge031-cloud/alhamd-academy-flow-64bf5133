@@ -539,6 +539,7 @@ const Teachers = () => {
                         setEditWhatsapp(teacher.profiles?.whatsapp ?? "");
                         setEditQualification(teacher.qualification ?? "");
                         setEditRate(String(teacher.hourly_rate ?? ""));
+                        setEditCurrency((teacher as any).rate_currency ?? "USD");
                       }}
                       title={t("editTeacher")}
                     >
