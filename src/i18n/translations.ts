@@ -675,10 +675,7 @@ const translations = {
   confirmDeleteTeacher: { en: "Are you sure? This will deactivate the teacher account.", ar: "هل أنت متأكد؟ سيتم تعطيل حساب المعلم." },
   teacherUpdated: { en: "Teacher updated successfully", ar: "تم تحديث بيانات المعلم بنجاح" },
   teacherDeleted: { en: "Teacher deleted successfully", ar: "تم حذف المعلم بنجاح" },
-  editReport: { en: "Edit report", ar: "تعديل التقرير" },
   sendReportViaWhatsapp: { en: "Send report via WhatsApp", ar: "إرسال التقرير عبر واتساب" },
-  reportUpdated: { en: "Report updated", ar: "تم تحديث التقرير" },
-  lowBalanceWarning: { en: "Low balance", ar: "رصيد منخفض" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
