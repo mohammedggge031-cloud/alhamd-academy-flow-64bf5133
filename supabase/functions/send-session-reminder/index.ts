@@ -80,8 +80,43 @@ serve(async (req) => {
       throw new Error("Invalid type. Use 'daily_reminder', 'teacher_joined', or 'invoice_reminders'");
     }
 
+    // Authorization: admin/manager for bulk; teacher must own the session for teacher_joined
+    const { data: roles } = await adminClient.from("user_roles").select("role").eq("user_id", caller.id);
+    const callerRoles = (roles ?? []).map((r: any) => r.role);
+    const isStaff = callerRoles.includes("admin") || callerRoles.includes("manager");
+
+    if (type === "daily_reminder" || type === "invoice_reminders") {
+      if (!isStaff) {
+        return new Response(JSON.stringify({ error: "Forbidden" }), {
+          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+    } else if (type === "teacher_joined") {
+      if (!isStaff) {
+        if (!session_id || typeof session_id !== "string") {
+          throw new Error("session_id required");
+        }
+        const { data: teacherRow } = await adminClient
+          .from("teachers")
+          .select("id")
+          .eq("user_id", caller.id)
+          .maybeSingle();
+        const { data: sessionOwner } = await adminClient
+          .from("sessions")
+          .select("teacher_id")
+          .eq("id", session_id)
+          .maybeSingle();
+        if (!teacherRow || !sessionOwner || teacherRow.id !== sessionOwner.teacher_id) {
+          return new Response(JSON.stringify({ error: "Forbidden" }), {
+            status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
+      }
+    }
+
     const whatsappApiKey = Deno.env.get("WHATSAPP_API_KEY");
     const whatsappPhoneId = Deno.env.get("WHATSAPP_PHONE_ID");
+
 
     // ─── DAILY SESSION REMINDER ───
     if (type === "daily_reminder") {
