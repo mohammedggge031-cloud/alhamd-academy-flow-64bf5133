@@ -181,9 +181,12 @@ Deno.serve(async (req) => {
     const functionUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/sync-to-external`;
 
     // Keep sync config up-to-date (function URL only, anon key is hardcoded in DB function)
+    // Keep sync config up-to-date (store function URL + secret so DB trigger can authenticate)
     await adminClient.rpc("set_external_sync_config", {
       _function_url: functionUrl,
+      _sync_secret: syncSecret,
     });
+
 
     const mode = body.mode || "schema_and_data";
     const logs: string[] = [];
