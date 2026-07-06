@@ -37,33 +37,14 @@ serve(async (req) => {
       throw new Error("الواجب مطلوب ويجب أن يكون أقل من 2000 حرف");
     }
 
-    // Authorization: must be admin/manager OR the teacher assigned to this student
-    const { data: roles } = await adminClient.from("user_roles").select("role").eq("user_id", caller.id);
-    const callerRoles = (roles ?? []).map((r: any) => r.role);
-    const isStaff = callerRoles.includes("admin") || callerRoles.includes("manager");
-
-    // Get student's WhatsApp number + assigned teacher
+    // Get student's WhatsApp number
     const { data: student } = await adminClient
       .from("students")
-      .select("whatsapp, guardian_whatsapp, name, assigned_teacher_id")
+      .select("whatsapp, guardian_whatsapp, name")
       .eq("id", student_id)
       .single();
 
     if (!student) throw new Error("الطالب غير موجود");
-
-    if (!isStaff) {
-      const { data: teacherRow } = await adminClient
-        .from("teachers")
-        .select("id")
-        .eq("user_id", caller.id)
-        .maybeSingle();
-      if (!teacherRow || teacherRow.id !== student.assigned_teacher_id) {
-        return new Response(JSON.stringify({ error: "Forbidden" }), {
-          status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
 
     const phone = student.whatsapp || student.guardian_whatsapp;
     if (!phone) {

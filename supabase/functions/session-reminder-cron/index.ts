@@ -24,34 +24,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Require CRON_SECRET or admin JWT
-    const cronSecret = Deno.env.get("CRON_SECRET") || "";
-    const providedSecret = req.headers.get("x-cron-secret") || "";
-    const hasValidCron = cronSecret.length > 0 && providedSecret === cronSecret;
-    let isAdmin = false;
-    if (!hasValidCron) {
-      const authHeader = req.headers.get("Authorization");
-      if (authHeader?.startsWith("Bearer ")) {
-        const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-          global: { headers: { Authorization: authHeader } },
-        });
-        const { data: { user } } = await callerClient.auth.getUser();
-        if (user) {
-          const admin = createClient(supabaseUrl, serviceRoleKey);
-          const { data: roles } = await admin.from("user_roles").select("role").eq("user_id", user.id);
-          isAdmin = (roles ?? []).some((r: any) => r.role === "admin");
-        }
-      }
-      if (!isAdmin) {
-        return new Response(JSON.stringify({ error: "Unauthorized" }), {
-          status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
-      }
-    }
-
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-
 
     const now = new Date();
     const today = now.toISOString().split("T")[0];

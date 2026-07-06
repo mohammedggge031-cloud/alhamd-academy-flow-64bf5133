@@ -106,51 +106,6 @@ export type Database = {
           },
         ]
       }
-      audit_log: {
-        Row: {
-          action: string
-          actor_id: string | null
-          actor_role: string | null
-          after: Json | null
-          before: Json | null
-          created_at: string
-          entity_id: string | null
-          entity_table: string
-          id: string
-          ip_address: string | null
-          reason: string | null
-          user_agent: string | null
-        }
-        Insert: {
-          action: string
-          actor_id?: string | null
-          actor_role?: string | null
-          after?: Json | null
-          before?: Json | null
-          created_at?: string
-          entity_id?: string | null
-          entity_table: string
-          id?: string
-          ip_address?: string | null
-          reason?: string | null
-          user_agent?: string | null
-        }
-        Update: {
-          action?: string
-          actor_id?: string | null
-          actor_role?: string | null
-          after?: Json | null
-          before?: Json | null
-          created_at?: string
-          entity_id?: string | null
-          entity_table?: string
-          id?: string
-          ip_address?: string | null
-          reason?: string | null
-          user_agent?: string | null
-        }
-        Relationships: []
-      }
       expenses: {
         Row: {
           amount: number
@@ -190,7 +145,6 @@ export type Database = {
           enabled: boolean
           function_url: string
           id: boolean
-          sync_secret: string | null
           updated_at: string
         }
         Insert: {
@@ -198,7 +152,6 @@ export type Database = {
           enabled?: boolean
           function_url: string
           id?: boolean
-          sync_secret?: string | null
           updated_at?: string
         }
         Update: {
@@ -206,7 +159,6 @@ export type Database = {
           enabled?: boolean
           function_url?: string
           id?: boolean
-          sync_secret?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -467,66 +419,6 @@ export type Database = {
         }
         Relationships: []
       }
-      parents: {
-        Row: {
-          created_at: string
-          email: string | null
-          full_name: string
-          id: string
-          notes: string | null
-          phone: string | null
-          updated_at: string
-          user_id: string | null
-          whatsapp: string | null
-        }
-        Insert: {
-          created_at?: string
-          email?: string | null
-          full_name: string
-          id?: string
-          notes?: string | null
-          phone?: string | null
-          updated_at?: string
-          user_id?: string | null
-          whatsapp?: string | null
-        }
-        Update: {
-          created_at?: string
-          email?: string | null
-          full_name?: string
-          id?: string
-          notes?: string | null
-          phone?: string | null
-          updated_at?: string
-          user_id?: string | null
-          whatsapp?: string | null
-        }
-        Relationships: []
-      }
-      permissions: {
-        Row: {
-          action: string
-          created_at: string
-          id: string
-          module: string
-          role: Database["public"]["Enums"]["app_role"]
-        }
-        Insert: {
-          action: string
-          created_at?: string
-          id?: string
-          module: string
-          role: Database["public"]["Enums"]["app_role"]
-        }
-        Update: {
-          action?: string
-          created_at?: string
-          id?: string
-          module?: string
-          role?: Database["public"]["Enums"]["app_role"]
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           created_at: string
@@ -750,45 +642,6 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "teachers_self_view"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      student_parents: {
-        Row: {
-          created_at: string
-          id: string
-          parent_id: string
-          relationship: string | null
-          student_id: string
-        }
-        Insert: {
-          created_at?: string
-          id?: string
-          parent_id: string
-          relationship?: string | null
-          student_id: string
-        }
-        Update: {
-          created_at?: string
-          id?: string
-          parent_id?: string
-          relationship?: string | null
-          student_id?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "student_parents_parent_id_fkey"
-            columns: ["parent_id"]
-            isOneToOne: false
-            referencedRelation: "parents"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "student_parents_student_id_fkey"
-            columns: ["student_id"]
-            isOneToOne: false
-            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
@@ -1290,31 +1143,12 @@ export type Database = {
           isSetofReturn: true
         }
       }
-      has_permission: {
-        Args: { _action: string; _module: string; _user_id: string }
-        Returns: boolean
-      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
         Returns: boolean
-      }
-      is_parent_of: {
-        Args: { _parent_user_id: string; _student_id: string }
-        Returns: boolean
-      }
-      log_audit: {
-        Args: {
-          _action: string
-          _after?: Json
-          _before?: Json
-          _entity_id: string
-          _entity_table: string
-          _reason?: string
-        }
-        Returns: string
       }
       mark_all_notifications_read: {
         Args: { _user_id: string }
@@ -1333,19 +1167,17 @@ export type Database = {
         Returns: undefined
       }
       request_external_sync_processing: { Args: never; Returns: undefined }
-      set_external_sync_config:
-        | { Args: { _function_url: string }; Returns: undefined }
-        | {
-            Args: { _function_url: string; _sync_secret?: string }
-            Returns: undefined
-          }
+      set_external_sync_config: {
+        Args: { _function_url: string }
+        Returns: undefined
+      }
       touch_external_sync_event: {
         Args: { _event_id: string; _last_error?: string }
         Returns: undefined
       }
     }
     Enums: {
-      app_role: "admin" | "teacher" | "manager" | "student" | "parent"
+      app_role: "admin" | "teacher" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1473,7 +1305,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["admin", "teacher", "manager", "student", "parent"],
+      app_role: ["admin", "teacher", "manager"],
     },
   },
 } as const

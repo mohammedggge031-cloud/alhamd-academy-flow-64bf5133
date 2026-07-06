@@ -148,12 +148,15 @@ Deno.serve(async (req) => {
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
 
     // ========= AUTH =========
-    // Only accept calls signed with SYNC_SECRET. The previous "internal_token"
-    // path used the public anon key, which any client could replay.
     const syncSecret = Deno.env.get("SYNC_SECRET") || "";
     const hasSecretKey = syncSecret.length > 0 && body.secret_key === syncSecret;
-
-    if (!hasSecretKey) {
+    
+    // Internal calls from DB trigger send the anon key JWT as internal_token
+    const internalToken = body.internal_token || "";
+    const authHeader = req.headers.get("authorization") || "";
+    const isInternalCall = internalToken.length > 50 && authHeader.includes(internalToken);
+    
+    if (!hasSecretKey && !isInternalCall) {
       console.log("❌ Auth failed");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -161,7 +164,6 @@ Deno.serve(async (req) => {
       });
     }
     console.log("✅ Auth passed");
-
 
     // ========= SETUP =========
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
@@ -181,12 +183,9 @@ Deno.serve(async (req) => {
     const functionUrl = `${supabaseUrl.replace(/\/$/, "")}/functions/v1/sync-to-external`;
 
     // Keep sync config up-to-date (function URL only, anon key is hardcoded in DB function)
-    // Keep sync config up-to-date (store function URL + secret so DB trigger can authenticate)
     await adminClient.rpc("set_external_sync_config", {
       _function_url: functionUrl,
-      _sync_secret: syncSecret,
     });
-
 
     const mode = body.mode || "schema_and_data";
     const logs: string[] = [];

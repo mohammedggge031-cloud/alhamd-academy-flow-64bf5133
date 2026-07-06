@@ -16,31 +16,7 @@ serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-
-    // Require authenticated caller with admin/manager/teacher role
-    const authHeader = req.headers.get("Authorization");
-    if (!authHeader?.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-    const callerClient = createClient(supabaseUrl, Deno.env.get("SUPABASE_ANON_KEY")!, {
-      global: { headers: { Authorization: authHeader } },
-    });
-    const { data: { user } } = await callerClient.auth.getUser();
-    if (!user) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: roles } = await adminClient.from("user_roles").select("role").eq("user_id", user.id);
-    const allowed = (roles ?? []).some((r: any) => ["admin", "manager", "teacher"].includes(r.role));
-    if (!allowed) {
-      return new Response(JSON.stringify({ error: "Forbidden" }), {
-        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
     const { report_id, student_name, teacher_name, report_month, overall_grade, student_phone } = await req.json();
 
@@ -50,19 +26,6 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-
-    // Verify the report actually exists
-    const { data: reportRow } = await adminClient
-      .from("monthly_reports")
-      .select("id")
-      .eq("id", report_id)
-      .maybeSingle();
-    if (!reportRow) {
-      return new Response(JSON.stringify({ error: "Report not found" }), {
-        status: 404, headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
 
     const { data: adminManagers } = await adminClient
       .from("user_roles")
