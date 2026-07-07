@@ -18,8 +18,8 @@ const FloatingQuickAdd = () => {
     { label: t("addStudent"), icon: UserPlus, to: "/students?action=add", roles: ["admin", "manager"] },
     { label: t("dashAddSession"), icon: CalendarPlus, to: "/sessions?action=add", roles: ["admin", "manager", "teacher"] },
     { label: t("dashAddInvoice"), icon: Receipt, to: "/invoices?action=add", roles: ["admin"] },
-    { label: t("addExpense") || "Expense", icon: Wallet, to: "/expenses?action=add", roles: ["admin"] },
-    { label: t("addTeacher") || "Teacher", icon: GraduationCap, to: "/teachers?action=add", roles: ["admin"] },
+    { label: t("addExpense"), icon: Wallet, to: "/expenses?action=add", roles: ["admin"] },
+    { label: t("addTeacher"), icon: GraduationCap, to: "/teachers?action=add", roles: ["admin"] },
   ].filter((a) => a.roles.includes(role));
 
   if (actions.length === 0) return null;
