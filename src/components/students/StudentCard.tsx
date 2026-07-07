@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
+import WhatsAppQuickMenu from "@/components/shared/WhatsAppQuickMenu";
 
 interface StudentCardProps {
   student: {
@@ -63,6 +64,7 @@ const StudentCard = ({ student, teacherName, invoiceStatus, onTransfer, onEdit, 
             <Badge variant="secondary" className={invoiceStatusMap[status].className}>
               {invoiceStatusMap[status].label}
             </Badge>
+            <WhatsAppQuickMenu phone={student.whatsapp} displayName={student.name} context="student" />
           </div>
         </div>
       </CardHeader>
