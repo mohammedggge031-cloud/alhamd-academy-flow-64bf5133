@@ -20,6 +20,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { TeacherProfileViewer } from "@/components/teachers/TeacherProfileViewer";
 import { WebsiteVisibilityDialog } from "@/components/teachers/WebsiteVisibilityDialog";
 import { TeacherSalaryDialog } from "@/components/teachers/TeacherSalaryDialog";
+import WhatsAppQuickMenu from "@/components/shared/WhatsAppQuickMenu";
 
 interface TeacherRow {
   id: string; user_id: string; age: number | null; qualification: string | null;
