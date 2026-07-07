@@ -36,8 +36,8 @@ interface Props {
 }
 
 const WhatsAppQuickMenu = ({ phone, displayName, context = "student", extra, size = "icon" }: Props) => {
-  const { t, language } = useLanguage();
-  const lang: MsgLang = language === "ar" ? "ar" : "en";
+  const { t, lang: uiLang } = useLanguage();
+  const lang: MsgLang = uiLang === "ar" ? "ar" : "en";
 
   if (!phone) return null;
 
