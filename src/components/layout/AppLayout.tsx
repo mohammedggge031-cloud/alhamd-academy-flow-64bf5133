@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import NotificationPanel from "@/components/notifications/NotificationPanel";
+import FloatingQuickAdd from "@/components/shared/FloatingQuickAdd";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -64,6 +65,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
         <main className="flex-1 p-4 md:p-6 lg:p-8 overflow-auto">
           {children}
         </main>
+        <FloatingQuickAdd />
       </div>
     </div>
   );

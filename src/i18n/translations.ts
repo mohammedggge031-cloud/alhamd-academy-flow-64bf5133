@@ -676,6 +676,14 @@ const translations = {
   teacherUpdated: { en: "Teacher updated successfully", ar: "تم تحديث بيانات المعلم بنجاح" },
   teacherDeleted: { en: "Teacher deleted successfully", ar: "تم حذف المعلم بنجاح" },
   sendReportViaWhatsapp: { en: "Send report via WhatsApp", ar: "إرسال التقرير عبر واتساب" },
+
+  // Quick actions & WhatsApp quick menu
+  quickAdd: { en: "Quick Add", ar: "إضافة سريعة" },
+  whatsappActions: { en: "WhatsApp Actions", ar: "إجراءات واتساب" },
+  waCustomMessage: { en: "Custom message", ar: "رسالة مخصصة" },
+  waSendHomework: { en: "Send homework", ar: "إرسال واجب" },
+  waSessionReminder: { en: "Send session reminder", ar: "تذكير بالحصة" },
+  waSendInvoice: { en: "Send invoice", ar: "إرسال الفاتورة" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
