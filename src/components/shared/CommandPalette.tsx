@@ -169,7 +169,7 @@ const CommandPalette = () => {
 
         <CommandSeparator />
 
-        <CommandGroup heading={t("navigation") || "التنقل"}>
+        <CommandGroup heading={t("navigation")}>
           {availableNav.map((c) => (
             <CommandItem key={c.to} onSelect={() => go(c.to)}>
               <c.icon className="me-2 h-4 w-4" />
