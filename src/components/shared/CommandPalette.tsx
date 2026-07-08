@@ -107,11 +107,11 @@ const CommandPalette = () => {
       if (!search.trim()) return [];
       const { data } = await supabase
         .from("teachers")
-        .select("id, name")
-        .ilike("name", `%${search}%`)
+        .select("id, profiles!teachers_profile_user_id_fkey!inner(full_name)")
         .eq("is_active", true)
+        .ilike("profiles.full_name", `%${search}%`)
         .limit(6);
-      return data ?? [];
+      return (data ?? []).map((r: any) => ({ id: r.id as string, name: (r.profiles?.full_name as string) ?? "" }));
     },
     enabled: open && canSearchEntities && search.trim().length > 0,
     staleTime: 30_000,
