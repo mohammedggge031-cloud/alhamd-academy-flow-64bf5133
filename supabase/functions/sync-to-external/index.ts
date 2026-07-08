@@ -148,15 +148,9 @@ Deno.serve(async (req) => {
     const body = bodyRaw ? JSON.parse(bodyRaw) : {};
 
     // ========= AUTH =========
+    // Only accept requests that carry the SYNC_SECRET. DB trigger passes it via body.
     const syncSecret = Deno.env.get("SYNC_SECRET") || "";
-    const hasSecretKey = syncSecret.length > 0 && body.secret_key === syncSecret;
-    
-    // Internal calls from DB trigger send the anon key JWT as internal_token
-    const internalToken = body.internal_token || "";
-    const authHeader = req.headers.get("authorization") || "";
-    const isInternalCall = internalToken.length > 50 && authHeader.includes(internalToken);
-    
-    if (!hasSecretKey && !isInternalCall) {
+    if (!syncSecret || body.secret_key !== syncSecret) {
       console.log("❌ Auth failed");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         status: 401,
@@ -164,6 +158,7 @@ Deno.serve(async (req) => {
       });
     }
     console.log("✅ Auth passed");
+
 
     // ========= SETUP =========
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
