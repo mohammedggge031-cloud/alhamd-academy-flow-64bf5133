@@ -16,6 +16,31 @@ serve(async (req) => {
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const admin = createClient(supabaseUrl, serviceRoleKey);
 
+    // Auth: accept either the CRON_SECRET header (for pg_cron) or a valid admin/manager JWT
+    const cronSecret = Deno.env.get("CRON_SECRET") || "";
+    const headerSecret = req.headers.get("x-cron-secret") || "";
+    const authHeader = req.headers.get("Authorization") || "";
+    let authorized = cronSecret.length > 0 && headerSecret === cronSecret;
+    if (!authorized && authHeader) {
+      const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+      const callerClient = createClient(supabaseUrl, anonKey, {
+        global: { headers: { Authorization: authHeader } },
+      });
+      const { data: { user } } = await callerClient.auth.getUser();
+      if (user) {
+        const { data: roleData } = await admin
+          .from("user_roles").select("role").eq("user_id", user.id)
+          .in("role", ["admin", "manager"]).maybeSingle();
+        if (roleData) authorized = true;
+      }
+    }
+    if (!authorized) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+
     // Determine "today" in Africa/Cairo
     const now = new Date();
     const cairoNow = new Date(now.toLocaleString("en-US", { timeZone: "Africa/Cairo" }));
