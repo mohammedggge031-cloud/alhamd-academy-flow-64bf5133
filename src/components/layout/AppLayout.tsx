@@ -6,6 +6,7 @@ import { useLanguage } from "@/i18n/LanguageContext";
 import { useAuth } from "@/hooks/useAuth";
 import NotificationPanel from "@/components/notifications/NotificationPanel";
 import FloatingQuickAdd from "@/components/shared/FloatingQuickAdd";
+import CommandPalette from "@/components/shared/CommandPalette";
 
 interface AppLayoutProps {
   children: React.ReactNode;
