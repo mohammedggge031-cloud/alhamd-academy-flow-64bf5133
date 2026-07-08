@@ -132,7 +132,7 @@ const CommandPalette = () => {
     <CommandDialog open={open} onOpenChange={setOpen}>
       <CommandInput placeholder={t("search") + "…  (Ctrl+K)"} value={search} onValueChange={setSearch} />
       <CommandList>
-        <CommandEmpty>{t("noResults") || "لا نتائج"}</CommandEmpty>
+        <CommandEmpty>{t("noResults")}</CommandEmpty>
 
         {students.length > 0 && (
           <CommandGroup heading={t("navStudents")}>
