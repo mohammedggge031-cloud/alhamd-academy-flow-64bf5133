@@ -684,6 +684,8 @@ const translations = {
   waSendHomework: { en: "Send homework", ar: "إرسال واجب" },
   waSessionReminder: { en: "Send session reminder", ar: "تذكير بالحصة" },
   waSendInvoice: { en: "Send invoice", ar: "إرسال الفاتورة" },
+  navigation: { en: "Navigation", ar: "التنقل" },
+  noResults: { en: "No results", ar: "لا نتائج" },
 } as const;
 
 export type TranslationKey = keyof typeof translations;
