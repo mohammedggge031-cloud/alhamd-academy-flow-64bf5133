@@ -18,13 +18,37 @@ interface ReportData {
   lang: Lang;
 }
 
-export function generateReportHTML(data: ReportData): string {
+function escapeHtml(s: string): string {
+  return String(s ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+}
+
+export function generateReportHTML(rawData: ReportData): string {
+  // HTML-escape every user-supplied string before interpolation to prevent stored XSS
+  const data: ReportData = {
+    ...rawData,
+    studentName: escapeHtml(rawData.studentName),
+    teacherName: escapeHtml(rawData.teacherName),
+    gradeLabelAr: escapeHtml(rawData.gradeLabelAr),
+    attendanceLabelAr: escapeHtml(rawData.attendanceLabelAr),
+    quranProgress: escapeHtml(rawData.quranProgress),
+    arabicIslamicStudies: escapeHtml(rawData.arabicIslamicStudies),
+    strengths: escapeHtml(rawData.strengths),
+    weaknesses: escapeHtml(rawData.weaknesses),
+    behaviorNotes: escapeHtml(rawData.behaviorNotes),
+    recommendations: escapeHtml(rawData.recommendations),
+  };
   const isAr = data.lang === "ar";
   const dir = isAr ? "rtl" : "ltr";
   const monthLabel = new Date(data.reportMonth).toLocaleDateString(
     isAr ? "ar-EG" : "en-US",
     { year: "numeric", month: "long" }
   );
+
 
   const sections: string[] = [];
 

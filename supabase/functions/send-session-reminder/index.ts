@@ -71,6 +71,16 @@ serve(async (req) => {
 
     const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
+    // Only admins/managers can trigger bulk reminders and invoice status updates
+    const { data: roleData } = await adminClient
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", caller.id)
+      .in("role", ["admin", "manager"])
+      .maybeSingle();
+    if (!roleData) throw new Error("غير مصرح");
+
+
     const body = await req.json();
     const { type, session_id } = body;
 

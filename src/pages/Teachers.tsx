@@ -170,8 +170,13 @@ const Teachers = () => {
     mutationFn: async () => {
       if (!form.name.trim()) throw new Error(t("nameRequired"));
       if (!form.whatsapp.trim()) throw new Error(t("whatsappRequired"));
-      // Auto-generate password if not provided
-      const password = form.password || (form.whatsapp.replace(/[^0-9]/g, "").slice(-6) + "aa");
+      // Auto-generate a strong random password if not provided
+      const genPassword = () => {
+        const bytes = new Uint8Array(12);
+        crypto.getRandomValues(bytes);
+        return Array.from(bytes, (b) => b.toString(36).padStart(2, "0")).join("").slice(0, 14) + "!A1";
+      };
+      const password = form.password || genPassword();
       const res = await supabase.functions.invoke("create-teacher", {
         body: {
           password, full_name: form.name,
