@@ -67,6 +67,7 @@ const AppLayout = ({ children }: AppLayoutProps) => {
           {children}
         </main>
         <FloatingQuickAdd />
+        <CommandPalette />
       </div>
     </div>
   );
