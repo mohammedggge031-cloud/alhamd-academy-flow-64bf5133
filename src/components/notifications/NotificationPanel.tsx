@@ -233,7 +233,16 @@ const NotificationPanel = () => {
                   {filteredNotifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`p-3 hover:bg-muted/30 transition-colors ${!n.is_read ? "bg-primary/5" : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => dismissAndMarkRead(n.id, !n.is_read)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          dismissAndMarkRead(n.id, !n.is_read);
+                        }
+                      }}
+                      className={`p-3 hover:bg-muted/30 transition-colors cursor-pointer ${!n.is_read ? "bg-primary/5" : ""}`}
                     >
                       <div className="flex items-start gap-2">
                         <span className="text-lg shrink-0">{typeIcons[n.type] || "📌"}</span>
@@ -242,7 +251,7 @@ const NotificationPanel = () => {
                           {n.body && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>}
                           <p className="text-[10px] text-muted-foreground mt-1">{timeAgo(n.created_at)}</p>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                           {n.metadata?.whatsapp_phone && (
                             <Button
                               variant="ghost"
@@ -265,11 +274,14 @@ const NotificationPanel = () => {
                               <MessageCircle className="h-4 w-4" />
                             </Button>
                           )}
-                          {!n.is_read && (
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => markRead(n.id)}>
-                              <Check className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => dismissAndMarkRead(n.id, !n.is_read)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </div>
