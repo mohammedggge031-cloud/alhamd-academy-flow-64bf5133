@@ -412,6 +412,27 @@ const Sessions = () => {
         onClose={() => setApprovalDialog(null)}
         requestTypeLabels={requestTypeLabels}
       />
+
+      <ConfirmDialog
+        open={!!bulkConfirm}
+        onOpenChange={(o) => !o && setBulkConfirm(null)}
+        title={t("confirmAction")}
+        description={
+          bulkConfirm === "delete"
+            ? `${t("confirmDeleteSelected")} (${selectedIds.size})`
+            : `${t("confirmChangeStatus")} — ${selectedIds.size}`
+        }
+        confirmLabel={
+          bulkConfirm === "delete"
+            ? t("deleteSelected")
+            : bulkConfirm === "completed"
+            ? t("bulkMarkCompleted")
+            : t("bulkMarkCancelled")
+        }
+        variant={bulkConfirm === "delete" || bulkConfirm === "cancelled" ? "destructive" : "default"}
+        onConfirm={runBulk}
+        isPending={bulkPending}
+      />
     </div>
   );
 };
