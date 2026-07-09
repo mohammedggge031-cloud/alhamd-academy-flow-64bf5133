@@ -326,6 +326,15 @@ const Sessions = () => {
                     onClick={() => setSelectedSession(session)}
                   >
                     <div className="flex items-center gap-4">
+                      {isAdmin && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.has(session.id)}
+                            onCheckedChange={() => toggleSelect(session.id)}
+                            aria-label={t("selectAll")}
+                          />
+                        </div>
+                      )}
                       <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center shrink-0">
                         <span className="text-sm font-bold text-primary">{getStudentName(session)[0]}</span>
                       </div>
