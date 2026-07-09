@@ -86,10 +86,10 @@ const NotificationPanel = () => {
 
   const categoryCounts = useMemo(() => {
     const counts: Record<NotificationCategory, number> = {
-      all: notifications.filter(n => !n.is_read).length,
+      all: visibleNotifications.filter(n => !n.is_read).length,
       reminders_6h: 0, reminders_5m: 0, homework: 0, reports: 0, invoices: 0, alerts: 0,
     };
-    for (const n of notifications) {
+    for (const n of visibleNotifications) {
       if (n.is_read) continue;
       for (const [cat, cfg] of Object.entries(categoryConfig)) {
         if (cat !== "all" && cfg.types.includes(n.type)) {
@@ -98,16 +98,29 @@ const NotificationPanel = () => {
       }
     }
     return counts;
-  }, [notifications]);
+  }, [visibleNotifications]);
 
-  // Shared read: uses database function to mark all copies in the group as read
-  const markRead = async (id: string) => {
-    await supabase.rpc("mark_notification_group_read", { _notification_id: id });
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  // Dismiss locally + mark read on server. The item disappears from the panel immediately.
+  const dismissAndMarkRead = async (id: string, wasUnread: boolean) => {
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    if (wasUnread) {
+      await supabase.rpc("mark_notification_group_read", { _notification_id: id });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    }
   };
 
   const markAllRead = async () => {
     if (!user) return;
+    // Dismiss every currently-visible notification from the panel
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      visibleNotifications.forEach((n) => next.add(n.id));
+      return next;
+    });
     await supabase.rpc("mark_all_notifications_read", { _user_id: user.id });
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
