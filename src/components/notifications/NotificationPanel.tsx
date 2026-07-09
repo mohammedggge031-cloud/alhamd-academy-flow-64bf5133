@@ -35,6 +35,7 @@ const categoryConfig: Record<NotificationCategory, { icon: React.ReactNode; type
 const NotificationPanel = () => {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<NotificationCategory>("all");
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -69,13 +70,19 @@ const NotificationPanel = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, queryClient]);
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  // Visible list excludes locally-dismissed notifications for this session
+  const visibleNotifications = useMemo(
+    () => notifications.filter((n) => !dismissedIds.has(n.id)),
+    [notifications, dismissedIds],
+  );
+
+  const unreadCount = visibleNotifications.filter((n) => !n.is_read).length;
 
   const filteredNotifications = useMemo(() => {
-    if (activeTab === "all") return notifications;
+    if (activeTab === "all") return visibleNotifications;
     const types = categoryConfig[activeTab].types;
-    return notifications.filter((n) => types.includes(n.type));
-  }, [notifications, activeTab]);
+    return visibleNotifications.filter((n) => types.includes(n.type));
+  }, [visibleNotifications, activeTab]);
 
   const categoryCounts = useMemo(() => {
     const counts: Record<NotificationCategory, number> = {
