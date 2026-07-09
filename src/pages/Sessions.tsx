@@ -262,12 +262,45 @@ const Sessions = () => {
         </Card>
       )}
 
+      {/* Bulk actions bar (admin only) */}
+      {!showMyReports && isAdmin && selectedIds.size > 0 && (
+        <Card className="border-primary/30 bg-primary/5 shadow-sm sticky top-2 z-10">
+          <CardContent className="p-3 flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">
+              {selectedIds.size} {t("selectedCount")}
+            </span>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setBulkConfirm("completed")}>
+              <CheckCircle2 className="h-3.5 w-3.5" /> {t("bulkMarkCompleted")}
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setBulkConfirm("cancelled")}>
+              <XCircle className="h-3.5 w-3.5" /> {t("bulkMarkCancelled")}
+            </Button>
+            <Button size="sm" variant="destructive" className="gap-1" onClick={() => setBulkConfirm("delete")}>
+              <Trash2 className="h-3.5 w-3.5" /> {t("deleteSelected")}
+            </Button>
+            <Button size="sm" variant="ghost" className="mr-auto" onClick={() => setSelectedIds(new Set())}>
+              {t("clearSelection")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Sessions list */}
       {!showMyReports && (isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
       ) : (
         <Card className="border-none shadow-sm">
           <CardContent className="p-0">
+            {isAdmin && paginatedItems.length > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/20">
+                <Checkbox
+                  checked={allPageSelected}
+                  onCheckedChange={(c) => togglePageSelect(!!c)}
+                  aria-label={t("selectAll")}
+                />
+                <span className="text-xs text-muted-foreground">{t("selectAll")}</span>
+              </div>
+            )}
             <div className="divide-y">
               {filtered.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">{t("noSessions")}</p>
