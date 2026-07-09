@@ -1,14 +1,16 @@
 import { useState, useMemo } from "react";
-import { CalendarDays, Filter, Loader2, FileText, Eye, DollarSign, Badge as BadgeIcon, MessageCircle } from "lucide-react";
+import { CalendarDays, Filter, Loader2, FileText, Eye, DollarSign, Badge as BadgeIcon, MessageCircle, Trash2, CheckCircle2, XCircle } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/usePagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { buildHomeworkMessage, buildSessionReportMessage } from "@/utils/whatsappLinks";
 import TeacherSchedule from "@/components/teachers/TeacherSchedule";
@@ -17,6 +19,7 @@ import SessionDetailDialog from "@/components/sessions/SessionDetailDialog";
 import SessionReportDialog from "@/components/sessions/SessionReportDialog";
 import ApprovalRequestDialog from "@/components/sessions/ApprovalRequestDialog";
 import PendingApprovalsSection from "@/components/sessions/PendingApprovalsSection";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const Sessions = () => {
   const { t, lang } = useLanguage();
