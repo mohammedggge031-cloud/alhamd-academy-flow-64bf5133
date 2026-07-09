@@ -96,6 +96,46 @@ const Sessions = () => {
   const getTeacherName = (s: any) => s.teachers?.profiles?.full_name ?? "—";
   const getStudentName = (s: any) => s.students?.name ?? "—";
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const togglePageSelect = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) paginatedItems.forEach((s: any) => next.add(s.id));
+      else paginatedItems.forEach((s: any) => next.delete(s.id));
+      return next;
+    });
+  };
+  const runBulk = async () => {
+    if (!bulkConfirm || selectedIds.size === 0) return;
+    setBulkPending(true);
+    try {
+      const ids = Array.from(selectedIds);
+      if (bulkConfirm === "delete") {
+        const { error } = await supabase.from("sessions").delete().in("id", ids);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("sessions").update({ status: bulkConfirm }).in("id", ids);
+        if (error) throw error;
+      }
+      toast({ title: t("bulkActionDone"), description: `${ids.length} ${t("sessionsCount")}` });
+      setSelectedIds(new Set());
+      setBulkConfirm(null);
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    } catch (e: any) {
+      toast({ title: t("error"), description: e.message, variant: "destructive" });
+    } finally {
+      setBulkPending(false);
+    }
+  };
+  const pageSelectedCount = paginatedItems.filter((s: any) => selectedIds.has(s.id)).length;
+  const allPageSelected = paginatedItems.length > 0 && pageSelectedCount === paginatedItems.length;
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
