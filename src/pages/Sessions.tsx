@@ -1,14 +1,16 @@
 import { useState, useMemo } from "react";
-import { CalendarDays, Filter, Loader2, FileText, Eye, DollarSign, Badge as BadgeIcon, MessageCircle } from "lucide-react";
+import { CalendarDays, Filter, Loader2, FileText, Eye, DollarSign, Badge as BadgeIcon, MessageCircle, Trash2, CheckCircle2, XCircle } from "lucide-react";
 import PaginationControls from "@/components/PaginationControls";
 import { usePagination } from "@/hooks/usePagination";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { buildHomeworkMessage, buildSessionReportMessage } from "@/utils/whatsappLinks";
 import TeacherSchedule from "@/components/teachers/TeacherSchedule";
@@ -17,6 +19,7 @@ import SessionDetailDialog from "@/components/sessions/SessionDetailDialog";
 import SessionReportDialog from "@/components/sessions/SessionReportDialog";
 import ApprovalRequestDialog from "@/components/sessions/ApprovalRequestDialog";
 import PendingApprovalsSection from "@/components/sessions/PendingApprovalsSection";
+import ConfirmDialog from "@/components/ConfirmDialog";
 
 const Sessions = () => {
   const { t, lang } = useLanguage();
@@ -52,6 +55,11 @@ const Sessions = () => {
   const [reportDialog, setReportDialog] = useState<any | null>(null);
   const [editingReport, setEditingReport] = useState<any | null>(null);
   const [showMyReports, setShowMyReports] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState<null | "delete" | "completed" | "cancelled">(null);
+  const [bulkPending, setBulkPending] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["sessions"],
@@ -87,6 +95,46 @@ const Sessions = () => {
   const { page, setPage, totalPages, paginatedItems, totalItems, hasNext, hasPrev } = usePagination(filtered, { pageSize: 50 });
   const getTeacherName = (s: any) => s.teachers?.profiles?.full_name ?? "—";
   const getStudentName = (s: any) => s.students?.name ?? "—";
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const togglePageSelect = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) paginatedItems.forEach((s: any) => next.add(s.id));
+      else paginatedItems.forEach((s: any) => next.delete(s.id));
+      return next;
+    });
+  };
+  const runBulk = async () => {
+    if (!bulkConfirm || selectedIds.size === 0) return;
+    setBulkPending(true);
+    try {
+      const ids = Array.from(selectedIds);
+      if (bulkConfirm === "delete") {
+        const { error } = await supabase.from("sessions").delete().in("id", ids);
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.from("sessions").update({ status: bulkConfirm }).in("id", ids);
+        if (error) throw error;
+      }
+      toast({ title: t("bulkActionDone"), description: `${ids.length} ${t("sessionsCount")}` });
+      setSelectedIds(new Set());
+      setBulkConfirm(null);
+      queryClient.invalidateQueries({ queryKey: ["sessions"] });
+    } catch (e: any) {
+      toast({ title: t("error"), description: e.message, variant: "destructive" });
+    } finally {
+      setBulkPending(false);
+    }
+  };
+  const pageSelectedCount = paginatedItems.filter((s: any) => selectedIds.has(s.id)).length;
+  const allPageSelected = paginatedItems.length > 0 && pageSelectedCount === paginatedItems.length;
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -214,12 +262,45 @@ const Sessions = () => {
         </Card>
       )}
 
+      {/* Bulk actions bar (admin only) */}
+      {!showMyReports && isAdmin && selectedIds.size > 0 && (
+        <Card className="border-primary/30 bg-primary/5 shadow-sm sticky top-2 z-10">
+          <CardContent className="p-3 flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">
+              {selectedIds.size} {t("selectedCount")}
+            </span>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setBulkConfirm("completed")}>
+              <CheckCircle2 className="h-3.5 w-3.5" /> {t("bulkMarkCompleted")}
+            </Button>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setBulkConfirm("cancelled")}>
+              <XCircle className="h-3.5 w-3.5" /> {t("bulkMarkCancelled")}
+            </Button>
+            <Button size="sm" variant="destructive" className="gap-1" onClick={() => setBulkConfirm("delete")}>
+              <Trash2 className="h-3.5 w-3.5" /> {t("deleteSelected")}
+            </Button>
+            <Button size="sm" variant="ghost" className="mr-auto" onClick={() => setSelectedIds(new Set())}>
+              {t("clearSelection")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Sessions list */}
       {!showMyReports && (isLoading ? (
         <div className="flex justify-center py-12"><Loader2 className="h-8 w-8 animate-spin text-primary" /></div>
       ) : (
         <Card className="border-none shadow-sm">
           <CardContent className="p-0">
+            {isAdmin && paginatedItems.length > 0 && (
+              <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/20">
+                <Checkbox
+                  checked={allPageSelected}
+                  onCheckedChange={(c) => togglePageSelect(!!c)}
+                  aria-label={t("selectAll")}
+                />
+                <span className="text-xs text-muted-foreground">{t("selectAll")}</span>
+              </div>
+            )}
             <div className="divide-y">
               {filtered.length === 0 && (
                 <p className="text-center text-muted-foreground py-8">{t("noSessions")}</p>
@@ -245,6 +326,15 @@ const Sessions = () => {
                     onClick={() => setSelectedSession(session)}
                   >
                     <div className="flex items-center gap-4">
+                      {isAdmin && (
+                        <div onClick={(e) => e.stopPropagation()}>
+                          <Checkbox
+                            checked={selectedIds.has(session.id)}
+                            onCheckedChange={() => toggleSelect(session.id)}
+                            aria-label={t("selectAll")}
+                          />
+                        </div>
+                      )}
                       <div className="h-10 w-10 rounded-full bg-accent flex items-center justify-center shrink-0">
                         <span className="text-sm font-bold text-primary">{getStudentName(session)[0]}</span>
                       </div>
@@ -321,6 +411,27 @@ const Sessions = () => {
         approval={approvalDialog}
         onClose={() => setApprovalDialog(null)}
         requestTypeLabels={requestTypeLabels}
+      />
+
+      <ConfirmDialog
+        open={!!bulkConfirm}
+        onOpenChange={(o) => !o && setBulkConfirm(null)}
+        title={t("confirmAction")}
+        description={
+          bulkConfirm === "delete"
+            ? `${t("confirmDeleteSelected")} (${selectedIds.size})`
+            : `${t("confirmChangeStatus")} — ${selectedIds.size}`
+        }
+        confirmLabel={
+          bulkConfirm === "delete"
+            ? t("deleteSelected")
+            : bulkConfirm === "completed"
+            ? t("bulkMarkCompleted")
+            : t("bulkMarkCancelled")
+        }
+        variant={bulkConfirm === "delete" || bulkConfirm === "cancelled" ? "destructive" : "default"}
+        onConfirm={runBulk}
+        isPending={bulkPending}
       />
     </div>
   );

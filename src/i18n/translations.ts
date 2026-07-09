@@ -497,6 +497,10 @@ const translations = {
   confirmDeleteSelected: { en: "Are you sure you want to delete the selected entries?", ar: "هل أنت متأكد من حذف الطلبات المحددة؟" },
   itemsDeleted: { en: "items deleted", ar: "عنصر تم حذفه" },
   selectAll: { en: "Select All", ar: "تحديد الكل" },
+  bulkMarkCompleted: { en: "Mark as Completed", ar: "تحديد كمكتملة" },
+  bulkMarkCancelled: { en: "Mark as Cancelled", ar: "تحديد كملغية" },
+  bulkActionDone: { en: "Bulk action applied", ar: "تم تنفيذ الإجراء الجماعي" },
+  selectedCount: { en: "selected", ar: "محدد" },
 
   // Teacher Profile
   myProfile: { en: "My Profile", ar: "ملفي الشخصي" },
