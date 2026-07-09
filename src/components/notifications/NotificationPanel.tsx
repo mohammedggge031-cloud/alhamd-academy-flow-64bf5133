@@ -35,6 +35,7 @@ const categoryConfig: Record<NotificationCategory, { icon: React.ReactNode; type
 const NotificationPanel = () => {
   const [open, setOpen] = useState(false);
   const [activeTab, setActiveTab] = useState<NotificationCategory>("all");
+  const [dismissedIds, setDismissedIds] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   const { t } = useLanguage();
   const queryClient = useQueryClient();
@@ -69,20 +70,26 @@ const NotificationPanel = () => {
     return () => { supabase.removeChannel(channel); };
   }, [user, queryClient]);
 
-  const unreadCount = notifications.filter((n) => !n.is_read).length;
+  // Visible list excludes locally-dismissed notifications for this session
+  const visibleNotifications = useMemo(
+    () => notifications.filter((n) => !dismissedIds.has(n.id)),
+    [notifications, dismissedIds],
+  );
+
+  const unreadCount = visibleNotifications.filter((n) => !n.is_read).length;
 
   const filteredNotifications = useMemo(() => {
-    if (activeTab === "all") return notifications;
+    if (activeTab === "all") return visibleNotifications;
     const types = categoryConfig[activeTab].types;
-    return notifications.filter((n) => types.includes(n.type));
-  }, [notifications, activeTab]);
+    return visibleNotifications.filter((n) => types.includes(n.type));
+  }, [visibleNotifications, activeTab]);
 
   const categoryCounts = useMemo(() => {
     const counts: Record<NotificationCategory, number> = {
-      all: notifications.filter(n => !n.is_read).length,
+      all: visibleNotifications.filter(n => !n.is_read).length,
       reminders_6h: 0, reminders_5m: 0, homework: 0, reports: 0, invoices: 0, alerts: 0,
     };
-    for (const n of notifications) {
+    for (const n of visibleNotifications) {
       if (n.is_read) continue;
       for (const [cat, cfg] of Object.entries(categoryConfig)) {
         if (cat !== "all" && cfg.types.includes(n.type)) {
@@ -91,16 +98,29 @@ const NotificationPanel = () => {
       }
     }
     return counts;
-  }, [notifications]);
+  }, [visibleNotifications]);
 
-  // Shared read: uses database function to mark all copies in the group as read
-  const markRead = async (id: string) => {
-    await supabase.rpc("mark_notification_group_read", { _notification_id: id });
-    queryClient.invalidateQueries({ queryKey: ["notifications"] });
+  // Dismiss locally + mark read on server. The item disappears from the panel immediately.
+  const dismissAndMarkRead = async (id: string, wasUnread: boolean) => {
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      next.add(id);
+      return next;
+    });
+    if (wasUnread) {
+      await supabase.rpc("mark_notification_group_read", { _notification_id: id });
+      queryClient.invalidateQueries({ queryKey: ["notifications"] });
+    }
   };
 
   const markAllRead = async () => {
     if (!user) return;
+    // Dismiss every currently-visible notification from the panel
+    setDismissedIds((prev) => {
+      const next = new Set(prev);
+      visibleNotifications.forEach((n) => next.add(n.id));
+      return next;
+    });
     await supabase.rpc("mark_all_notifications_read", { _user_id: user.id });
     queryClient.invalidateQueries({ queryKey: ["notifications"] });
   };
@@ -213,7 +233,16 @@ const NotificationPanel = () => {
                   {filteredNotifications.map((n) => (
                     <div
                       key={n.id}
-                      className={`p-3 hover:bg-muted/30 transition-colors ${!n.is_read ? "bg-primary/5" : ""}`}
+                      role="button"
+                      tabIndex={0}
+                      onClick={() => dismissAndMarkRead(n.id, !n.is_read)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          dismissAndMarkRead(n.id, !n.is_read);
+                        }
+                      }}
+                      className={`p-3 hover:bg-muted/30 transition-colors cursor-pointer ${!n.is_read ? "bg-primary/5" : ""}`}
                     >
                       <div className="flex items-start gap-2">
                         <span className="text-lg shrink-0">{typeIcons[n.type] || "📌"}</span>
@@ -222,7 +251,7 @@ const NotificationPanel = () => {
                           {n.body && <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{n.body}</p>}
                           <p className="text-[10px] text-muted-foreground mt-1">{timeAgo(n.created_at)}</p>
                         </div>
-                        <div className="flex items-center gap-1 shrink-0">
+                        <div className="flex items-center gap-1 shrink-0" onClick={(e) => e.stopPropagation()}>
                           {n.metadata?.whatsapp_phone && (
                             <Button
                               variant="ghost"
@@ -245,11 +274,14 @@ const NotificationPanel = () => {
                               <MessageCircle className="h-4 w-4" />
                             </Button>
                           )}
-                          {!n.is_read && (
-                            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => markRead(n.id)}>
-                              <Check className="h-3.5 w-3.5" />
-                            </Button>
-                          )}
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => dismissAndMarkRead(n.id, !n.is_read)}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
                         </div>
                       </div>
                     </div>
