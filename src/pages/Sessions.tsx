@@ -55,6 +55,11 @@ const Sessions = () => {
   const [reportDialog, setReportDialog] = useState<any | null>(null);
   const [editingReport, setEditingReport] = useState<any | null>(null);
   const [showMyReports, setShowMyReports] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState<null | "delete" | "completed" | "cancelled">(null);
+  const [bulkPending, setBulkPending] = useState(false);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const { data: sessions = [], isLoading } = useQuery({
     queryKey: ["sessions"],
