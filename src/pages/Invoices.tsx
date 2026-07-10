@@ -455,6 +455,23 @@ const Invoices = () => {
         </div>
       </div>
 
+      {isAdmin && selectedIds.size > 0 && (
+        <Card className="border-primary/30 bg-primary/5 shadow-sm sticky top-2 z-10">
+          <CardContent className="p-3 flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">{selectedIds.size} {t("selectedCount")}</span>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setBulkConfirm("paid")}>
+              <DollarSign className="h-3.5 w-3.5" /> {t("bulkMarkPaid")}
+            </Button>
+            <Button size="sm" variant="destructive" className="gap-1" onClick={() => setBulkConfirm("delete")}>
+              <Trash2 className="h-3.5 w-3.5" /> {t("deleteSelected")}
+            </Button>
+            <Button size="sm" variant="ghost" className="mr-auto" onClick={() => setSelectedIds(new Set())}>
+              {t("clearSelection")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
