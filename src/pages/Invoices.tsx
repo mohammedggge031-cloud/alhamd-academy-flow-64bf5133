@@ -26,6 +26,8 @@ import { useAuth } from "@/hooks/useAuth";
 
 const Invoices = () => {
   const { t, lang } = useLanguage();
+  const { role } = useAuth();
+  const isAdmin = role === "admin" || role === "manager";
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
