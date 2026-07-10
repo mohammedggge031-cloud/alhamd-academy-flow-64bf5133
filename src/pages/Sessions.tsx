@@ -20,6 +20,7 @@ import SessionReportDialog from "@/components/sessions/SessionReportDialog";
 import ApprovalRequestDialog from "@/components/sessions/ApprovalRequestDialog";
 import PendingApprovalsSection from "@/components/sessions/PendingApprovalsSection";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { toastWithUndo } from "@/lib/toastWithUndo";
 
 const Sessions = () => {
   const { t, lang } = useLanguage();
