@@ -20,6 +20,9 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { openWhatsApp, buildInvoiceMessage, buildPaidInvoiceMessage } from "@/utils/whatsappLinks";
 import { AdminSignatureToggle, AdminSignatureDisplay } from "@/components/AdminSignature";
+import { Checkbox } from "@/components/ui/checkbox";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useAuth } from "@/hooks/useAuth";
 
 const Invoices = () => {
   const { t, lang } = useLanguage();
