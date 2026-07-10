@@ -202,6 +202,50 @@ const Invoices = () => {
     return names.length > 0 ? names.join("، ") : "—";
   };
 
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const togglePageSelect = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) paginatedItems.forEach((i: any) => next.add(i.id));
+      else paginatedItems.forEach((i: any) => next.delete(i.id));
+      return next;
+    });
+  };
+  const runBulk = async () => {
+    if (!bulkConfirm || selectedIds.size === 0) return;
+    setBulkPending(true);
+    try {
+      const ids = Array.from(selectedIds);
+      if (bulkConfirm === "delete") {
+        await supabase.from("invoice_students").delete().in("invoice_id", ids);
+        const { error } = await supabase.from("invoices").delete().in("id", ids);
+        if (error) throw error;
+      } else {
+        // Mark paid one-by-one to trigger student credit logic
+        for (const id of ids) {
+          const inv = invoices.find((i: any) => i.id === id);
+          if (!inv || inv.status === "paid") continue;
+          await markPaid.mutateAsync(id);
+        }
+      }
+      toast({ title: t("bulkActionDone"), description: `${ids.length}` });
+      setSelectedIds(new Set());
+      setBulkConfirm(null);
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    } catch (e: any) {
+      toast({ title: t("error"), description: e.message, variant: "destructive" });
+    } finally {
+      setBulkPending(false);
+    }
+  };
+
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
