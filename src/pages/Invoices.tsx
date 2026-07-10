@@ -479,6 +479,20 @@ const Invoices = () => {
       ) : (
         <Card className="border-none shadow-sm">
           <CardContent className="p-0">
+            {isAdmin && paginatedItems.length > 0 && (() => {
+              const pageSelectedCount = paginatedItems.filter((i: any) => selectedIds.has(i.id)).length;
+              const allPageSelected = pageSelectedCount === paginatedItems.length;
+              return (
+                <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/20">
+                  <Checkbox
+                    checked={allPageSelected}
+                    onCheckedChange={(c) => togglePageSelect(!!c)}
+                    aria-label={t("selectAll")}
+                  />
+                  <span className="text-xs text-muted-foreground">{t("selectAll")}</span>
+                </div>
+              );
+            })()}
             <div className="divide-y">
               {filtered.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">{t("noData")}</p>
@@ -488,6 +502,13 @@ const Invoices = () => {
                 return (
                   <div key={invoice.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
                     <div className="flex items-center gap-4">
+                      {isAdmin && (
+                        <Checkbox
+                          checked={selectedIds.has(invoice.id)}
+                          onCheckedChange={() => toggleSelect(invoice.id)}
+                          aria-label={t("selectAll")}
+                        />
+                      )}
                       <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
                         <Receipt className="h-5 w-5 text-primary" />
                       </div>
