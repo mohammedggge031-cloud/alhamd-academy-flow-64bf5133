@@ -1229,25 +1229,43 @@ export type Database = {
           academic_degree: string | null
           age: number | null
           bio: string | null
+          bio_ar: string | null
+          bio_en: string | null
           bonus_amount: number | null
           bonus_reason: string | null
+          certificates: string[]
+          country: string | null
           created_at: string
+          deleted_at: string | null
+          display_order: number
+          experience_years: number | null
           gender: string | null
           hourly_rate: number
           id: string
           ijazat: string | null
           is_active: boolean | null
+          is_featured: boolean
+          job_title_ar: string | null
+          job_title_en: string | null
+          languages: string[]
           monthly_absence_hours: number | null
           monthly_hours: number | null
           monthly_salary: number | null
           monthly_waiting_minutes: number | null
           profile_completed: boolean | null
+          published_at: string | null
           qualification: string | null
           rate_currency: string
           rating: number | null
+          show_on_arabic_website: boolean
+          show_on_english_website: boolean
           show_on_website: boolean | null
+          slug: string | null
+          specializations: string[]
           students_count: number | null
           subjects: string[] | null
+          teaching_audience: string[]
+          translation_status: string
           updated_at: string
           user_id: string
           website_visible_fields: string[] | null
@@ -1258,25 +1276,43 @@ export type Database = {
           academic_degree?: string | null
           age?: number | null
           bio?: string | null
+          bio_ar?: string | null
+          bio_en?: string | null
           bonus_amount?: number | null
           bonus_reason?: string | null
+          certificates?: string[]
+          country?: string | null
           created_at?: string
+          deleted_at?: string | null
+          display_order?: number
+          experience_years?: number | null
           gender?: string | null
           hourly_rate?: number
           id?: string
           ijazat?: string | null
           is_active?: boolean | null
+          is_featured?: boolean
+          job_title_ar?: string | null
+          job_title_en?: string | null
+          languages?: string[]
           monthly_absence_hours?: number | null
           monthly_hours?: number | null
           monthly_salary?: number | null
           monthly_waiting_minutes?: number | null
           profile_completed?: boolean | null
+          published_at?: string | null
           qualification?: string | null
           rate_currency?: string
           rating?: number | null
+          show_on_arabic_website?: boolean
+          show_on_english_website?: boolean
           show_on_website?: boolean | null
+          slug?: string | null
+          specializations?: string[]
           students_count?: number | null
           subjects?: string[] | null
+          teaching_audience?: string[]
+          translation_status?: string
           updated_at?: string
           user_id: string
           website_visible_fields?: string[] | null
@@ -1287,25 +1323,43 @@ export type Database = {
           academic_degree?: string | null
           age?: number | null
           bio?: string | null
+          bio_ar?: string | null
+          bio_en?: string | null
           bonus_amount?: number | null
           bonus_reason?: string | null
+          certificates?: string[]
+          country?: string | null
           created_at?: string
+          deleted_at?: string | null
+          display_order?: number
+          experience_years?: number | null
           gender?: string | null
           hourly_rate?: number
           id?: string
           ijazat?: string | null
           is_active?: boolean | null
+          is_featured?: boolean
+          job_title_ar?: string | null
+          job_title_en?: string | null
+          languages?: string[]
           monthly_absence_hours?: number | null
           monthly_hours?: number | null
           monthly_salary?: number | null
           monthly_waiting_minutes?: number | null
           profile_completed?: boolean | null
+          published_at?: string | null
           qualification?: string | null
           rate_currency?: string
           rating?: number | null
+          show_on_arabic_website?: boolean
+          show_on_english_website?: boolean
           show_on_website?: boolean | null
+          slug?: string | null
+          specializations?: string[]
           students_count?: number | null
           subjects?: string[] | null
+          teaching_audience?: string[]
+          translation_status?: string
           updated_at?: string
           user_id?: string
           website_visible_fields?: string[] | null
@@ -1656,6 +1710,7 @@ export type Database = {
             Args: { _function_url: string; _sync_secret?: string }
             Returns: undefined
           }
+      slugify: { Args: { _input: string }; Returns: string }
       touch_external_sync_event: {
         Args: { _event_id: string; _last_error?: string }
         Returns: undefined
