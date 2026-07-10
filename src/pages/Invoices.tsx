@@ -588,6 +588,21 @@ const Invoices = () => {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={!!bulkConfirm}
+        onOpenChange={(o) => !o && setBulkConfirm(null)}
+        title={t("confirmAction")}
+        description={
+          bulkConfirm === "delete"
+            ? `${t("confirmDeleteSelected")} (${selectedIds.size})`
+            : `${t("bulkMarkPaid")} — ${selectedIds.size}`
+        }
+        confirmLabel={bulkConfirm === "delete" ? t("deleteSelected") : t("bulkMarkPaid")}
+        variant={bulkConfirm === "delete" ? "destructive" : "default"}
+        onConfirm={runBulk}
+        isPending={bulkPending}
+      />
     </div>
   );
 };
