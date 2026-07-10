@@ -307,6 +307,7 @@ export type Database = {
           hours: number | null
           id: string
           notes: string | null
+          package_id: string | null
           paid_at: string | null
           status: string
           student_id: string | null
@@ -321,6 +322,7 @@ export type Database = {
           hours?: number | null
           id?: string
           notes?: string | null
+          package_id?: string | null
           paid_at?: string | null
           status?: string
           student_id?: string | null
@@ -335,6 +337,7 @@ export type Database = {
           hours?: number | null
           id?: string
           notes?: string | null
+          package_id?: string | null
           paid_at?: string | null
           status?: string
           student_id?: string | null
@@ -590,6 +593,74 @@ export type Database = {
         }
         Relationships: []
       }
+      session_edit_requests: {
+        Row: {
+          created_at: string
+          id: string
+          reason: string | null
+          requested_changes: Json
+          reviewed_at: string | null
+          reviewed_by: string | null
+          session_id: string
+          status: string
+          teacher_id: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requested_changes: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id: string
+          status?: string
+          teacher_id: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          reason?: string | null
+          requested_changes?: Json
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          session_id?: string
+          status?: string
+          teacher_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_edit_requests_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_edit_requests_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_edit_requests_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_manager_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "session_edit_requests_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_self_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_reports: {
         Row: {
           admin_alert: boolean | null
@@ -670,11 +741,16 @@ export type Database = {
       }
       sessions: {
         Row: {
+          absence_decision: string | null
+          absence_reviewed: boolean
+          absence_reviewed_at: string | null
+          absence_reviewed_by: string | null
           approval_status: string | null
           created_at: string
           duration_minutes: number
           exception_minutes: number | null
           id: string
+          locked_by_teacher: boolean
           notes: string | null
           original_data: Json | null
           pending_approval: boolean | null
@@ -688,11 +764,16 @@ export type Database = {
           waiting_minutes: number | null
         }
         Insert: {
+          absence_decision?: string | null
+          absence_reviewed?: boolean
+          absence_reviewed_at?: string | null
+          absence_reviewed_by?: string | null
           approval_status?: string | null
           created_at?: string
           duration_minutes?: number
           exception_minutes?: number | null
           id?: string
+          locked_by_teacher?: boolean
           notes?: string | null
           original_data?: Json | null
           pending_approval?: boolean | null
@@ -706,11 +787,16 @@ export type Database = {
           waiting_minutes?: number | null
         }
         Update: {
+          absence_decision?: string | null
+          absence_reviewed?: boolean
+          absence_reviewed_at?: string | null
+          absence_reviewed_by?: string | null
           approval_status?: string | null
           created_at?: string
           duration_minutes?: number
           exception_minutes?: number | null
           id?: string
+          locked_by_teacher?: boolean
           notes?: string | null
           original_data?: Json | null
           pending_approval?: boolean | null
@@ -750,6 +836,53 @@ export type Database = {
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "teachers_self_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      student_ledger: {
+        Row: {
+          amount_delta: number
+          created_at: string
+          created_by: string | null
+          entry_type: string
+          hours_delta: number
+          id: string
+          invoice_id: string | null
+          notes: string | null
+          session_id: string | null
+          student_id: string
+        }
+        Insert: {
+          amount_delta?: number
+          created_at?: string
+          created_by?: string | null
+          entry_type: string
+          hours_delta?: number
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          session_id?: string | null
+          student_id: string
+        }
+        Update: {
+          amount_delta?: number
+          created_at?: string
+          created_by?: string | null
+          entry_type?: string
+          hours_delta?: number
+          id?: string
+          invoice_id?: string | null
+          notes?: string | null
+          session_id?: string | null
+          student_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "student_ledger_student_id_fkey"
+            columns: ["student_id"]
+            isOneToOne: false
+            referencedRelation: "students"
             referencedColumns: ["id"]
           },
         ]
@@ -802,6 +935,7 @@ export type Database = {
           communication_language: string | null
           country: string | null
           created_at: string
+          current_package_id: string | null
           guardian_whatsapp: string | null
           id: string
           is_active: boolean | null
@@ -810,6 +944,10 @@ export type Database = {
           remaining_hours: number | null
           schedule: Json | null
           session_duration_minutes: number | null
+          subscription_end_date: string | null
+          subscription_hours: number | null
+          subscription_start_date: string | null
+          subscription_status: string
           timezone: string | null
           updated_at: string
           whatsapp: string | null
@@ -822,6 +960,7 @@ export type Database = {
           communication_language?: string | null
           country?: string | null
           created_at?: string
+          current_package_id?: string | null
           guardian_whatsapp?: string | null
           id?: string
           is_active?: boolean | null
@@ -830,6 +969,10 @@ export type Database = {
           remaining_hours?: number | null
           schedule?: Json | null
           session_duration_minutes?: number | null
+          subscription_end_date?: string | null
+          subscription_hours?: number | null
+          subscription_start_date?: string | null
+          subscription_status?: string
           timezone?: string | null
           updated_at?: string
           whatsapp?: string | null
@@ -842,6 +985,7 @@ export type Database = {
           communication_language?: string | null
           country?: string | null
           created_at?: string
+          current_package_id?: string | null
           guardian_whatsapp?: string | null
           id?: string
           is_active?: boolean | null
@@ -850,6 +994,10 @@ export type Database = {
           remaining_hours?: number | null
           schedule?: Json | null
           session_duration_minutes?: number | null
+          subscription_end_date?: string | null
+          subscription_hours?: number | null
+          subscription_start_date?: string | null
+          subscription_status?: string
           timezone?: string | null
           updated_at?: string
           whatsapp?: string | null
@@ -877,6 +1025,42 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      subscription_packages: {
+        Row: {
+          created_at: string
+          currency: string
+          hours: number
+          id: string
+          is_active: boolean
+          name: string
+          price: number
+          updated_at: string
+          validity_days: number
+        }
+        Insert: {
+          created_at?: string
+          currency?: string
+          hours: number
+          id?: string
+          is_active?: boolean
+          name: string
+          price: number
+          updated_at?: string
+          validity_days?: number
+        }
+        Update: {
+          created_at?: string
+          currency?: string
+          hours?: number
+          id?: string
+          is_active?: boolean
+          name?: string
+          price?: number
+          updated_at?: string
+          validity_days?: number
+        }
+        Relationships: []
       }
       subscription_requests: {
         Row: {
@@ -971,6 +1155,67 @@ export type Database = {
           },
           {
             foreignKeyName: "teacher_documents_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_self_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      teacher_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          entry_type: string
+          id: string
+          minutes: number
+          notes: string | null
+          payroll_month: string | null
+          session_id: string | null
+          teacher_id: string
+        }
+        Insert: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          entry_type: string
+          id?: string
+          minutes?: number
+          notes?: string | null
+          payroll_month?: string | null
+          session_id?: string | null
+          teacher_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          entry_type?: string
+          id?: string
+          minutes?: number
+          notes?: string | null
+          payroll_month?: string | null
+          session_id?: string | null
+          teacher_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_ledger_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_ledger_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_manager_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_ledger_teacher_id_fkey"
             columns: ["teacher_id"]
             isOneToOne: false
             referencedRelation: "teachers_self_view"
@@ -1150,6 +1395,61 @@ export type Database = {
       }
     }
     Views: {
+      teacher_ledger_academic_view: {
+        Row: {
+          created_at: string | null
+          entry_type: string | null
+          id: string | null
+          minutes: number | null
+          notes: string | null
+          payroll_month: string | null
+          session_id: string | null
+          teacher_id: string | null
+        }
+        Insert: {
+          created_at?: string | null
+          entry_type?: string | null
+          id?: string | null
+          minutes?: number | null
+          notes?: string | null
+          payroll_month?: string | null
+          session_id?: string | null
+          teacher_id?: string | null
+        }
+        Update: {
+          created_at?: string | null
+          entry_type?: string | null
+          id?: string | null
+          minutes?: number | null
+          notes?: string | null
+          payroll_month?: string | null
+          session_id?: string | null
+          teacher_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "teacher_ledger_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_ledger_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_manager_view"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "teacher_ledger_teacher_id_fkey"
+            columns: ["teacher_id"]
+            isOneToOne: false
+            referencedRelation: "teachers_self_view"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teachers_manager_view: {
         Row: {
           academic_degree: string | null
@@ -1267,6 +1567,14 @@ export type Database = {
       }
     }
     Functions: {
+      add_bonus_session: {
+        Args: { _hours: number; _reason: string; _student_id: string }
+        Returns: string
+      }
+      apply_absence_decision: {
+        Args: { _decision: string; _reason?: string; _session_id: string }
+        Returns: undefined
+      }
       claim_external_sync_events: {
         Args: { _limit?: number }
         Returns: {
@@ -1328,10 +1636,19 @@ export type Database = {
         Args: { _notification_id: string }
         Returns: undefined
       }
+      recalc_student_balance: {
+        Args: { _student_id: string }
+        Returns: undefined
+      }
+      recalc_subscription_status: {
+        Args: { _student_id: string }
+        Returns: undefined
+      }
       recalc_teacher_monthly_stats: {
         Args: { _teacher_id: string }
         Returns: undefined
       }
+      refresh_all_subscription_statuses: { Args: never; Returns: undefined }
       request_external_sync_processing: { Args: never; Returns: undefined }
       set_external_sync_config:
         | { Args: { _function_url: string }; Returns: undefined }
