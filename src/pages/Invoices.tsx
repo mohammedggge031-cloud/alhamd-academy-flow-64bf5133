@@ -22,6 +22,7 @@ import { openWhatsApp, buildInvoiceMessage, buildPaidInvoiceMessage } from "@/ut
 import { AdminSignatureToggle, AdminSignatureDisplay } from "@/components/AdminSignature";
 import { Checkbox } from "@/components/ui/checkbox";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { toastWithUndo } from "@/lib/toastWithUndo";
 import { useAuth } from "@/hooks/useAuth";
 
 const Invoices = () => {
