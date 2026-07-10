@@ -501,6 +501,7 @@ const translations = {
   bulkMarkCancelled: { en: "Mark as Cancelled", ar: "تحديد كملغية" },
   bulkActionDone: { en: "Bulk action applied", ar: "تم تنفيذ الإجراء الجماعي" },
   selectedCount: { en: "selected", ar: "محدد" },
+  bulkMarkPaid: { en: "Mark as Paid", ar: "تحديد كمدفوعة" },
 
   // Teacher Profile
   myProfile: { en: "My Profile", ar: "ملفي الشخصي" },

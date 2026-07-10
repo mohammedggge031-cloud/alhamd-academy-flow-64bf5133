@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
-import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2, MessageCircle, Check, X, Search, Users } from "lucide-react";
+import { Receipt, Filter, Plus, CalendarDays, AlertTriangle, Loader2, MessageCircle, Check, X, Search, Users, Trash2, DollarSign } from "lucide-react";
 import { usePagination } from "@/hooks/usePagination";
 import PaginationControls from "@/components/PaginationControls";
 import { Card, CardContent } from "@/components/ui/card";
@@ -20,9 +20,14 @@ import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/i18n/LanguageContext";
 import { openWhatsApp, buildInvoiceMessage, buildPaidInvoiceMessage } from "@/utils/whatsappLinks";
 import { AdminSignatureToggle, AdminSignatureDisplay } from "@/components/AdminSignature";
+import { Checkbox } from "@/components/ui/checkbox";
+import ConfirmDialog from "@/components/ConfirmDialog";
+import { useAuth } from "@/hooks/useAuth";
 
 const Invoices = () => {
   const { t, lang } = useLanguage();
+  const { role } = useAuth();
+  const isAdmin = role === "admin" || role === "manager";
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [dateFrom, setDateFrom] = useState("");
   const [dateTo, setDateTo] = useState("");
@@ -46,6 +51,9 @@ const Invoices = () => {
   const [hours, setHours] = useState("");
   const [discount, setDiscount] = useState("0");
   const [dueDate, setDueDate] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState<null | "delete" | "paid">(null);
+  const [bulkPending, setBulkPending] = useState(false);
 
   const statusConfig: Record<string, { label: string; className: string }> = {
     paid: { label: t("paid"), className: "bg-success text-success-foreground" },
@@ -193,6 +201,50 @@ const Invoices = () => {
     }
     return names.length > 0 ? names.join("، ") : "—";
   };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id); else next.add(id);
+      return next;
+    });
+  };
+  const togglePageSelect = (checked: boolean) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) paginatedItems.forEach((i: any) => next.add(i.id));
+      else paginatedItems.forEach((i: any) => next.delete(i.id));
+      return next;
+    });
+  };
+  const runBulk = async () => {
+    if (!bulkConfirm || selectedIds.size === 0) return;
+    setBulkPending(true);
+    try {
+      const ids = Array.from(selectedIds);
+      if (bulkConfirm === "delete") {
+        await supabase.from("invoice_students").delete().in("invoice_id", ids);
+        const { error } = await supabase.from("invoices").delete().in("id", ids);
+        if (error) throw error;
+      } else {
+        // Mark paid one-by-one to trigger student credit logic
+        for (const id of ids) {
+          const inv = invoices.find((i: any) => i.id === id);
+          if (!inv || inv.status === "paid") continue;
+          await markPaid.mutateAsync(id);
+        }
+      }
+      toast({ title: t("bulkActionDone"), description: `${ids.length}` });
+      setSelectedIds(new Set());
+      setBulkConfirm(null);
+      queryClient.invalidateQueries({ queryKey: ["invoices"] });
+    } catch (e: any) {
+      toast({ title: t("error"), description: e.message, variant: "destructive" });
+    } finally {
+      setBulkPending(false);
+    }
+  };
+
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -403,6 +455,23 @@ const Invoices = () => {
         </div>
       </div>
 
+      {isAdmin && selectedIds.size > 0 && (
+        <Card className="border-primary/30 bg-primary/5 shadow-sm sticky top-2 z-10">
+          <CardContent className="p-3 flex items-center gap-2 flex-wrap">
+            <span className="text-sm font-medium">{selectedIds.size} {t("selectedCount")}</span>
+            <Button size="sm" variant="outline" className="gap-1" onClick={() => setBulkConfirm("paid")}>
+              <DollarSign className="h-3.5 w-3.5" /> {t("bulkMarkPaid")}
+            </Button>
+            <Button size="sm" variant="destructive" className="gap-1" onClick={() => setBulkConfirm("delete")}>
+              <Trash2 className="h-3.5 w-3.5" /> {t("deleteSelected")}
+            </Button>
+            <Button size="sm" variant="ghost" className="mr-auto" onClick={() => setSelectedIds(new Set())}>
+              {t("clearSelection")}
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
       {isLoading ? (
         <div className="flex justify-center py-12">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -410,6 +479,20 @@ const Invoices = () => {
       ) : (
         <Card className="border-none shadow-sm">
           <CardContent className="p-0">
+            {isAdmin && paginatedItems.length > 0 && (() => {
+              const pageSelectedCount = paginatedItems.filter((i: any) => selectedIds.has(i.id)).length;
+              const allPageSelected = pageSelectedCount === paginatedItems.length;
+              return (
+                <div className="flex items-center gap-2 px-4 py-2 border-b bg-muted/20">
+                  <Checkbox
+                    checked={allPageSelected}
+                    onCheckedChange={(c) => togglePageSelect(!!c)}
+                    aria-label={t("selectAll")}
+                  />
+                  <span className="text-xs text-muted-foreground">{t("selectAll")}</span>
+                </div>
+              );
+            })()}
             <div className="divide-y">
               {filtered.length === 0 ? (
                 <p className="text-center text-muted-foreground py-8">{t("noData")}</p>
@@ -419,6 +502,13 @@ const Invoices = () => {
                 return (
                   <div key={invoice.id} className="flex items-center justify-between p-4 hover:bg-muted/30 transition-colors">
                     <div className="flex items-center gap-4">
+                      {isAdmin && (
+                        <Checkbox
+                          checked={selectedIds.has(invoice.id)}
+                          onCheckedChange={() => toggleSelect(invoice.id)}
+                          aria-label={t("selectAll")}
+                        />
+                      )}
                       <div className="h-10 w-10 rounded-lg bg-accent flex items-center justify-center shrink-0">
                         <Receipt className="h-5 w-5 text-primary" />
                       </div>
@@ -498,6 +588,21 @@ const Invoices = () => {
           </CardContent>
         </Card>
       )}
+
+      <ConfirmDialog
+        open={!!bulkConfirm}
+        onOpenChange={(o) => !o && setBulkConfirm(null)}
+        title={t("confirmAction")}
+        description={
+          bulkConfirm === "delete"
+            ? `${t("confirmDeleteSelected")} (${selectedIds.size})`
+            : `${t("bulkMarkPaid")} — ${selectedIds.size}`
+        }
+        confirmLabel={bulkConfirm === "delete" ? t("deleteSelected") : t("bulkMarkPaid")}
+        variant={bulkConfirm === "delete" ? "destructive" : "default"}
+        onConfirm={runBulk}
+        isPending={bulkPending}
+      />
     </div>
   );
 };
