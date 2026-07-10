@@ -51,6 +51,9 @@ const Invoices = () => {
   const [hours, setHours] = useState("");
   const [discount, setDiscount] = useState("0");
   const [dueDate, setDueDate] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkConfirm, setBulkConfirm] = useState<null | "delete" | "paid">(null);
+  const [bulkPending, setBulkPending] = useState(false);
 
   const statusConfig: Record<string, { label: string; className: string }> = {
     paid: { label: t("paid"), className: "bg-success text-success-foreground" },
