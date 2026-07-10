@@ -20,6 +20,7 @@ import SessionReportDialog from "@/components/sessions/SessionReportDialog";
 import ApprovalRequestDialog from "@/components/sessions/ApprovalRequestDialog";
 import PendingApprovalsSection from "@/components/sessions/PendingApprovalsSection";
 import ConfirmDialog from "@/components/ConfirmDialog";
+import { toastWithUndo } from "@/lib/toastWithUndo";
 
 const Sessions = () => {
   const { t, lang } = useLanguage();
@@ -113,16 +114,31 @@ const Sessions = () => {
   };
   const runBulk = async () => {
     if (!bulkConfirm || selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    if (bulkConfirm === "delete") {
+      // Optimistic: hide from UI immediately via query cache; defer real delete
+      const prev = queryClient.getQueryData<any[]>(["sessions"]) ?? [];
+      queryClient.setQueryData(["sessions"], prev.filter((s: any) => !selectedIds.has(s.id)));
+      setSelectedIds(new Set());
+      setBulkConfirm(null);
+      toastWithUndo({
+        message: `${t("bulkActionDone")} — ${ids.length} ${t("sessionsCount")}`,
+        undoLabel: lang === "ar" ? "تراجع" : "Undo",
+        commit: async () => {
+          const { error } = await supabase.from("sessions").delete().in("id", ids);
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ["sessions"] });
+        },
+        onUndo: () => {
+          queryClient.setQueryData(["sessions"], prev);
+        },
+      });
+      return;
+    }
     setBulkPending(true);
     try {
-      const ids = Array.from(selectedIds);
-      if (bulkConfirm === "delete") {
-        const { error } = await supabase.from("sessions").delete().in("id", ids);
-        if (error) throw error;
-      } else {
-        const { error } = await supabase.from("sessions").update({ status: bulkConfirm }).in("id", ids);
-        if (error) throw error;
-      }
+      const { error } = await supabase.from("sessions").update({ status: bulkConfirm }).in("id", ids);
+      if (error) throw error;
       toast({ title: t("bulkActionDone"), description: `${ids.length} ${t("sessionsCount")}` });
       setSelectedIds(new Set());
       setBulkConfirm(null);
