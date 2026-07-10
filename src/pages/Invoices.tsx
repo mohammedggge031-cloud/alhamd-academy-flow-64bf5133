@@ -220,20 +220,33 @@ const Invoices = () => {
   };
   const runBulk = async () => {
     if (!bulkConfirm || selectedIds.size === 0) return;
+    const ids = Array.from(selectedIds);
+    if (bulkConfirm === "delete") {
+      const prev = queryClient.getQueryData<any[]>(["invoices"]) ?? [];
+      queryClient.setQueryData(["invoices"], prev.filter((i: any) => !selectedIds.has(i.id)));
+      setSelectedIds(new Set());
+      setBulkConfirm(null);
+      toastWithUndo({
+        message: `${t("bulkActionDone")} — ${ids.length}`,
+        undoLabel: lang === "ar" ? "تراجع" : "Undo",
+        commit: async () => {
+          await supabase.from("invoice_students").delete().in("invoice_id", ids);
+          const { error } = await supabase.from("invoices").delete().in("id", ids);
+          if (error) throw error;
+          queryClient.invalidateQueries({ queryKey: ["invoices"] });
+        },
+        onUndo: () => {
+          queryClient.setQueryData(["invoices"], prev);
+        },
+      });
+      return;
+    }
     setBulkPending(true);
     try {
-      const ids = Array.from(selectedIds);
-      if (bulkConfirm === "delete") {
-        await supabase.from("invoice_students").delete().in("invoice_id", ids);
-        const { error } = await supabase.from("invoices").delete().in("id", ids);
-        if (error) throw error;
-      } else {
-        // Mark paid one-by-one to trigger student credit logic
-        for (const id of ids) {
-          const inv = invoices.find((i: any) => i.id === id);
-          if (!inv || inv.status === "paid") continue;
-          await markPaid.mutateAsync(id);
-        }
+      for (const id of ids) {
+        const inv = invoices.find((i: any) => i.id === id);
+        if (!inv || inv.status === "paid") continue;
+        await markPaid.mutateAsync(id);
       }
       toast({ title: t("bulkActionDone"), description: `${ids.length}` });
       setSelectedIds(new Set());
